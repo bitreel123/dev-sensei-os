@@ -1,0 +1,58 @@
+import { Link } from "@tanstack/react-router";
+import { Download } from "lucide-react";
+import { LogoLockup } from "./logo";
+
+const nav = [
+  { label: "Product", href: "/product" },
+  { label: "Workflow", href: "/workflow" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Docs", href: "/docs" },
+];
+
+export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }) {
+  const isDark = variant === "dark";
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 border-b ${
+        isDark
+          ? "bg-black/70 border-white/10 text-white"
+          : "bg-white/70 border-black/5 text-black"
+      } backdrop-blur-xl`}
+    >
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-5">
+        <div className="flex items-center gap-10">
+          <LogoLockup />
+          <nav className="hidden md:flex items-center gap-7">
+            {nav.map((n) => (
+              <Link
+                key={n.href}
+                to={n.href}
+                className="text-[13px] text-foreground/70 hover:text-foreground transition-colors"
+              >
+                {n.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/login"
+            className="hidden sm:inline-flex text-[13px] px-3 py-1.5 text-foreground/70 hover:text-foreground"
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/download"
+            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-all ${
+              isDark
+                ? "bg-white text-black hover:bg-white/90"
+                : "bg-black text-white hover:bg-black/90"
+            }`}
+          >
+            Download <Download className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}

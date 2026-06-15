@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { AlertCircle, Check, Circle, FileCode2, Sparkles } from "lucide-react";
+import { LogoMark } from "./logo";
 
 export function DashboardMockup() {
   return (
@@ -11,10 +12,11 @@ export function DashboardMockup() {
           <span className="h-2.5 w-2.5 rounded-full bg-black/10" />
           <span className="h-2.5 w-2.5 rounded-full bg-black/10" />
         </div>
-        <div className="text-[11px] text-black/40 font-mono">
+        <div className="text-[11px] text-black/50 font-mono flex items-center gap-1.5">
+          <LogoMark className="h-3 w-3 text-black" />
           fixdemy — watching lovable.dev
         </div>
-        <div className="text-[11px] text-black/40 font-mono flex items-center gap-1.5">
+        <div className="text-[11px] text-black/50 font-mono flex items-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-black animate-pulse" />
           live
         </div>

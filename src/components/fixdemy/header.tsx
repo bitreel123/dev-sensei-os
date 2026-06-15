@@ -27,7 +27,7 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
               <Link
                 key={n.href}
                 to={n.href}
-                className="text-[13px] text-foreground/70 hover:text-foreground transition-colors"
+                className={`text-[13px] font-medium ${isDark ? "text-white/70 hover:text-white" : "text-black/70 hover:text-black"} transition-colors`}
               >
                 {n.label}
               </Link>

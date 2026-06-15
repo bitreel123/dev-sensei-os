@@ -1,27 +1,27 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Eye, Zap, ShieldCheck, Plug, Apple, Globe } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
 import { SiteHeader } from "@/components/fixdemy/header";
 import { SiteFooter } from "@/components/fixdemy/footer";
-import { AnimatedWords, FadeUp, FadeIn } from "@/components/fixdemy/animated-text";
-import { ParticleField } from "@/components/fixdemy/particles";
+import { LogoWordmark } from "@/components/fixdemy/logo";
+import { CursorHalo } from "@/components/fixdemy/cursor-halo";
 import { DashboardMockup } from "@/components/fixdemy/dashboard-mockup";
-import { LogoMark } from "@/components/fixdemy/logo";
-import { motion } from "motion/react";
+import { BrandLogo, BrandName, ALL_BRANDS, type BrandKey } from "@/components/fixdemy/brand-logos";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Fixdemy — The read-only debugger for vibecoded apps" },
+      { title: "Fixdemy — Debug what you vibecode" },
       {
         name: "description",
         content:
-          "Fixdemy watches your screen while you build with Lovable, Cursor, Replit and Gemini. It catches bugs in real time, explains them in plain language, and shows you exactly where to fix them.",
+          "A read-only debugger that watches every vibecoding tool and every IDE. Catches errors live, explains them, never writes your code.",
       },
-      { property: "og:title", content: "Fixdemy — Read-only debugger for vibecoded apps" },
+      { property: "og:title", content: "Fixdemy — Debug what you vibecode" },
       {
         property: "og:description",
         content:
-          "A diagnostic layer that watches, reads and explains. Never writes a line of your code.",
+          "A read-only debugger that watches every vibecoding tool and every IDE.",
       },
     ],
   }),
@@ -30,205 +30,123 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen bg-white text-black selection:bg-black selection:text-white">
+      <CursorHalo />
       <SiteHeader />
       <Hero />
-      <LogoBar />
-      <Features />
-      <WorkflowSection />
-      <MockupSection />
-      <IntegrationSection />
+      <LogoStrip />
+      <ValueGrid />
+      <LiveMockup />
+      <DevAngle />
+      <WorkflowBand />
+      <Connector />
       <CTA />
       <SiteFooter />
     </div>
   );
 }
 
-function Hero() {
-  return (
-    <section className="relative overflow-hidden pt-32 pb-24">
-      <ParticleField className="absolute inset-0 h-full w-full opacity-70" />
-      <div className="relative mx-auto max-w-5xl px-5 text-center">
-        <FadeUp delay={0.1}>
-          <div className="inline-flex items-center gap-2 text-[12px] text-black/60">
-            <LogoMark className="h-3.5 w-3.5" />
-            Fixdemy
-          </div>
-        </FadeUp>
+/* ------------------------------ Hero ------------------------------ */
 
-        <h1 className="mt-6 text-[44px] sm:text-[64px] md:text-[78px] leading-[1.02] tracking-[-0.04em] font-medium">
-          <AnimatedWords text="See the bug" delay={0.15} />
+function Hero() {
+  // Build headline word-by-word reveal (antigravity-style: each letter rises slightly)
+  return (
+    <section className="relative pt-44 pb-24">
+      <div className="relative mx-auto max-w-6xl px-6 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <LogoWordmark />
+        </motion.div>
+
+        <h1 className="mt-6 text-[44px] sm:text-[68px] md:text-[88px] leading-[0.98] tracking-[-0.045em] font-bold text-black">
+          <RisingLine text="Debug what you" delay={0.05} />
           <br />
-          <span className="text-black/40">
-            <AnimatedWords text="before it costs you credits." delay={0.55} />
-          </span>
+          <RisingLine text="vibecode." delay={0.35} />
         </h1>
 
-        <FadeUp delay={1.2}>
-          <p className="mx-auto mt-7 max-w-xl text-[15px] text-black/55 leading-relaxed">
-            Fixdemy is a read-only debugging copilot. It watches your screen while you
-            vibecode in Lovable, Cursor, Replit or Gemini — and tells you exactly where
-            the error is, what it means, and how to fix it. It never touches your code.
-          </p>
-        </FadeUp>
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.9 }}
+          className="mx-auto mt-7 max-w-[520px] text-[14.5px] text-black leading-relaxed"
+        >
+          Fixdemy is the read-only debugger for vibecoders and developers.
+          It watches your screen, catches the error, and tells you the fix.
+        </motion.p>
 
-        <FadeUp delay={1.4}>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-2.5">
-            <Link
-              to="/download"
-              className="group inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-[13px] font-medium text-white transition-all hover:scale-[1.02]"
-            >
-              Download for Windows
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <Link
-              to="/product"
-              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-3 text-[13px] font-medium text-black hover:bg-black/[0.03]"
-            >
-              See how it works
-            </Link>
-          </div>
-        </FadeUp>
-
-        <FadeUp delay={1.6}>
-          <div className="mt-6 text-[11px] text-black/40">
-            Also on macOS · Linux · Web · Chrome extension
-          </div>
-        </FadeUp>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 1.05 }}
+          className="mt-8 flex flex-wrap items-center justify-center gap-2"
+        >
+          <Link
+            to="/download"
+            className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2.5 text-[13px] font-medium text-white hover:bg-black/85 transition-colors"
+          >
+            <DownloadGlyph /> Download for Windows
+          </Link>
+          <Link
+            to="/product"
+            className="inline-flex items-center gap-2 rounded-full bg-black/[0.04] px-4 py-2.5 text-[13px] font-medium text-black hover:bg-black/[0.08] transition-colors"
+          >
+            Explore use cases
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
 }
 
-function LogoBar() {
-  const items = ["Lovable", "Cursor", "Replit", "Gemini", "v0", "Bolt", "Windsurf"];
+function RisingLine({ text, delay = 0 }: { text: string; delay?: number }) {
   return (
-    <FadeIn>
-      <section className="border-y border-black/5 bg-white py-10">
-        <div className="mx-auto max-w-6xl px-5">
-          <div className="text-center text-[11px] uppercase tracking-[0.2em] text-black/40">
-            Connects to the tools you already vibecode in
-          </div>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-            {items.map((i) => (
-              <span
-                key={i}
-                className="text-[15px] font-medium tracking-tight text-black/35 hover:text-black/70 transition-colors"
-              >
-                {i}
+    <span className="inline-block overflow-hidden align-bottom">
+      <motion.span
+        className="inline-block"
+        initial={{ y: "108%" }}
+        animate={{ y: 0 }}
+        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay }}
+      >
+        {text}
+      </motion.span>
+    </span>
+  );
+}
+
+function DownloadGlyph() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M8 2v9m0 0 3-3m-3 3L5 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 13h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/* --------------------------- Logo strip --------------------------- */
+
+function LogoStrip() {
+  const brands: BrandKey[] = ["lovable", "cursor", "replit", "gemini", "v0", "bolt", "windsurf", "vscode"];
+  return (
+    <section className="border-y border-black/10 bg-white">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-5">
+          {brands.map((b, i) => (
+            <motion.div
+              key={b}
+              initial={{ opacity: 0, y: 6 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.04 }}
+              className="flex items-center gap-2 text-black"
+            >
+              <BrandLogo brand={b} className="h-5 w-5" />
+              <span className="text-[13.5px] font-medium tracking-tight">
+                {BrandName(b)}
               </span>
-            ))}
-          </div>
-        </div>
-      </section>
-    </FadeIn>
-  );
-}
-
-function Features() {
-  const features = [
-    {
-      icon: Eye,
-      title: "Watches your screen",
-      body: "A lightweight observer reads what's on your editor, terminal and browser preview. Nothing is uploaded — analysis happens locally first.",
-    },
-    {
-      icon: Zap,
-      title: "Catches errors live",
-      body: "The moment a stack trace, hydration error or console warning appears, Fixdemy flags the exact file and line — not a vague suggestion.",
-    },
-    {
-      icon: ShieldCheck,
-      title: "Read-only, by design",
-      body: "Fixdemy will never write, commit or modify your code. It shows you the fix; you decide what to apply, inside the tool you already use.",
-    },
-    {
-      icon: Plug,
-      title: "Plugs into every tool",
-      body: "Bridge to Lovable, Cursor, Replit, Gemini, VS Code and JetBrains via a single MCP connector. One install, every workflow.",
-    },
-  ];
-  return (
-    <section className="mx-auto max-w-6xl px-5 py-28">
-      <FadeIn>
-        <div className="max-w-2xl">
-          <div className="text-[11px] uppercase tracking-[0.2em] text-black/40">
-            What it does
-          </div>
-          <h2 className="mt-3 text-[36px] sm:text-[48px] leading-[1.05] tracking-[-0.03em] font-medium">
-            A debugger that sits on top of every vibecoding tool.
-          </h2>
-        </div>
-      </FadeIn>
-
-      <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-px bg-black/5 border border-black/5">
-        {features.map((f, i) => (
-          <FadeIn key={f.title} delay={i * 0.05}>
-            <div className="bg-white p-8 h-full">
-              <f.icon className="h-5 w-5" />
-              <h3 className="mt-5 text-[18px] font-medium tracking-tight">
-                {f.title}
-              </h3>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-black/55">
-                {f.body}
-              </p>
-            </div>
-          </FadeIn>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function WorkflowSection() {
-  const steps = [
-    {
-      n: "01",
-      title: "You vibecode",
-      body: "Build in Lovable, Cursor, Replit, Gemini — wherever you ship from. Fixdemy runs quietly in the background.",
-    },
-    {
-      n: "02",
-      title: "Something breaks",
-      body: "A stack trace, a blank screen, a hydration warning — Fixdemy spots it the second it appears on screen.",
-    },
-    {
-      n: "03",
-      title: "We explain it",
-      body: "Plain-language semantics: what's wrong, why it's wrong, which line, which file, which fix.",
-    },
-    {
-      n: "04",
-      title: "You apply, in-place",
-      body: "Copy the fix or send it directly back to the tool you came from. We never touch your code.",
-    },
-  ];
-  return (
-    <section className="bg-black text-white py-28">
-      <div className="mx-auto max-w-6xl px-5">
-        <FadeIn>
-          <div className="max-w-2xl">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-white/40">
-              Workflow
-            </div>
-            <h2 className="mt-3 text-[36px] sm:text-[48px] leading-[1.05] tracking-[-0.03em] font-medium">
-              Four steps. Zero credits wasted on bugs.
-            </h2>
-          </div>
-        </FadeIn>
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-4 gap-6">
-          {steps.map((s, i) => (
-            <FadeIn key={s.n} delay={i * 0.08}>
-              <div className="border-t border-white/15 pt-5">
-                <div className="text-[11px] font-mono text-white/40">{s.n}</div>
-                <h3 className="mt-2 text-[17px] font-medium tracking-tight">
-                  {s.title}
-                </h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-white/55">
-                  {s.body}
-                </p>
-              </div>
-            </FadeIn>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -236,30 +154,94 @@ function WorkflowSection() {
   );
 }
 
-function MockupSection() {
+/* --------------------------- Value grid --------------------------- */
+
+function ValueGrid() {
+  const items = [
+    {
+      tag: "01",
+      title: "Watches.",
+      body: "Reads your editor, terminal and browser. Locally first.",
+    },
+    {
+      tag: "02",
+      title: "Catches.",
+      body: "Flags the file and line the second an error appears.",
+    },
+    {
+      tag: "03",
+      title: "Explains.",
+      body: "Plain-language semantics. Why it broke. What to change.",
+    },
+    {
+      tag: "04",
+      title: "Never writes.",
+      body: "Read-only by design. You apply the fix, in your tool.",
+    },
+  ];
   return (
-    <section className="bg-[#fafafa] py-28">
-      <div className="mx-auto max-w-6xl px-5">
-        <FadeIn>
-          <div className="text-center max-w-2xl mx-auto">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-black/40">
-              The interface
+    <section className="mx-auto max-w-7xl px-6 pt-28 pb-20">
+      <div className="grid md:grid-cols-2 gap-12 items-end">
+        <h2 className="text-[40px] sm:text-[56px] leading-[1] tracking-[-0.035em] font-bold text-black">
+          A debugger that sits on top of every vibecoding tool.
+        </h2>
+        <p className="text-[14.5px] text-black/70 leading-relaxed max-w-md md:justify-self-end">
+          One install. Bridges to Lovable, Cursor, Replit, Gemini, Windsurf, v0
+          and your IDE. Fixdemy never touches your code.
+        </p>
+      </div>
+
+      <div className="mt-16 grid grid-cols-1 md:grid-cols-4 gap-px bg-black/10 border border-black/10">
+        {items.map((it, i) => (
+          <motion.div
+            key={it.tag}
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: i * 0.05 }}
+            className="bg-white p-6 min-h-[180px] flex flex-col justify-between"
+          >
+            <span className="text-[11px] font-mono text-black/50">{it.tag}</span>
+            <div>
+              <h3 className="text-[22px] font-bold tracking-tight text-black">
+                {it.title}
+              </h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-black/65">
+                {it.body}
+              </p>
             </div>
-            <h2 className="mt-3 text-[36px] sm:text-[48px] leading-[1.05] tracking-[-0.03em] font-medium">
-              A quiet panel. A loud signal.
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* --------------------------- Live mockup --------------------------- */
+
+function LiveMockup() {
+  return (
+    <section className="bg-[#f6f6f4]">
+      <div className="mx-auto max-w-7xl px-6 py-28">
+        <div className="grid md:grid-cols-12 gap-10 items-end mb-12">
+          <div className="md:col-span-8">
+            <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-black/50">
+              The interface
+            </span>
+            <h2 className="mt-3 text-[40px] sm:text-[56px] leading-[1] tracking-[-0.035em] font-bold text-black">
+              Quiet panel. Loud signal.
             </h2>
-            <p className="mt-4 text-[14px] text-black/55">
-              Fixdemy sits beside your editor and lights up only when something needs
-              your attention. No noise. No clutter.
-            </p>
           </div>
-        </FadeIn>
+          <p className="md:col-span-4 text-[14px] text-black/70 leading-relaxed">
+            Sits next to your editor. Lights up only when something actually
+            needs your attention.
+          </p>
+        </div>
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-14"
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         >
           <DashboardMockup />
         </motion.div>
@@ -268,56 +250,140 @@ function MockupSection() {
   );
 }
 
-function IntegrationSection() {
-  return (
-    <section className="mx-auto max-w-6xl px-5 py-28">
-      <div className="grid md:grid-cols-2 gap-14 items-center">
-        <FadeIn>
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.2em] text-black/40">
-              Universal connector
-            </div>
-            <h2 className="mt-3 text-[36px] sm:text-[44px] leading-[1.05] tracking-[-0.03em] font-medium">
-              One MCP. Every vibecoding tool.
-            </h2>
-            <p className="mt-4 text-[14px] text-black/55 leading-relaxed">
-              Fixdemy speaks Model Context Protocol. Install once, and a single click
-              bridges it to Lovable, Cursor, Replit, Gemini, Windsurf, v0, VS Code or
-              your IDE of choice. Connections are scoped and revocable.
-            </p>
-            <div className="mt-6 flex gap-2">
-              <Link
-                to="/docs"
-                className="inline-flex items-center gap-1.5 text-[13px] font-medium text-black hover:underline underline-offset-4"
-              >
-                Read the MCP docs <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-        </FadeIn>
+/* --------------------------- Dev angle --------------------------- */
 
-        <FadeIn delay={0.1}>
-          <div className="relative rounded-2xl border border-black/10 bg-white p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.2)]">
+function DevAngle() {
+  return (
+    <section className="mx-auto max-w-7xl px-6 py-28">
+      <div className="grid md:grid-cols-12 gap-10">
+        <div className="md:col-span-5">
+          <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-black/50">
+            Not just for vibecoders
+          </span>
+          <h2 className="mt-3 text-[40px] sm:text-[52px] leading-[1] tracking-[-0.035em] font-bold text-black">
+            Built for developers too.
+          </h2>
+        </div>
+        <div className="md:col-span-7">
+          <p className="text-[15px] text-black leading-relaxed">
+            Open it next to VS Code, JetBrains or Zed. Fixdemy reads your
+            stack traces, surfaces the offending line, and explains the bug in
+            plain English — faster than searching Stack Overflow, cheaper than
+            another AI prompt.
+          </p>
+          <div className="mt-8 grid grid-cols-2 gap-px bg-black/10 border border-black/10">
+            {[
+              { k: "0.4s", v: "Average time to flag a runtime error." },
+              { k: "100%", v: "Read-only. Your repo is never modified." },
+              { k: "12+", v: "Editors and vibecoding tools supported." },
+              { k: "0", v: "Credits burnt on debugging the same bug twice." },
+            ].map((s) => (
+              <div key={s.k} className="bg-white p-5">
+                <div className="text-[28px] font-bold tracking-tight text-black">
+                  {s.k}
+                </div>
+                <div className="mt-1 text-[12.5px] text-black/65 leading-relaxed">
+                  {s.v}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* --------------------------- Workflow band --------------------------- */
+
+function WorkflowBand() {
+  const steps = [
+    { n: "01", t: "You vibecode.", b: "Build in Lovable, Cursor, Replit, Gemini. Fixdemy runs in the background." },
+    { n: "02", t: "Something breaks.", b: "Stack trace, blank screen, hydration warning — caught the instant it appears." },
+    { n: "03", t: "We explain it.", b: "Which file. Which line. Why it broke. What to change." },
+    { n: "04", t: "You apply it.", b: "Copy or send the fix back to the tool. Your code, your hands." },
+  ];
+  return (
+    <section className="bg-black text-white">
+      <div className="mx-auto max-w-7xl px-6 py-28">
+        <div className="grid md:grid-cols-12 gap-10 items-end mb-14">
+          <h2 className="md:col-span-8 text-[40px] sm:text-[56px] leading-[1] tracking-[-0.035em] font-bold">
+            Four steps. Zero wasted credits.
+          </h2>
+          <p className="md:col-span-4 text-[14px] text-white/65 leading-relaxed">
+            The loop is short on purpose. Build, break, understand, ship.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-px bg-white/10 border border-white/10">
+          {steps.map((s, i) => (
+            <motion.div
+              key={s.n}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.06 }}
+              className="bg-black p-6 min-h-[220px] flex flex-col justify-between"
+            >
+              <span className="text-[11px] font-mono text-white/45">{s.n}</span>
+              <div>
+                <h3 className="text-[22px] font-bold tracking-tight">{s.t}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-white/65">
+                  {s.b}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* --------------------------- Connector --------------------------- */
+
+function Connector() {
+  return (
+    <section className="mx-auto max-w-7xl px-6 py-28">
+      <div className="grid md:grid-cols-12 gap-12 items-center">
+        <div className="md:col-span-5">
+          <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-black/50">
+            Universal connector
+          </span>
+          <h2 className="mt-3 text-[40px] sm:text-[52px] leading-[1] tracking-[-0.035em] font-bold text-black">
+            One MCP. Every tool.
+          </h2>
+          <p className="mt-5 text-[14.5px] text-black/70 leading-relaxed max-w-md">
+            Fixdemy speaks Model Context Protocol. Install once, then bridge to
+            anything — scoped, revocable, transparent.
+          </p>
+          <Link
+            to="/docs"
+            className="mt-7 inline-flex items-center gap-1.5 text-[13px] font-semibold text-black hover:underline underline-offset-4"
+          >
+            Read the MCP docs <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        <div className="md:col-span-7">
+          <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.18)]">
             <div className="grid grid-cols-3 gap-3">
-              {["Lovable", "Cursor", "Replit", "Gemini", "Windsurf", "v0", "VS Code", "Bolt", "Zed"].map(
-                (t, i) => (
-                  <motion.div
-                    key={t}
-                    initial={{ opacity: 0, scale: 0.94 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: i * 0.04 }}
-                    className="aspect-square rounded-xl border border-black/10 flex flex-col items-center justify-center gap-2 hover:border-black transition-colors cursor-pointer group"
-                  >
-                    <div className="h-6 w-6 rounded-md bg-black/5 group-hover:bg-black transition-colors" />
-                    <span className="text-[11px] text-black/60 group-hover:text-black">
-                      {t}
-                    </span>
-                  </motion.div>
-                )
-              )}
+              {ALL_BRANDS.map((b, i) => (
+                <motion.div
+                  key={b}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.35, delay: i * 0.04 }}
+                  className="group aspect-square rounded-xl border border-black/10 bg-white flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-black/[0.02] transition-colors cursor-pointer"
+                >
+                  <BrandLogo brand={b} className="h-7 w-7" />
+                  <span className="text-[11.5px] font-medium text-black">
+                    {BrandName(b)}
+                  </span>
+                </motion.div>
+              ))}
             </div>
-            <div className="mt-4 flex items-center justify-between text-[11px] text-black/40 font-mono">
+            <div className="mt-4 flex items-center justify-between text-[11px] font-mono text-black/45">
               <span>fixdemy.mcp · v0.1</span>
               <span className="flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-black animate-pulse" />
@@ -325,49 +391,38 @@ function IntegrationSection() {
               </span>
             </div>
           </div>
-        </FadeIn>
+        </div>
       </div>
     </section>
   );
 }
 
+/* --------------------------- CTA --------------------------- */
+
 function CTA() {
   return (
-    <section className="border-t border-black/5 bg-white">
-      <div className="mx-auto max-w-5xl px-5 py-28 text-center">
-        <FadeIn>
-          <h2 className="text-[44px] sm:text-[64px] leading-[1.02] tracking-[-0.04em] font-medium">
-            Stop guessing.
-            <br />
-            <span className="text-black/40">Start shipping.</span>
-          </h2>
-          <p className="mx-auto mt-6 max-w-lg text-[14px] text-black/55">
-            Fixdemy is free during beta. Download it for Windows, macOS, Linux or use
-            it directly in the browser.
-          </p>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-2.5">
-            <Link
-              to="/download"
-              className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-[13px] font-medium text-white hover:scale-[1.02] transition-all"
-            >
-              <Apple className="h-3.5 w-3.5" />
-              Download for Mac
-            </Link>
-            <Link
-              to="/download"
-              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-3 text-[13px] font-medium text-black hover:bg-black/[0.03]"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              Open in browser
-            </Link>
-            <Link
-              to="/signup"
-              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-3 text-[13px] font-medium text-black hover:bg-black/[0.03]"
-            >
-              Create an account
-            </Link>
-          </div>
-        </FadeIn>
+    <section className="border-t border-black/10">
+      <div className="mx-auto max-w-5xl px-6 py-28 text-center">
+        <h2 className="text-[44px] sm:text-[72px] leading-[0.98] tracking-[-0.04em] font-bold text-black">
+          Ship without the loops.
+        </h2>
+        <p className="mx-auto mt-5 max-w-md text-[14px] text-black/70">
+          Free during beta. Windows, macOS, Linux and Web.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+          <Link
+            to="/download"
+            className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2.5 text-[13px] font-medium text-white hover:bg-black/85"
+          >
+            <DownloadGlyph /> Download Fixdemy
+          </Link>
+          <Link
+            to="/signup"
+            className="inline-flex items-center gap-2 rounded-full bg-black/[0.04] px-4 py-2.5 text-[13px] font-medium text-black hover:bg-black/[0.08]"
+          >
+            Create an account
+          </Link>
+        </div>
       </div>
     </section>
   );

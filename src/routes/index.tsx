@@ -310,77 +310,56 @@ const WORKFLOWS = [
 
 function Connector() {
   return (
-    <section className="mx-auto max-w-7xl px-6 py-28">
-      <div className="grid md:grid-cols-12 gap-12 items-start">
-        <div className="md:col-span-5">
-          <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-black/50">
-            Universal connector
-          </span>
-          <h2 className="mt-3 text-[36px] sm:text-[48px] leading-[1] tracking-[-0.035em] font-bold text-black">
-            One layer. Every tool.
-          </h2>
-          <p className="mt-5 text-[14.5px] text-black/70 leading-relaxed max-w-md">
-            Fixdemy works alongside any AI coding tool to validate decisions,
-            detect mistakes, explain failures and keep projects moving from
-            ideas to production.
-          </p>
+    <section className="bg-black text-white">
+      <div className="mx-auto max-w-6xl px-6 py-24">
+        <div className="grid md:grid-cols-12 gap-10 items-center">
+          <div className="md:col-span-6">
+            <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-white/50">
+              Universal connector
+            </span>
+            <h2 className="mt-3 text-[32px] sm:text-[42px] leading-[1.02] tracking-[-0.03em] font-semibold text-white">
+              One layer. Every tool.
+            </h2>
+            <p className="mt-5 text-[14px] text-white/65 leading-relaxed max-w-md">
+              Fixdemy works alongside any AI coding tool to validate decisions,
+              detect mistakes, explain failures and keep projects moving from
+              ideas to production.
+            </p>
 
-          {/* Animated workflow shape — image 5 marker style */}
-          <div className="mt-7 relative rounded-2xl border border-black/15 bg-white p-5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.15)]">
-            <div className="flex items-center gap-2 mb-4 font-mono text-[11px] text-black/50">
-              <span className="h-1.5 w-1.5 rounded-full bg-black animate-pulse" />
-              workflows.live
-            </div>
-            <ul className="flex flex-wrap gap-2">
-              {WORKFLOWS.map((w, i) => (
-                <motion.li
-                  key={w}
-                  initial={{ opacity: 0, y: 8 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.45, delay: 0.05 + i * 0.07 }}
-                  className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-black/[0.02] px-3 py-1.5 text-[12px] font-medium text-black hover:bg-black hover:text-white transition-colors cursor-default"
-                >
-                  <span className="h-1 w-1 rounded-full bg-current opacity-70" />
-                  {w}
-                </motion.li>
-              ))}
-            </ul>
+            <Link
+              to="/docs"
+              className="mt-7 inline-flex items-center gap-1.5 text-[13px] font-medium text-white hover:underline underline-offset-4"
+            >
+              Read the MCP docs <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
 
-          <Link
-            to="/docs"
-            className="mt-7 inline-flex items-center gap-1.5 text-[13px] font-semibold text-black hover:underline underline-offset-4"
-          >
-            Read the MCP docs <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        <div className="md:col-span-7">
-          <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.18)]">
-            <div className="grid grid-cols-3 gap-3">
-              {ALL_BRANDS.map((b, i) => (
-                <motion.div
-                  key={b}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.35, delay: i * 0.04 }}
-                  className="group aspect-square rounded-xl border border-black/10 bg-white flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-black/[0.02] transition-colors cursor-pointer"
-                >
-                  <BrandLogo brand={b} className="h-7 w-7" />
-                  <span className="text-[11.5px] font-medium text-black">
-                    {BrandName(b)}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-            <div className="mt-4 flex items-center justify-between text-[11px] font-mono text-black/45">
-              <span>fixdemy.mcp · v0.1</span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-black animate-pulse" />
-                listening
-              </span>
+          <div className="md:col-span-6">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 max-w-md md:ml-auto">
+              <div className="grid grid-cols-3 gap-2">
+                {ALL_BRANDS.map((b, i) => (
+                  <motion.div
+                    key={b}
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.35, delay: i * 0.04 }}
+                    className="group aspect-square rounded-lg border border-white/10 bg-white/[0.02] flex flex-col items-center justify-center gap-1.5 hover:border-white/40 hover:bg-white/[0.05] transition-colors cursor-pointer"
+                  >
+                    <BrandLogo brand={b} className="h-5 w-5 [&_*]:fill-white [&_*]:stroke-white" />
+                    <span className="text-[10px] font-medium text-white/80">
+                      {BrandName(b)}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center justify-between px-1 text-[10px] font-mono text-white/40">
+                <span>fixdemy.mcp · v0.1</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white/70 animate-pulse" />
+                  listening
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -388,6 +367,7 @@ function Connector() {
     </section>
   );
 }
+
 
 /* --------------------------- CTA --------------------------- */
 

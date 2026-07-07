@@ -83,7 +83,7 @@ function Hero() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.9 }}
-            className="mt-8 flex flex-wrap items-center justify-center gap-2"
+            className="mt-8 flex flex-col items-center gap-5"
           >
             <Link
               to="/download"
@@ -91,13 +91,10 @@ function Hero() {
             >
               <DownloadGlyph /> Download for Windows
             </Link>
-            <Link
-              to="/product"
-              className="inline-flex items-center gap-2 rounded-full bg-black/[0.05] px-4 py-2.5 text-[13px] font-medium text-black hover:bg-black/[0.1] transition-colors"
-            >
-              Explore use cases
-            </Link>
+
+            <InstallTerminal />
           </motion.div>
+
         </div>
       </div>
     </section>

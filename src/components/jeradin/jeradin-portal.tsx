@@ -9,7 +9,7 @@ import portalImg from "@/assets/ciel_noir.jpeg.asset.json";
  */
 export function JeradinPortal() {
   return (
-    <section className="relative overflow-hidden bg-[#1f21ff] text-white">
+    <section className="relative overflow-hidden bg-black text-white">
       {/* Faded backdrop wordmark */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
         <span
@@ -62,10 +62,11 @@ export function JeradinPortal() {
         >
           <Link
             to="/pricing"
-            className="inline-flex items-center justify-center border border-white/70 bg-white/[0.04] px-8 py-3.5 font-mono text-[12px] tracking-[0.28em] uppercase text-white hover:bg-white hover:text-[#1f21ff] transition-colors"
+            className="inline-flex items-center justify-center border border-white/70 bg-transparent px-8 py-3.5 font-mono text-[12px] tracking-[0.28em] uppercase text-white hover:bg-white hover:text-black transition-colors"
           >
             View all our plans
           </Link>
+
         </motion.div>
 
         <motion.div
@@ -78,9 +79,10 @@ export function JeradinPortal() {
           <img
             src={portalImg.url}
             alt="Jeradin portal figure"
-            className="w-[min(560px,80%)] h-auto object-contain mix-blend-screen"
+            className="w-[min(560px,80%)] h-auto object-contain"
             loading="lazy"
           />
+
         </motion.div>
       </div>
     </section>

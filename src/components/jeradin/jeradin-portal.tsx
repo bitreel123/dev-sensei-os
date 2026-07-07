@@ -79,9 +79,10 @@ export function JeradinPortal() {
           <img
             src={portalImg.url}
             alt="Jeradin portal figure"
-            className="w-[min(560px,80%)] h-auto object-contain mix-blend-screen"
+            className="w-[min(560px,80%)] h-auto object-contain"
             loading="lazy"
           />
+
         </motion.div>
       </div>
     </section>

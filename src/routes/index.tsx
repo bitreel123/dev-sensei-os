@@ -39,6 +39,7 @@ function Landing() {
       <Hero />
       <HermesFeatures />
       <Connector />
+      <IntelligenceFeatures />
 
       <CTA />
       <SiteFooter />

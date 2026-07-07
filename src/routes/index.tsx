@@ -10,6 +10,7 @@ import { MorphVisual } from "@/components/fixdemy/morph-visual";
 import { InteractiveGlobe } from "@/components/fixdemy/interactive-globe";
 import { BrandLogo, ALL_BRANDS, BrandName } from "@/components/fixdemy/brand-logos";
 import { HermesFeatures } from "@/components/fixdemy/hermes-features";
+import { IntelligenceFeatures } from "@/components/fixdemy/intelligence-features";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,6 +39,7 @@ function Landing() {
       <Hero />
       <HermesFeatures />
       <Connector />
+      <IntelligenceFeatures />
 
       <CTA />
       <SiteFooter />

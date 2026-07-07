@@ -46,6 +46,7 @@ export function BrandLogo({
         alt={`${b.name} logo`}
         className={className}
         loading="lazy"
+        style={variant === "light" ? { filter: "brightness(0) invert(1)" } : undefined}
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}

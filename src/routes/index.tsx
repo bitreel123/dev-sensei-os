@@ -37,8 +37,8 @@ function Landing() {
       <SiteHeader />
       <Hero />
       <HermesFeatures />
-      <SystemVisual />
       <Connector />
+
       <CTA />
       <SiteFooter />
 

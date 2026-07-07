@@ -283,36 +283,15 @@ function SystemVisual() {
     <section className="relative bg-black text-white overflow-hidden">
       <div className="mx-auto max-w-7xl px-6 pt-20 pb-32">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-          className="relative z-10 max-w-md rounded-[6px] border border-white/15 bg-black/60 backdrop-blur-md p-6"
-        >
-          <p className="text-[13.5px] leading-relaxed text-white/85">
-            Fixdemy understands your entire system, not just your code. Connect
-            repositories, applications, databases, APIs, infrastructure,
-            hardware projects and AI workflows to receive real-time
-            intelligence, diagnostics, architecture guidance and automated
-            recommendations.
-          </p>
-          <Link
-            to="/product"
-            className="mt-5 inline-flex items-center gap-2 border border-white/30 px-3.5 py-2 text-[12px] font-mono tracking-wide hover:bg-white hover:text-black transition-colors"
-          >
-            About our product <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </motion.div>
-
-        <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          className="relative -mt-24 md:-mt-32"
+          className="relative"
         >
           <MorphVisual />
         </motion.div>
+
       </div>
     </section>
   );

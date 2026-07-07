@@ -37,11 +37,11 @@ function Landing() {
       <SiteHeader />
       <Hero />
       <HermesFeatures />
-      <OperatingSystem />
       <SystemVisual />
       <Connector />
       <CTA />
       <SiteFooter />
+
     </div>
   );
 }

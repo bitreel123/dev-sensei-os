@@ -1,25 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { SiteHeader } from "@/components/fixdemy/header";
-import { SiteFooter } from "@/components/fixdemy/footer";
-import { FadeIn, AnimatedWords } from "@/components/fixdemy/animated-text";
+import { SiteHeader } from "@/components/jeradin/header";
+import { SiteFooter } from "@/components/jeradin/footer";
+import { FadeIn, AnimatedWords } from "@/components/jeradin/animated-text";
 import { Apple, Globe, Monitor, Terminal, ArrowRight, Chrome } from "lucide-react";
 
 export const Route = createFileRoute("/download")({
   head: () => ({
     meta: [
-      { title: "Download Fixdemy" },
-      { name: "description", content: "Download Fixdemy for Windows, macOS, Linux, or use it directly in the browser." },
-      { property: "og:title", content: "Download Fixdemy" },
-      { property: "og:description", content: "Get Fixdemy on every platform — free during beta." },
+      { title: "Download Jeradin" },
+      { name: "description", content: "Download Jeradin for Windows, macOS, Linux, or use it directly in the browser." },
+      { property: "og:title", content: "Download Jeradin" },
+      { property: "og:description", content: "Get Jeradin on every platform — free during beta." },
     ],
   }),
   component: DownloadPage,
 });
 
 const platforms = [
-  { icon: Monitor, name: "Windows", sub: "Windows 10 & 11 · 64-bit", file: "Fixdemy-Setup-0.1.exe", primary: true },
-  { icon: Apple, name: "macOS", sub: "Apple Silicon & Intel · 13+", file: "Fixdemy-0.1.dmg" },
-  { icon: Terminal, name: "Linux", sub: "AppImage · Debian · RPM", file: "Fixdemy-0.1.AppImage" },
+  { icon: Monitor, name: "Windows", sub: "Windows 10 & 11 · 64-bit", file: "Jeradin-Setup-0.1.exe", primary: true },
+  { icon: Apple, name: "macOS", sub: "Apple Silicon & Intel · 13+", file: "Jeradin-0.1.dmg" },
+  { icon: Terminal, name: "Linux", sub: "AppImage · Debian · RPM", file: "Jeradin-0.1.AppImage" },
   { icon: Globe, name: "Web", sub: "Run in browser — no install", file: "Open web app" },
   { icon: Chrome, name: "Chrome Extension", sub: "Lightweight overlay", file: "Add to Chrome" },
 ];

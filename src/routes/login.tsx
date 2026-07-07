@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { LogoMark } from "@/components/fixdemy/logo";
+import { LogoMark } from "@/components/jeradin/logo";
 import { ArrowRight, Plus, Mic, AudioLines, Sparkles, MessageSquare, BookOpen, Code, Coffee } from "lucide-react";
 import { motion } from "motion/react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Sign in · Fixdemy" },
-      { name: "description", content: "Sign in to your Fixdemy workspace." },
+      { title: "Sign in · Jeradin" },
+      { name: "description", content: "Sign in to your Jeradin workspace." },
     ],
   }),
   component: LoginPage,
@@ -56,7 +56,7 @@ function LoginPage() {
           >
             <div className="rounded-2xl border border-white/10 bg-[#222222] p-1">
               <div className="px-3 pt-2 pb-1 text-[12px] text-white/55">
-                Fixdemy beta sign-in · email-only, no password
+                Jeradin beta sign-in · email-only, no password
               </div>
               <input
                 value={email}
@@ -69,7 +69,7 @@ function LoginPage() {
                   <Plus className="h-3.5 w-3.5" /> Continue with Google
                 </button>
                 <div className="flex items-center gap-1">
-                  <span className="text-[11px] text-white/40 px-2">Fixdemy 0.1 · Beta</span>
+                  <span className="text-[11px] text-white/40 px-2">Jeradin 0.1 · Beta</span>
                   <button className="h-8 w-8 rounded-md hover:bg-white/5 flex items-center justify-center text-white/45">
                     <Mic className="h-3.5 w-3.5" />
                   </button>
@@ -104,7 +104,7 @@ function LoginPage() {
             </div>
 
             <p className="mt-8 text-center text-[12px] text-white/40">
-              New to Fixdemy?{" "}
+              New to Jeradin?{" "}
               <Link to="/signup" className="text-white/70 underline underline-offset-2">
                 Create an account
               </Link>

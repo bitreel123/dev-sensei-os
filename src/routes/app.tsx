@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LogoMark } from "@/components/fixdemy/logo";
-import { DashboardMockup } from "@/components/fixdemy/dashboard-mockup";
+import { LogoMark } from "@/components/jeradin/logo";
+import { DashboardMockup } from "@/components/jeradin/dashboard-mockup";
 import { Plug, Home, Bug, BookOpen, Settings, Search } from "lucide-react";
 
 export const Route = createFileRoute("/app")({
   head: () => ({
     meta: [
-      { title: "Workspace · Fixdemy" },
-      { name: "description", content: "Your Fixdemy debugging workspace." },
+      { title: "Workspace · Jeradin" },
+      { name: "description", content: "Your Jeradin debugging workspace." },
     ],
   }),
   component: AppPage,
@@ -27,7 +27,7 @@ function AppPage() {
       <aside className="hidden md:flex w-56 border-r border-black/5 bg-white flex-col">
         <div className="h-14 px-4 flex items-center gap-2 border-b border-black/5">
           <LogoMark className="h-4 w-4" />
-          <span className="text-[14px] font-medium tracking-tight">Fixdemy</span>
+          <span className="text-[14px] font-medium tracking-tight">Jeradin</span>
         </div>
         <nav className="flex-1 p-2">
           {nav.map((n) => (

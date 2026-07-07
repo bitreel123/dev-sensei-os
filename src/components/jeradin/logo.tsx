@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 
 /**
- * Fixdemy mark — a stylized "F" formed by a bracket and a fix-line.
- * Mono, scales with currentColor, sits flush with text.
+ * Jeradin mark — a stylized "J" with a hooked base and an orbiting dot,
+ * suggesting a system loop closing on a decision point.
  */
 export function LogoMark({ className = "h-5 w-5" }: { className?: string }) {
   return (
@@ -14,24 +14,18 @@ export function LogoMark({ className = "h-5 w-5" }: { className?: string }) {
       aria-hidden="true"
     >
       <path
-        d="M4 3.5 H20"
+        d="M15 3 V15 A5 5 0 0 1 5 15"
         stroke="currentColor"
         strokeWidth="2.4"
         strokeLinecap="round"
       />
       <path
-        d="M4 3.5 V20.5"
+        d="M10 3 H19"
         stroke="currentColor"
         strokeWidth="2.4"
         strokeLinecap="round"
       />
-      <path
-        d="M4 12 H14"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
-      <circle cx="19" cy="12" r="2.2" fill="currentColor" />
+      <circle cx="19" cy="6" r="1.8" fill="currentColor" />
     </svg>
   );
 }
@@ -46,18 +40,18 @@ export function LogoLockup({
   return (
     <Link to={href} className={`flex items-center gap-2 ${className}`}>
       <LogoMark className="h-[18px] w-[18px] text-current" />
-      <span className="text-[15px] font-semibold tracking-tight">Fixdemy</span>
+      <span className="text-[15px] font-semibold tracking-tight">Jeradin</span>
     </Link>
   );
 }
 
-/** Centered wordmark used above the hero headline (antigravity style). */
+/** Centered wordmark used above the hero headline. */
 export function LogoWordmark({ className = "" }: { className?: string }) {
   return (
     <div className={`inline-flex items-center gap-1.5 ${className}`}>
       <LogoMark className="h-[15px] w-[15px]" />
       <span className="text-[13px] font-semibold tracking-tight text-black">
-        Fixdemy
+        Jeradin
       </span>
     </div>
   );

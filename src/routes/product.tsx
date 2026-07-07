@@ -1,20 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { SiteHeader } from "@/components/fixdemy/header";
-import { SiteFooter } from "@/components/fixdemy/footer";
-import { FadeIn, AnimatedWords } from "@/components/fixdemy/animated-text";
-import { DashboardMockup } from "@/components/fixdemy/dashboard-mockup";
+import { SiteHeader } from "@/components/jeradin/header";
+import { SiteFooter } from "@/components/jeradin/footer";
+import { FadeIn, AnimatedWords } from "@/components/jeradin/animated-text";
+import { DashboardMockup } from "@/components/jeradin/dashboard-mockup";
 import { ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/product")({
   head: () => ({
     meta: [
-      { title: "Product · Fixdemy" },
+      { title: "Product · Jeradin" },
       {
         name: "description",
         content:
-          "Fixdemy reads your screen, understands what your code is doing, and explains errors in real time — without ever touching your codebase.",
+          "Jeradin reads your screen, understands what your code is doing, and explains errors in real time — without ever touching your codebase.",
       },
-      { property: "og:title", content: "Product · Fixdemy" },
+      { property: "og:title", content: "Product · Jeradin" },
       {
         property: "og:description",
         content: "A read-only debugger that watches, understands and explains.",
@@ -36,7 +36,7 @@ function ProductPage() {
           <AnimatedWords text="A debugger that lives on top of your screen." />
         </h1>
         <p className="mt-6 max-w-2xl text-[15px] text-black/55 leading-relaxed">
-          Fixdemy uses on-device screen understanding and semantic code analysis to
+          Jeradin uses on-device screen understanding and semantic code analysis to
           detect bugs in any vibecoding environment — Lovable, Cursor, Replit,
           Gemini and beyond. It points to the exact line. It explains the cause.
           It shows the correction. You stay in control.
@@ -53,11 +53,11 @@ function ProductPage() {
         {[
           {
             t: "Semantic, not syntactic",
-            b: "Most linters catch typos. Fixdemy catches intent mismatches — when your code runs but doesn't do what you meant.",
+            b: "Most linters catch typos. Jeradin catches intent mismatches — when your code runs but doesn't do what you meant.",
           },
           {
             t: "Zero write access",
-            b: "Fixdemy has no permission to edit, commit or push. It is, by design, observation-only.",
+            b: "Jeradin has no permission to edit, commit or push. It is, by design, observation-only.",
           },
           {
             t: "Local first",
@@ -80,7 +80,7 @@ function ProductPage() {
             to="/download"
             className="mt-7 inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-[13px] font-medium text-white"
           >
-            Download Fixdemy <ArrowRight className="h-3.5 w-3.5" />
+            Download Jeradin <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </section>

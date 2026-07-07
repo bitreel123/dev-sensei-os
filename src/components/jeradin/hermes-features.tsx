@@ -16,7 +16,7 @@ const FEATURES = [
     label: "Build",
     title: ["Idea to", "Production"],
     img: img2,
-    body: "Fixdemy compresses the distance between an idea, a working system, and what ships. Engineering cycles measured in days, not quarters.",
+    body: "Jeradin compresses the distance between an idea, a working system, and what ships. Engineering cycles measured in days, not quarters.",
   },
   {
     num: "#3",

@@ -31,22 +31,22 @@ const cols = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-black/5 bg-white">
+    <footer className="bg-black text-white">
       <div className="mx-auto max-w-7xl px-5 py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
           <div className="col-span-2">
             <div className="flex items-center gap-2">
-              <LogoMark className="h-5 w-5" />
+              <LogoMark className="h-5 w-5 text-white" />
               <span className="text-[15px] font-medium tracking-tight">Jeradin</span>
             </div>
-            <p className="mt-3 max-w-xs text-[13px] text-black/55 leading-relaxed">
+            <p className="mt-3 max-w-xs text-[13px] text-white/55 leading-relaxed">
               The read-only debugging copilot that watches your screen and tells you
               exactly where vibecoded code breaks — and how to fix it.
             </p>
           </div>
           {cols.map((c) => (
             <div key={c.title}>
-              <div className="text-[12px] uppercase tracking-wider text-black/40">
+              <div className="text-[12px] uppercase tracking-wider text-white/40">
                 {c.title}
               </div>
               <ul className="mt-3 space-y-2">
@@ -54,7 +54,7 @@ export function SiteFooter() {
                   <li key={l.label}>
                     <Link
                       to={l.href}
-                      className="text-[13px] text-black/70 hover:text-black"
+                      className="text-[13px] text-white/70 hover:text-white"
                     >
                       {l.label}
                     </Link>
@@ -64,11 +64,11 @@ export function SiteFooter() {
             </div>
           ))}
         </div>
-        <div className="mt-14 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-black/5 pt-6">
-          <div className="text-[12px] text-black/40">
+        <div className="mt-14 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-white/10 pt-6">
+          <div className="text-[12px] text-white/40">
             © {new Date().getFullYear()} Jeradin Labs. All rights reserved.
           </div>
-          <div className="text-[12px] text-black/40">
+          <div className="text-[12px] text-white/40">
             Built for builders. Read-only. Never touches your code.
           </div>
         </div>

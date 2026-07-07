@@ -311,7 +311,8 @@ const WORKFLOWS = [
 function Connector() {
   return (
     <section className="bg-black text-white">
-      <div className="mx-auto max-w-6xl px-6 py-24">
+      <div className="mx-auto max-w-6xl px-6 py-14 md:py-16">
+
         <div className="grid md:grid-cols-12 gap-10 items-center">
           <div className="md:col-span-6">
             <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-white/50">

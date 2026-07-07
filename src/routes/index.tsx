@@ -116,7 +116,72 @@ function RisingLine({ text, delay = 0 }: { text: string; delay?: number }) {
   );
 }
 
+function InstallTerminal() {
+  const [os, setOs] = useState<"mac" | "win">("mac");
+  const [copied, setCopied] = useState(false);
+  const cmd =
+    os === "mac"
+      ? "curl -fsSL https://get.fixdemy.dev/install.sh | sh"
+      : "irm https://get.fixdemy.dev/install.ps1 | iex";
+  const prefix = os === "mac" ? "curl" : "irm";
+  const rest = cmd.slice(prefix.length);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(cmd);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    } catch {}
+  };
+
+  return (
+    <div className="w-full max-w-[440px] text-left">
+      <div className="mb-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-black/50">
+        Install via terminal
+      </div>
+      <div className="rounded-md border border-black/15 bg-white overflow-hidden">
+        <div className="flex items-center gap-1 border-b border-black/10 px-2 pt-2 font-mono text-[11px]">
+          {(["mac", "win"] as const).map((k) => (
+            <button
+              key={k}
+              onClick={() => setOs(k)}
+              className={`px-2.5 py-1 rounded-t-sm transition-colors ${
+                os === k
+                  ? "bg-black/[0.06] text-black"
+                  : "text-black/50 hover:text-black"
+              }`}
+            >
+              {k === "mac" ? "macOS / Linux" : "Windows"}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2.5 font-mono text-[12px]">
+          <span className="text-black/45">{prefix}</span>
+          <span className="text-black truncate">{rest}</span>
+          <button
+            onClick={copy}
+            aria-label="Copy command"
+            className="ml-auto rounded p-1 text-black/50 hover:text-black hover:bg-black/[0.06] transition-colors"
+          >
+            {copied ? (
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8.5 6.5 12 13 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <rect x="5" y="5" width="8" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.4" />
+                <path d="M3 11V4a1 1 0 0 1 1-1h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DownloadGlyph() {
+
   return (
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden>
       <path d="M8 2v9m0 0 3-3m-3 3L5 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />

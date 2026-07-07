@@ -62,10 +62,11 @@ export function JeradinPortal() {
         >
           <Link
             to="/pricing"
-            className="inline-flex items-center justify-center border border-white/70 bg-white/[0.04] px-8 py-3.5 font-mono text-[12px] tracking-[0.28em] uppercase text-white hover:bg-white hover:text-[#1f21ff] transition-colors"
+            className="inline-flex items-center justify-center border border-white/70 bg-transparent px-8 py-3.5 font-mono text-[12px] tracking-[0.28em] uppercase text-white hover:bg-white hover:text-black transition-colors"
           >
             View all our plans
           </Link>
+
         </motion.div>
 
         <motion.div

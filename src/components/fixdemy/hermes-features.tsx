@@ -42,7 +42,7 @@ export function HermesFeatures() {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-14 px-4 pb-24 pt-10 sm:px-8 md:grid-cols-3 md:gap-8 md:pt-14">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-14 px-4 pb-12 pt-10 sm:px-8 md:grid-cols-3 md:gap-8 md:pt-14">
         {FEATURES.map((f, i) => (
           <motion.article
             key={f.num}

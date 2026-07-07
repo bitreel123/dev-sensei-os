@@ -11,6 +11,7 @@ import { InteractiveGlobe } from "@/components/jeradin/interactive-globe";
 import { BrandLogo, ALL_BRANDS, BrandName } from "@/components/jeradin/brand-logos";
 import { HermesFeatures } from "@/components/jeradin/hermes-features";
 import { IntelligenceFeatures } from "@/components/jeradin/intelligence-features";
+import { JeradinPortal } from "@/components/jeradin/jeradin-portal";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -41,7 +42,7 @@ function Landing() {
       <Connector />
       <IntelligenceFeatures />
 
-      <CTA />
+      <JeradinPortal />
       <SiteFooter />
 
     </div>

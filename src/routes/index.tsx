@@ -311,7 +311,8 @@ const WORKFLOWS = [
 function Connector() {
   return (
     <section className="bg-black text-white">
-      <div className="mx-auto max-w-6xl px-6 py-24">
+      <div className="mx-auto max-w-6xl px-6 py-14 md:py-16">
+
         <div className="grid md:grid-cols-12 gap-10 items-center">
           <div className="md:col-span-6">
             <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-white/50">
@@ -346,7 +347,7 @@ function Connector() {
                     transition={{ duration: 0.35, delay: i * 0.04 }}
                     className="group aspect-square rounded-lg border border-white/10 bg-white/[0.02] flex flex-col items-center justify-center gap-1.5 hover:border-white/40 hover:bg-white/[0.05] transition-colors cursor-pointer"
                   >
-                    <BrandLogo brand={b} className="h-5 w-5 [&_*]:fill-white [&_*]:stroke-white" />
+                    <BrandLogo brand={b} variant="light" className="h-5 w-5" />
                     <span className="text-[10px] font-medium text-white/80">
                       {BrandName(b)}
                     </span>

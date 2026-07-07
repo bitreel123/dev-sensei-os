@@ -31,34 +31,41 @@ export type BrandKey = keyof typeof BRANDS;
 export function BrandLogo({
   brand,
   className = "h-6 w-6",
+  variant = "dark",
 }: {
   brand: BrandKey;
   className?: string;
+  variant?: "dark" | "light";
 }) {
   const b = BRANDS[brand];
+  const hex = variant === "light" ? "ffffff" : "000000";
   if (b.slug) {
     return (
       <img
-        src={`https://cdn.simpleicons.org/${b.slug}/000000`}
+        src={`https://cdn.simpleicons.org/${b.slug}/${hex}`}
         alt={`${b.name} logo`}
         className={className}
         loading="lazy"
         onError={(e) => {
-          // hide broken icon, fallback letter shown by parent
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
       />
     );
   }
+  const letterClasses =
+    variant === "light"
+      ? "bg-white/10 text-white border border-white/20"
+      : "bg-black text-white";
   return (
     <span
-      className={`${className} inline-flex items-center justify-center rounded-md bg-black text-white font-semibold`}
+      className={`${className} inline-flex items-center justify-center rounded-md font-semibold ${letterClasses}`}
       aria-label={b.name}
     >
       {b.letter ?? b.name[0]}
     </span>
   );
 }
+
 
 export function BrandName(key: BrandKey) {
   return BRANDS[key].name;

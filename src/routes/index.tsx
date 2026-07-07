@@ -347,7 +347,7 @@ function Connector() {
                     transition={{ duration: 0.35, delay: i * 0.04 }}
                     className="group aspect-square rounded-lg border border-white/10 bg-white/[0.02] flex flex-col items-center justify-center gap-1.5 hover:border-white/40 hover:bg-white/[0.05] transition-colors cursor-pointer"
                   >
-                    <BrandLogo brand={b} className="h-5 w-5 [&_*]:fill-white [&_*]:stroke-white" />
+                    <BrandLogo brand={b} variant="light" className="h-5 w-5" />
                     <span className="text-[10px] font-medium text-white/80">
                       {BrandName(b)}
                     </span>

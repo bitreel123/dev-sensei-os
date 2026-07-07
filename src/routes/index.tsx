@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 import { SiteHeader } from "@/components/fixdemy/header";

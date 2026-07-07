@@ -74,16 +74,25 @@ export function JeradinPortal() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.9, delay: 0.2 }}
-          className="relative mt-8 flex justify-center"
+          className="relative mt-12 flex justify-center pb-16"
         >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[520px] w-[520px] rounded-full"
+            style={{
+              background:
+                "radial-gradient(closest-side, rgba(255,255,255,0.14), rgba(255,255,255,0) 70%)",
+            }}
+          />
           <img
             src={portalImg.url}
-            alt="Jeradin portal figure"
-            className="w-[min(560px,80%)] h-auto object-contain"
+            alt="Jeradin portal figure — silhouette reaching toward a luminous hand"
+            className="relative w-[min(520px,82%)] h-auto object-contain"
+            style={{ filter: "brightness(1.15) contrast(1.05)" }}
             loading="lazy"
           />
-
         </motion.div>
+
       </div>
     </section>
   );

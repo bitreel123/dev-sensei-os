@@ -1,15 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { SiteHeader } from "@/components/fixdemy/header";
-import { SiteFooter } from "@/components/fixdemy/footer";
-import { FadeIn, AnimatedWords } from "@/components/fixdemy/animated-text";
+import { SiteHeader } from "@/components/jeradin/header";
+import { SiteFooter } from "@/components/jeradin/footer";
+import { FadeIn, AnimatedWords } from "@/components/jeradin/animated-text";
 import { Check } from "lucide-react";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing · Fixdemy" },
+      { title: "Pricing · Jeradin" },
       { name: "description", content: "Free while in beta. Simple plans built for vibecoders, indie devs and teams." },
-      { property: "og:title", content: "Pricing · Fixdemy" },
+      { property: "og:title", content: "Pricing · Jeradin" },
       { property: "og:description", content: "Free during beta. Honest pricing after." },
     ],
   }),

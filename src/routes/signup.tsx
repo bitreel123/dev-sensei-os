@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { LogoMark } from "@/components/fixdemy/logo";
+import { LogoMark } from "@/components/jeradin/logo";
 import { ArrowRight, Plus, MessageSquare, BookOpen, Sparkles, Code, Coffee, Mic, AudioLines } from "lucide-react";
 import { motion } from "motion/react";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Create your Fixdemy account" },
-      { name: "description", content: "Sign up for Fixdemy — free during beta." },
+      { title: "Create your Jeradin account" },
+      { name: "description", content: "Sign up for Jeradin — free during beta." },
     ],
   }),
   component: SignupPage,
@@ -67,7 +67,7 @@ function SignupPage() {
                 <Plus className="h-3.5 w-3.5" /> Continue with Google
               </button>
               <div className="flex items-center gap-1">
-                <span className="text-[11px] text-white/40 px-2">Fixdemy 0.1 · Beta</span>
+                <span className="text-[11px] text-white/40 px-2">Jeradin 0.1 · Beta</span>
                 <button className="h-8 w-8 rounded-md hover:bg-white/5 flex items-center justify-center text-white/45">
                   <Mic className="h-3.5 w-3.5" />
                 </button>

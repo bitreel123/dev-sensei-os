@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SiteHeader } from "@/components/fixdemy/header";
-import { SiteFooter } from "@/components/fixdemy/footer";
-import { AnimatedWords } from "@/components/fixdemy/animated-text";
+import { SiteHeader } from "@/components/jeradin/header";
+import { SiteFooter } from "@/components/jeradin/footer";
+import { AnimatedWords } from "@/components/jeradin/animated-text";
 
 export const Route = createFileRoute("/docs")({
   head: () => ({
     meta: [
-      { title: "Docs · Fixdemy" },
-      { name: "description", content: "Install Fixdemy, connect your MCP, and read about the debugging engine." },
-      { property: "og:title", content: "Docs · Fixdemy" },
+      { title: "Docs · Jeradin" },
+      { name: "description", content: "Install Jeradin, connect your MCP, and read about the debugging engine." },
+      { property: "og:title", content: "Docs · Jeradin" },
       { property: "og:description", content: "Quickstart, MCP setup and engine internals." },
     ],
   }),
@@ -19,16 +19,16 @@ const sections = [
   {
     h: "Quickstart",
     items: [
-      ["Install Fixdemy", "Download for Windows, macOS or Linux. Sign in. Approve screen reading. You're done."],
+      ["Install Jeradin", "Download for Windows, macOS or Linux. Sign in. Approve screen reading. You're done."],
       ["Connect a vibecoding tool", "Open the Connectors panel, pick Lovable, Cursor, Replit or Gemini, and click Bridge."],
-      ["First detection", "Break something on purpose — Fixdemy will flag it within a second."],
+      ["First detection", "Break something on purpose — Jeradin will flag it within a second."],
     ],
   },
   {
     h: "MCP Connector",
     items: [
-      ["What is MCP?", "Model Context Protocol — a small, open spec that lets Fixdemy talk to any vibecoding tool that exposes one."],
-      ["Permissions", "Connections are read-only and revocable. Fixdemy never gets write access to your repo."],
+      ["What is MCP?", "Model Context Protocol — a small, open spec that lets Jeradin talk to any vibecoding tool that exposes one."],
+      ["Permissions", "Connections are read-only and revocable. Jeradin never gets write access to your repo."],
       ["Self-hosting", "Run the bridge on your own machine in air-gapped environments."],
     ],
   },

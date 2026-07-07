@@ -37,7 +37,7 @@ export function SiteFooter() {
           <div className="col-span-2">
             <div className="flex items-center gap-2">
               <LogoMark className="h-5 w-5" />
-              <span className="text-[15px] font-medium tracking-tight">Fixdemy</span>
+              <span className="text-[15px] font-medium tracking-tight">Jeradin</span>
             </div>
             <p className="mt-3 max-w-xs text-[13px] text-black/55 leading-relaxed">
               The read-only debugging copilot that watches your screen and tells you
@@ -66,7 +66,7 @@ export function SiteFooter() {
         </div>
         <div className="mt-14 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-black/5 pt-6">
           <div className="text-[12px] text-black/40">
-            © {new Date().getFullYear()} Fixdemy Labs. All rights reserved.
+            © {new Date().getFullYear()} Jeradin Labs. All rights reserved.
           </div>
           <div className="text-[12px] text-black/40">
             Built for builders. Read-only. Never touches your code.

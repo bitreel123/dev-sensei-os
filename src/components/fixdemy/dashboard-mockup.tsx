@@ -14,7 +14,7 @@ export function DashboardMockup() {
         </div>
         <div className="text-[11px] text-black/50 font-mono flex items-center gap-1.5">
           <LogoMark className="h-3 w-3 text-black" />
-          fixdemy — watching lovable.dev
+          jeradin — watching lovable.dev
         </div>
         <div className="text-[11px] text-black/50 font-mono flex items-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-black animate-pulse" />
@@ -83,7 +83,7 @@ export function DashboardMockup() {
           <div className="mt-4 rounded-lg border border-black/10 bg-[#fafafa] overflow-hidden">
             <div className="px-3 py-1.5 border-b border-black/5 text-[10px] font-mono text-black/40 flex items-center justify-between">
               <span>App.tsx</span>
-              <span>read-only · fixdemy will not write</span>
+              <span>read-only · jeradin will not write</span>
             </div>
             <pre className="px-3 py-2.5 text-[12px] font-mono leading-relaxed text-black/80 overflow-x-auto">
 {`  const { data: user } = useUser()

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 /**
- * Fixdemy mark — a stylized "F" formed by a bracket and a fix-line.
+ * Jeradin mark — a stylized "F" formed by a bracket and a fix-line.
  * Mono, scales with currentColor, sits flush with text.
  */
 export function LogoMark({ className = "h-5 w-5" }: { className?: string }) {
@@ -46,7 +46,7 @@ export function LogoLockup({
   return (
     <Link to={href} className={`flex items-center gap-2 ${className}`}>
       <LogoMark className="h-[18px] w-[18px] text-current" />
-      <span className="text-[15px] font-semibold tracking-tight">Fixdemy</span>
+      <span className="text-[15px] font-semibold tracking-tight">Jeradin</span>
     </Link>
   );
 }
@@ -57,7 +57,7 @@ export function LogoWordmark({ className = "" }: { className?: string }) {
     <div className={`inline-flex items-center gap-1.5 ${className}`}>
       <LogoMark className="h-[15px] w-[15px]" />
       <span className="text-[13px] font-semibold tracking-tight text-black">
-        Fixdemy
+        Jeradin
       </span>
     </div>
   );

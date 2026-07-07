@@ -1,5 +1,5 @@
 /**
- * Real brand marks for the tools Fixdemy connects to.
+ * Real brand marks for the tools Jeradin connects to.
  * Sourced via simpleicons CDN (monochrome, currentColor-friendly).
  * Fallbacks to a clean letter mark if a brand is unavailable.
  */

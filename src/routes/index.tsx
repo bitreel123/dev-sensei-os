@@ -3,25 +3,25 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
-import { SiteHeader } from "@/components/fixdemy/header";
-import { SiteFooter } from "@/components/fixdemy/footer";
-import { LogoWordmark } from "@/components/fixdemy/logo";
-import { MorphVisual } from "@/components/fixdemy/morph-visual";
-import { InteractiveGlobe } from "@/components/fixdemy/interactive-globe";
-import { BrandLogo, ALL_BRANDS, BrandName } from "@/components/fixdemy/brand-logos";
-import { HermesFeatures } from "@/components/fixdemy/hermes-features";
-import { IntelligenceFeatures } from "@/components/fixdemy/intelligence-features";
+import { SiteHeader } from "@/components/jeradin/header";
+import { SiteFooter } from "@/components/jeradin/footer";
+import { LogoWordmark } from "@/components/jeradin/logo";
+import { MorphVisual } from "@/components/jeradin/morph-visual";
+import { InteractiveGlobe } from "@/components/jeradin/interactive-globe";
+import { BrandLogo, ALL_BRANDS, BrandName } from "@/components/jeradin/brand-logos";
+import { HermesFeatures } from "@/components/jeradin/hermes-features";
+import { IntelligenceFeatures } from "@/components/jeradin/intelligence-features";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Fixdemy — From idea to production. One intelligence layer." },
+      { title: "Jeradin — From idea to production. One intelligence layer." },
       {
         name: "description",
         content:
-          "Fixdemy is an AI powered systems intelligence platform helping developers, founders and engineers understand, build, debug, test and improve complex systems.",
+          "Jeradin is an AI powered systems intelligence platform helping developers, founders and engineers understand, build, debug, test and improve complex systems.",
       },
-      { property: "og:title", content: "Fixdemy — One intelligence layer" },
+      { property: "og:title", content: "Jeradin — One intelligence layer" },
       {
         property: "og:description",
         content:
@@ -127,8 +127,8 @@ function InstallTerminal() {
   const [copied, setCopied] = useState(false);
   const cmd =
     os === "mac"
-      ? "curl -fsSL https://get.fixdemy.dev/install.sh | sh"
-      : "irm https://get.fixdemy.dev/install.ps1 | iex";
+      ? "curl -fsSL https://get.jeradin.dev/install.sh | sh"
+      : "irm https://get.jeradin.dev/install.ps1 | iex";
   const prefix = os === "mac" ? "curl" : "irm";
   const rest = cmd.slice(prefix.length);
 
@@ -218,7 +218,7 @@ function OperatingSystem() {
           transition={{ duration: 0.7, delay: 0.1 }}
           className="text-[14.5px] text-black/70 leading-relaxed max-w-md md:justify-self-end"
         >
-          Fixdemy is an AI powered systems intelligence platform that helps
+          Jeradin is an AI powered systems intelligence platform that helps
           developers, founders, engineers, and teams understand, build, debug,
           test, and improve complex systems across software, AI, infrastructure,
           hardware and data.
@@ -261,7 +261,7 @@ function OperatingSystem() {
           className="mt-10 max-w-xl bg-black text-white p-7"
         >
           <p className="text-[13.5px] leading-relaxed text-white/85">
-            Fixdemy changes that. We embed an intelligence layer directly into
+            Jeradin changes that. We embed an intelligence layer directly into
             the way teams build — compressing the distance between an idea, a
             working system, and what ships to production. Designed for the
             engineers, founders and operators redefining what is possible.
@@ -324,7 +324,7 @@ function Connector() {
               One layer. Every tool.
             </h2>
             <p className="mt-5 text-[14px] text-white/65 leading-relaxed max-w-md">
-              Fixdemy works alongside any AI coding tool to validate decisions,
+              Jeradin works alongside any AI coding tool to validate decisions,
               detect mistakes, explain failures and keep projects moving from
               ideas to production.
             </p>
@@ -357,7 +357,7 @@ function Connector() {
                 ))}
               </div>
               <div className="mt-3 flex items-center justify-between px-1 text-[10px] font-mono text-white/40">
-                <span>fixdemy.mcp · v0.1</span>
+                <span>jeradin.mcp · v0.1</span>
                 <span className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-white/70 animate-pulse" />
                   listening
@@ -389,7 +389,7 @@ function CTA() {
             to="/download"
             className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2.5 text-[13px] font-medium text-white hover:bg-black/85"
           >
-            <DownloadGlyph /> Download Fixdemy
+            <DownloadGlyph /> Download Jeradin
           </Link>
           <Link
             to="/signup"

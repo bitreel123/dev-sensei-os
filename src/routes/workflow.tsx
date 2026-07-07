@@ -1,19 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SiteHeader } from "@/components/fixdemy/header";
-import { SiteFooter } from "@/components/fixdemy/footer";
-import { FadeIn, AnimatedWords } from "@/components/fixdemy/animated-text";
+import { SiteHeader } from "@/components/jeradin/header";
+import { SiteFooter } from "@/components/jeradin/footer";
+import { FadeIn, AnimatedWords } from "@/components/jeradin/animated-text";
 import { Monitor, Eye, Brain, GitBranch } from "lucide-react";
 
 export const Route = createFileRoute("/workflow")({
   head: () => ({
     meta: [
-      { title: "Workflow · Fixdemy" },
+      { title: "Workflow · Jeradin" },
       {
         name: "description",
         content:
-          "How Fixdemy fits into your vibecoding loop: observe, detect, explain, hand back. Read-only by design.",
+          "How Jeradin fits into your vibecoding loop: observe, detect, explain, hand back. Read-only by design.",
       },
-      { property: "og:title", content: "Workflow · Fixdemy" },
+      { property: "og:title", content: "Workflow · Jeradin" },
       {
         property: "og:description",
         content: "The four-step debugging loop that keeps your credits intact.",
@@ -27,7 +27,7 @@ const steps = [
   {
     icon: Monitor,
     n: "01 · Observe",
-    t: "Fixdemy quietly records your editor, terminal and preview frames.",
+    t: "Jeradin quietly records your editor, terminal and preview frames.",
     b: "A lightweight observer captures only what's visible on your active vibecoding workspace. Nothing leaves your machine without permission.",
   },
   {
@@ -46,7 +46,7 @@ const steps = [
     icon: GitBranch,
     n: "04 · Hand back",
     t: "Send the suggested fix back to your vibecoding tool — or copy it manually.",
-    b: "Fixdemy never writes. It offers a one-click prompt that lands in Lovable, Cursor or your IDE so you can apply the fix in your own flow.",
+    b: "Jeradin never writes. It offers a one-click prompt that lands in Lovable, Cursor or your IDE so you can apply the fix in your own flow.",
   },
 ];
 
@@ -63,7 +63,7 @@ function WorkflowPage() {
         </h1>
         <p className="mt-6 max-w-2xl text-[15px] text-black/55 leading-relaxed">
           A loop designed for the way vibecoders actually work — fast, visual,
-          interruption-driven. Fixdemy stays out of the way until it has something
+          interruption-driven. Jeradin stays out of the way until it has something
           worth saying.
         </p>
       </section>

@@ -42,7 +42,7 @@ function Landing() {
       <Connector />
       <IntelligenceFeatures />
 
-      <CTA />
+      <JeradinPortal />
       <SiteFooter />
 
     </div>

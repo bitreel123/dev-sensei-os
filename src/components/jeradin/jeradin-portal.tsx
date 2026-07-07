@@ -9,7 +9,7 @@ import portalImg from "@/assets/ciel_noir.jpeg.asset.json";
  */
 export function JeradinPortal() {
   return (
-    <section className="relative overflow-hidden bg-[#1f21ff] text-white">
+    <section className="relative overflow-hidden bg-black text-white">
       {/* Faded backdrop wordmark */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
         <span

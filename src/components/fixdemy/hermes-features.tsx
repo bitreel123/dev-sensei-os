@@ -6,24 +6,24 @@ import img3 from "@/assets/hermes-3.jpg";
 const FEATURES = [
   {
     num: "#1",
-    label: "Connect",
-    title: ["Lives", "Everywhere"],
+    label: "Understand",
+    title: ["Systems", "Intelligence"],
     img: img1,
-    body: "GitHub, Vercel, Supabase, AWS, Docker, CLI — and a growing list of platforms. One agent, one memory, every surface.",
+    body: "An AI layer that reads across software, infrastructure, hardware and data — so complex systems finally make sense to the humans building them.",
   },
   {
     num: "#2",
-    label: "Remember",
-    title: ["Persistent", "Memory"],
+    label: "Build",
+    title: ["Idea to", "Production"],
     img: img2,
-    body: "It learns your projects, auto-generates skills, and never forgets how it solved a problem.",
+    body: "Fixdemy compresses the distance between an idea, a working system, and what ships. Engineering cycles measured in days, not quarters.",
   },
   {
     num: "#3",
-    label: "Automate",
-    title: ["Focused", "Automation"],
+    label: "Ship",
+    title: ["Built for", "Operators"],
     img: img3,
-    body: "Natural-language scheduling for background debugging, refactors and reviews — while you keep shipping.",
+    body: "Designed for the developers, founders and engineers redefining what is possible — one intelligence layer across every tool you already use.",
   },
 ];
 

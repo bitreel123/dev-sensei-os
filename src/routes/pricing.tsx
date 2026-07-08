@@ -329,8 +329,16 @@ function PricingPage() {
           {TIERS.map((t) => {
             const optIdx = selectedOption[t.id] ?? 0;
             const opt = t.options[optIdx];
+            const isFree = t.id === "free";
+            const effectiveCycle: Cycle = isFree ? "monthly" : cycle;
+            const displayPrice =
+              effectiveCycle === "yearly"
+                ? yearlyMonthlyPrice(opt.price)
+                : opt.price;
             const isCurrent =
-              t.id === state.plan && opt.credits === state.monthlyCredits;
+              t.id === state.plan &&
+              opt.credits === state.monthlyCredits &&
+              effectiveCycle === state.cycle;
             const isUpgrade = RANK[t.id] > RANK[state.plan];
             const label = isCurrent
               ? "Your current plan"
@@ -363,11 +371,18 @@ function PricingPage() {
                       fontWeight: 400,
                     }}
                   >
-                    ${opt.price}
+                    ${displayPrice}
                   </div>
                   <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/60">
                     /mo
                   </div>
+                </div>
+                <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/45 min-h-[14px]">
+                  {isFree
+                    ? "Forever"
+                    : effectiveCycle === "yearly"
+                    ? `$${yearlyTotal(opt.price)} billed yearly · save $${(opt.price - displayPrice) * 12}`
+                    : "Billed monthly"}
                 </div>
 
                 {/* Credit selector */}
@@ -386,11 +401,17 @@ function PricingPage() {
                     disabled={t.options.length === 1}
                     className="mt-1.5 w-full bg-black border border-white/25 px-3 py-2.5 font-mono text-[12px] text-white focus:outline-none focus:border-white disabled:opacity-60"
                   >
-                    {t.options.map((o, i) => (
-                      <option key={i} value={i} className="bg-black text-white">
-                        {o.credits} credits · ${o.price}/mo
-                      </option>
-                    ))}
+                    {t.options.map((o, i) => {
+                      const p =
+                        effectiveCycle === "yearly"
+                          ? yearlyMonthlyPrice(o.price)
+                          : o.price;
+                      return (
+                        <option key={i} value={i} className="bg-black text-white">
+                          {o.credits} credits · ${p}/mo
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

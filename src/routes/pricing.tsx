@@ -195,13 +195,19 @@ function PricingPage() {
 
   function choose(tier: Tier) {
     const opt = tier.options[selectedOption[tier.id]] ?? tier.options[0];
-    if (tier.id === state.plan && opt.credits === state.monthlyCredits) return;
+    if (
+      tier.id === state.plan &&
+      opt.credits === state.monthlyCredits &&
+      cycle === state.cycle
+    )
+      return;
     const prevRank = RANK[state.plan];
     const nextRank = RANK[tier.id];
     // preserve any leftover top-up balance above the previous monthly grant
     const leftover = Math.max(state.balance - state.monthlyCredits, 0);
     const next: BillingState = {
       plan: tier.id,
+      cycle: tier.id === "free" ? "monthly" : cycle,
       monthlyCredits: opt.credits,
       balance: opt.credits + leftover,
     };
@@ -213,7 +219,13 @@ function PricingPage() {
         : nextRank < prevRank
         ? "Downgraded"
         : "Switched";
-    setToast(`${action} to ${tier.name} · ${opt.credits} monthly credits`);
+    const billed =
+      tier.id === "free"
+        ? "free"
+        : next.cycle === "yearly"
+        ? `billed yearly ($${yearlyTotal(opt.price)}/yr)`
+        : `$${opt.price}/mo`;
+    setToast(`${action} to ${tier.name} · ${opt.credits} credits · ${billed}`);
   }
 
   function confirmTopUp() {

@@ -92,12 +92,21 @@ function Hero() {
             transition={{ duration: 0.7, delay: 0.9 }}
             className="mt-8 flex flex-col items-center gap-5"
           >
-            <Link
-              to="/download"
-              className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2.5 text-[13px] font-medium text-white hover:bg-black/85 transition-colors"
-            >
-              <DownloadGlyph /> Download for Windows
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <Link
+                to="/download"
+                className="inline-flex items-center gap-2 bg-black px-4 py-2.5 text-[13px] font-medium text-white hover:bg-black/85 transition-colors"
+              >
+                <DownloadGlyph /> Download for Windows
+              </Link>
+              <Link
+                to="/download"
+                className="inline-flex items-center gap-2 border border-black/30 px-4 py-2.5 text-[11.5px] font-medium text-black hover:bg-black hover:text-white transition-colors"
+              >
+                Install as extension
+              </Link>
+            </div>
+
 
             <InstallTerminal />
           </motion.div>

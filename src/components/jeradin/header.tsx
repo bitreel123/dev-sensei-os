@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Download } from "lucide-react";
 import { LogoLockup } from "./logo";
+import { useAuth } from "@/hooks/use-auth";
 
 const nav = [
   { label: "Product", href: "/product" },
@@ -11,6 +12,7 @@ const nav = [
 
 export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }) {
   const isDark = variant === "dark";
+  const { user } = useAuth();
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 border-b ${
@@ -36,14 +38,14 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
         </div>
         <div className="flex items-center gap-2">
           <Link
-            to="/signup"
+            to={user ? "/account" : "/signup"}
             className={`inline-flex items-center px-3.5 py-1.5 text-[13px] font-medium border transition-all ${
               isDark
                 ? "border-white/30 text-white hover:bg-white hover:text-black"
                 : "border-black/30 text-black hover:bg-black hover:text-white"
             }`}
           >
-            Create account
+            {user ? "Account" : "Create account"}
           </Link>
           <Link
             to="/download"

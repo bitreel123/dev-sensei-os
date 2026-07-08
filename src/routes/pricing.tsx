@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Check } from "lucide-react";
 import { SiteHeader } from "@/components/jeradin/header";
 import { SiteFooter } from "@/components/jeradin/footer";
 import planFree from "@/assets/plan-free.jpg";
@@ -14,12 +15,12 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "Hybrid credit-based plans for Jeradin — real-time error, semantic, screen, knowledge and GitHub intelligence. Free, Basic, Pro and Elite tiers.",
+          "Feature-based monthly credit plans for Jeradin — real-time error, semantic, screen, knowledge and GitHub intelligence.",
       },
       { property: "og:title", content: "Pricing · Jeradin" },
       {
         property: "og:description",
-        content: "Credit-based subscription plans for the Jeradin debugging copilot.",
+        content: "Monthly credit plans for the Jeradin debugging copilot.",
       },
     ],
   }),
@@ -28,103 +29,110 @@ export const Route = createFileRoute("/pricing")({
 
 type TierId = "free" | "basic" | "pro" | "elite";
 
+type CreditOption = { credits: number; price: number };
+
 type Tier = {
   id: TierId;
   name: string;
-  price: string;
-  priceValue: number;
-  sub: string;
-  bonus?: string;
+  tagline: string;
   image: string;
-  credits: number;
+  options: CreditOption[]; // first entry is the default
   features: string[];
-  ctaLabel?: string;
+  perks: string[];
 };
 
 const TIERS: Tier[] = [
   {
     id: "free",
     name: "Free",
-    price: "$0",
-    priceValue: 0,
-    sub: "Forever",
+    tagline: "Try Jeradin with zero commitment.",
     image: planFree,
-    credits: 0,
+    options: [{ credits: 5, price: 0 }],
     features: [
+      "5 monthly credits",
       "Real-Time Error Intelligence",
-      "Standard rate limits",
-      "$0 monthly credits",
       "Lovable + Cursor connectors",
       "Community support",
     ],
+    perks: ["Standard rate limits", "1 workspace"],
   },
   {
     id: "basic",
     name: "Basic",
-    price: "$8",
-    priceValue: 8,
-    sub: "Per month",
-    bonus: "5% BONUS",
+    tagline: "For solo builders shipping every day.",
     image: planBasic,
-    credits: 80,
+    options: [
+      { credits: 100, price: 10 },
+      { credits: 250, price: 24 },
+      { credits: 500, price: 45 },
+    ],
     features: [
-      "$8 monthly credits",
-      "Real-Time Error Intelligence",
+      "Everything in Free",
       "Semantic System Intelligence",
       "Screen Intelligence",
       "All MCP connectors",
+      "Email support",
     ],
+    perks: ["On-demand top-ups", "Credit rollover up to 1 month"],
   },
   {
     id: "pro",
     name: "Pro",
-    price: "$20",
-    priceValue: 20,
-    sub: "Per month",
-    bonus: "10% BONUS",
+    tagline: "For power users and small teams.",
     image: planPro,
-    credits: 220,
+    options: [
+      { credits: 300, price: 25 },
+      { credits: 700, price: 55 },
+      { credits: 1500, price: 110 },
+    ],
     features: [
-      "$22 monthly credits",
       "Everything in Basic",
       "Knowledge Discovery",
       "GitHub Intelligence",
-      "Rollover cap up to $10",
       "Priority cloud reasoning",
+      "3 team seats",
     ],
+    perks: ["Rollover cap up to 2 months", "Priority support"],
   },
   {
     id: "elite",
     name: "Elite",
-    price: "$50",
-    priceValue: 50,
-    sub: "Per month",
-    bonus: "15% BONUS",
+    tagline: "For teams operating at scale.",
     image: planElite,
-    credits: 600,
+    options: [
+      { credits: 900, price: 60 },
+      { credits: 2000, price: 130 },
+      { credits: 5000, price: 300 },
+    ],
     features: [
-      "$57 monthly credits",
       "Everything in Pro",
       "Highest rate limits",
-      "Rollover cap up to $30",
       "Shared team memory",
-      "Dedicated support",
+      "SSO + role management",
+      "Unlimited seats",
     ],
+    perks: ["Rollover cap up to 3 months", "Dedicated support"],
   },
 ];
 
 const RANK: Record<TierId, number> = { free: 0, basic: 1, pro: 2, elite: 3 };
 const STORAGE_KEY = "jeradin:billing";
+const TOPUP_RATE = 10; // 1 USD = 10 credits
 
-type BillingState = { plan: TierId; credits: number };
+type BillingState = {
+  plan: TierId;
+  monthlyCredits: number; // included with the plan
+  balance: number; // usable credits (monthly + top-ups)
+};
 
 function loadBilling(): BillingState {
-  if (typeof window === "undefined") return { plan: "free", credits: 0 };
+  if (typeof window === "undefined")
+    return { plan: "free", monthlyCredits: 5, balance: 5 };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw) as BillingState;
   } catch {}
-  return { plan: "free", credits: 0 };
+  return { plan: "free", monthlyCredits: 5, balance: 5 };
 }
 
 function saveBilling(state: BillingState) {
@@ -134,11 +142,25 @@ function saveBilling(state: BillingState) {
 }
 
 function PricingPage() {
-  const [state, setState] = useState<BillingState>({ plan: "free", credits: 0 });
+  const [state, setState] = useState<BillingState>({
+    plan: "free",
+    monthlyCredits: 5,
+    balance: 5,
+  });
+  const [hydrated, setHydrated] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [selectedOption, setSelectedOption] = useState<Record<TierId, number>>({
+    free: 0,
+    basic: 0,
+    pro: 0,
+    elite: 0,
+  });
+  const [topupOpen, setTopupOpen] = useState(false);
+  const [topupAmount, setTopupAmount] = useState<number>(10);
 
   useEffect(() => {
     setState(loadBilling());
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
@@ -147,30 +169,56 @@ function PricingPage() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const currentTier = TIERS.find((t) => t.id === state.plan)!;
+  const currentTier = useMemo(
+    () => TIERS.find((t) => t.id === state.plan)!,
+    [state.plan]
+  );
 
   function choose(tier: Tier) {
-    if (tier.id === state.plan) return;
-    const next: BillingState = { plan: tier.id, credits: tier.credits };
+    const opt = tier.options[selectedOption[tier.id]] ?? tier.options[0];
+    if (tier.id === state.plan && opt.credits === state.monthlyCredits) return;
+    const prevRank = RANK[state.plan];
+    const nextRank = RANK[tier.id];
+    // preserve any leftover top-up balance above the previous monthly grant
+    const leftover = Math.max(state.balance - state.monthlyCredits, 0);
+    const next: BillingState = {
+      plan: tier.id,
+      monthlyCredits: opt.credits,
+      balance: opt.credits + leftover,
+    };
     setState(next);
     saveBilling(next);
     const action =
-      RANK[tier.id] > RANK[state.plan] ? "Upgraded" : RANK[tier.id] < RANK[state.plan] ? "Downgraded" : "Switched";
-    setToast(`${action} to ${tier.name} · ${tier.credits} credits loaded`);
+      nextRank > prevRank
+        ? "Upgraded"
+        : nextRank < prevRank
+        ? "Downgraded"
+        : "Switched";
+    setToast(`${action} to ${tier.name} · ${opt.credits} monthly credits`);
   }
 
-  function topUp(amount: number) {
-    const next: BillingState = { plan: state.plan, credits: state.credits + amount };
+  function confirmTopUp() {
+    if (state.plan === "free") {
+      setToast("Upgrade to a paid plan to top up");
+      setTopupOpen(false);
+      return;
+    }
+    const usd = Math.max(1, Math.floor(topupAmount));
+    const added = usd * TOPUP_RATE;
+    const next: BillingState = {
+      ...state,
+      balance: state.balance + added,
+    };
     setState(next);
     saveBilling(next);
-    setToast(`Topped up +${amount} credits`);
+    setTopupOpen(false);
+    setToast(`Topped up +${added} credits ($${usd})`);
   }
 
   return (
     <div className="min-h-screen bg-black text-white">
       <SiteHeader />
 
-      {/* Top bar mimic */}
       <div className="pt-24 pb-2 mx-auto max-w-[1400px] px-5 flex items-center justify-between">
         <Link
           to="/"
@@ -191,80 +239,107 @@ function PricingPage() {
 
       {/* Current plan strip */}
       <section className="mx-auto max-w-[1400px] px-5 pt-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-white/15 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-white/15 bg-white/[0.02] p-5">
           <div>
             <div className="font-mono text-[10.5px] uppercase tracking-[0.25em] text-white/60">
               Current plan
             </div>
             <div
-              className="mt-1 font-serif text-[36px] leading-none"
+              className="mt-1 text-[36px] leading-none"
               style={{ fontFamily: "'Instrument Serif', serif" }}
             >
               {currentTier.name}
             </div>
             <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/70">
-              Balance · ${state.credits} credits
+              Balance · {hydrated ? state.balance : 0} credits ·{" "}
+              {hydrated ? state.monthlyCredits : 0} monthly
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => topUp(10)}
+              onClick={() => setTopupOpen(true)}
               disabled={state.plan === "free"}
               className="border border-white/70 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              Top up +$10
-            </button>
-            <button
-              onClick={() => topUp(50)}
-              disabled={state.plan === "free"}
-              className="border border-white/70 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              Top up +$50
+              Top up
             </button>
           </div>
         </div>
       </section>
 
-      {/* Plan grid */}
+      {/* Plan grid — Lovable-style dark cards with credit selector */}
       <section className="mx-auto max-w-[1400px] px-5 py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {TIERS.map((t) => {
-            const isCurrent = t.id === state.plan;
+            const optIdx = selectedOption[t.id] ?? 0;
+            const opt = t.options[optIdx];
+            const isCurrent =
+              t.id === state.plan && opt.credits === state.monthlyCredits;
             const isUpgrade = RANK[t.id] > RANK[state.plan];
             const label = isCurrent
               ? "Your current plan"
               : isUpgrade
               ? "Upgrade"
+              : t.id === state.plan
+              ? "Switch plan"
               : "Downgrade";
+
             return (
               <article
                 key={t.id}
-                className="flex flex-col bg-[#1f21ff] text-white p-5"
+                className="flex flex-col border border-white/15 bg-white/[0.03] p-5 hover:border-white/30 transition-colors"
               >
                 <div className="flex items-center justify-between">
-                  <span className="bg-white/15 px-2.5 py-1 font-mono text-[10px] tracking-[0.22em] uppercase">
+                  <span className="font-mono text-[10px] tracking-[0.24em] uppercase text-white/70">
                     {t.name}
                   </span>
-                  {t.bonus && (
-                    <span className="border border-white/60 px-2.5 py-1 font-mono text-[10px] tracking-[0.22em] uppercase">
-                      {t.bonus}
-                    </span>
-                  )}
                 </div>
 
-                <div className="mt-6">
+                <p className="mt-2 text-[13px] text-white/60 leading-snug min-h-[36px]">
+                  {t.tagline}
+                </p>
+
+                <div className="mt-5 flex items-baseline gap-1.5">
                   <div
-                    className="text-[64px] leading-none"
-                    style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+                    className="text-[56px] leading-none"
+                    style={{
+                      fontFamily: "'Instrument Serif', serif",
+                      fontWeight: 400,
+                    }}
                   >
-                    {t.price}
+                    ${opt.price}
                   </div>
-                  <div className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/85">
-                    {t.sub}
+                  <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/60">
+                    /mo
                   </div>
                 </div>
 
-                <div className="relative mt-6 aspect-square w-full overflow-hidden border border-white/20 bg-black">
+                {/* Credit selector */}
+                <div className="mt-4">
+                  <label className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/50">
+                    Monthly credits
+                  </label>
+                  <select
+                    value={optIdx}
+                    onChange={(e) =>
+                      setSelectedOption((s) => ({
+                        ...s,
+                        [t.id]: Number(e.target.value),
+                      }))
+                    }
+                    disabled={t.options.length === 1}
+                    className="mt-1.5 w-full bg-black border border-white/25 px-3 py-2.5 font-mono text-[12px] text-white focus:outline-none focus:border-white disabled:opacity-60"
+                  >
+                    {t.options.map((o, i) => (
+                      <option key={i} value={i} className="bg-black text-white">
+                        {o.credits} credits · ${o.price}/mo
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Image */}
+                <div className="relative mt-5 aspect-square w-full overflow-hidden border border-white/15 bg-black">
                   <img
                     src={t.image}
                     alt={`${t.name} plan illustration`}
@@ -275,31 +350,113 @@ function PricingPage() {
                   />
                 </div>
 
-                <ul className="mt-6 space-y-2 font-mono text-[10.5px] uppercase tracking-[0.14em] text-white/90 flex-1">
+                <button
+                  onClick={() => choose(t)}
+                  disabled={isCurrent}
+                  className={`mt-5 w-full border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.25em] transition-colors ${
+                    isCurrent
+                      ? "border-white/25 text-white/50 cursor-not-allowed bg-white/5"
+                      : "border-white text-black bg-white hover:bg-white/90"
+                  }`}
+                >
+                  {label}
+                </button>
+
+                <ul className="mt-6 space-y-2.5 text-[13px] text-white/85 flex-1">
                   {t.features.map((f) => (
-                    <li key={f} className="flex gap-2">
-                      <span className="text-white/60">•</span>
+                    <li key={f} className="flex items-start gap-2.5">
+                      <Check className="h-4 w-4 mt-0.5 text-white/70 shrink-0" />
                       <span>{f}</span>
                     </li>
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => choose(t)}
-                  disabled={isCurrent}
-                  className={`mt-6 w-full border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.25em] transition-colors ${
-                    isCurrent
-                      ? "border-white/30 text-white/50 cursor-not-allowed"
-                      : "border-white text-white hover:bg-white hover:text-[#1f21ff]"
-                  }`}
-                >
-                  {label}
-                </button>
+                {t.perks.length > 0 && (
+                  <div className="mt-5 pt-4 border-t border-white/10 space-y-1.5">
+                    {t.perks.map((p) => (
+                      <div
+                        key={p}
+                        className="font-mono text-[10.5px] uppercase tracking-[0.15em] text-white/50"
+                      >
+                        · {p}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </article>
             );
           })}
         </div>
+
+        <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.2em] text-white/50 text-center">
+          Monthly credits · No daily reset · Top up anytime · Cancel anytime
+        </p>
       </section>
+
+      {/* Top-up modal */}
+      {topupOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-5">
+          <div className="w-full max-w-md border border-white/20 bg-black p-6">
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/60">
+              Top up credits
+            </div>
+            <div
+              className="mt-2 text-[28px] leading-none"
+              style={{ fontFamily: "'Instrument Serif', serif" }}
+            >
+              Add credits to your balance
+            </div>
+            <p className="mt-3 text-[13px] text-white/60">
+              ${topupAmount} = {topupAmount * TOPUP_RATE} credits. One-time
+              charge, credits never expire.
+            </p>
+
+            <div className="mt-5 flex gap-2">
+              {[10, 25, 50, 100].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setTopupAmount(v)}
+                  className={`flex-1 border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.2em] transition-colors ${
+                    topupAmount === v
+                      ? "border-white bg-white text-black"
+                      : "border-white/30 text-white hover:border-white"
+                  }`}
+                >
+                  ${v}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4">
+              <label className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/50">
+                Custom amount (USD)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={topupAmount}
+                onChange={(e) => setTopupAmount(Number(e.target.value) || 0)}
+                className="mt-1.5 w-full bg-black border border-white/25 px-3 py-2.5 font-mono text-[13px] text-white focus:outline-none focus:border-white"
+              />
+            </div>
+
+            <div className="mt-6 flex gap-2">
+              <button
+                onClick={() => setTopupOpen(false)}
+                className="flex-1 border border-white/30 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.22em] hover:border-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmTopUp}
+                className="flex-1 border border-white bg-white text-black px-4 py-3 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white/90"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 border border-white bg-black px-5 py-3 font-mono text-[11px] uppercase tracking-[0.22em]">

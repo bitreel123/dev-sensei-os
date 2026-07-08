@@ -36,14 +36,18 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
         </div>
         <div className="flex items-center gap-2">
           <Link
-            to="/login"
-            className="hidden sm:inline-flex text-[13px] px-3 py-1.5 text-foreground/70 hover:text-foreground"
+            to="/signup"
+            className={`inline-flex items-center px-3.5 py-1.5 text-[13px] font-medium border transition-all ${
+              isDark
+                ? "border-white/30 text-white hover:bg-white hover:text-black"
+                : "border-black/30 text-black hover:bg-black hover:text-white"
+            }`}
           >
-            Sign in
+            Create account
           </Link>
           <Link
             to="/download"
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-all ${
+            className={`hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium transition-all ${
               isDark
                 ? "bg-white text-black hover:bg-white/90"
                 : "bg-black text-white hover:bg-black/90"
@@ -51,6 +55,7 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
           >
             Download <Download className="h-3.5 w-3.5" />
           </Link>
+
         </div>
       </div>
     </header>

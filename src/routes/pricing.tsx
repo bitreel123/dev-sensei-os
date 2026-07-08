@@ -41,6 +41,8 @@ type Tier = {
   perks: string[];
 };
 
+const YEARLY_DISCOUNT = 0.2; // 20% off = ~2 months free
+
 const TIERS: Tier[] = [
   {
     id: "free",
@@ -62,9 +64,9 @@ const TIERS: Tier[] = [
     tagline: "For solo builders shipping every day.",
     image: planBasic,
     options: [
-      { credits: 100, price: 10 },
-      { credits: 250, price: 24 },
-      { credits: 500, price: 45 },
+      { credits: 80, price: 8 },
+      { credits: 200, price: 18 },
+      { credits: 500, price: 40 },
     ],
     features: [
       "Everything in Free",
@@ -81,8 +83,8 @@ const TIERS: Tier[] = [
     tagline: "For power users and small teams.",
     image: planPro,
     options: [
-      { credits: 300, price: 25 },
-      { credits: 700, price: 55 },
+      { credits: 220, price: 20 },
+      { credits: 600, price: 50 },
       { credits: 1500, price: 110 },
     ],
     features: [
@@ -100,9 +102,9 @@ const TIERS: Tier[] = [
     tagline: "For teams operating at scale.",
     image: planElite,
     options: [
-      { credits: 900, price: 60 },
-      { credits: 2000, price: 130 },
-      { credits: 5000, price: 300 },
+      { credits: 600, price: 50 },
+      { credits: 1500, price: 120 },
+      { credits: 4000, price: 300 },
     ],
     features: [
       "Everything in Pro",

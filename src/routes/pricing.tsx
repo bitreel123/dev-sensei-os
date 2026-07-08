@@ -283,7 +283,8 @@ function PricingPage() {
             </div>
             <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/70">
               Balance · {hydrated ? state.balance : 0} credits ·{" "}
-              {hydrated ? state.monthlyCredits : 0} monthly
+              {hydrated ? state.monthlyCredits : 0} monthly ·{" "}
+              {hydrated ? (state.plan === "free" ? "no billing" : `billed ${state.cycle}`) : ""}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">

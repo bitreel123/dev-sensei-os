@@ -1,94 +1,119 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { LogoMark } from "@/components/jeradin/logo";
-import { ArrowRight, Plus, MessageSquare, BookOpen, Sparkles, Code, Coffee, Mic, AudioLines } from "lucide-react";
 import { motion } from "motion/react";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
       { title: "Create your Jeradin account" },
-      { name: "description", content: "Sign up for Jeradin — free during beta." },
+      { name: "description", content: "Get 5 free credits. No card required." },
     ],
   }),
   component: SignupPage,
 });
 
 function SignupPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function signUp(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/pricing` },
+    });
+    setLoading(false);
+    if (error) return toast.error(error.message);
+    toast.success("Account created — check your email to confirm");
+    navigate({ to: "/pricing" });
+  }
+
+  async function signInGoogle() {
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) toast.error(result.error.message ?? "Sign in failed");
+  }
+
   return (
-    <div className="min-h-screen bg-[#1a1a1a] text-white flex">
-      <aside className="hidden md:flex w-14 border-r border-white/5 flex-col items-center py-4 gap-3">
-        <LogoMark className="h-5 w-5 text-white" />
-        <div className="mt-4 flex flex-col gap-1 text-white/40">
-          {[Plus, MessageSquare, BookOpen, Sparkles, Code, Coffee].map((I, i) => (
-            <button key={i} className="h-9 w-9 rounded-lg hover:bg-white/5 flex items-center justify-center">
-              <I className="h-4 w-4" />
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      <main className="flex-1 flex flex-col items-center justify-center px-4 relative">
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-center h-12 text-[12px] text-white/55">
-          Free plan · <Link to="/pricing" className="ml-1 underline underline-offset-2">Upgrade</Link>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="flex items-center gap-3"
-        >
+    <div className="min-h-screen bg-[#1a1a1a] text-white flex items-center justify-center px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-sm"
+      >
+        <div className="flex items-center gap-3 justify-center">
           <LogoMark className="h-7 w-7 text-white" />
-          <h1 className="text-[36px] tracking-[-0.02em] font-serif text-white/95">
-            Start debugging?
+          <h1
+            className="text-[32px] tracking-[-0.02em]"
+            style={{ fontFamily: "'Instrument Serif', serif" }}
+          >
+            Create account
           </h1>
-        </motion.div>
+        </div>
+        <p className="mt-2 text-center text-[12px] text-white/55">
+          5 free credits · No card required
+        </p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-9 w-full max-w-2xl"
+        <button
+          onClick={signInGoogle}
+          className="mt-8 w-full border border-white/25 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors"
         >
-          <div className="rounded-2xl border border-white/10 bg-[#222222] p-1">
-            <div className="px-3 pt-2 pb-1 text-[12px] text-white/55">
-              Create your workspace · we'll email you a magic link
-            </div>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@yourdomain.com"
-              className="w-full bg-transparent px-3 py-3 text-[14px] placeholder:text-white/30 outline-none"
-            />
-            <div className="flex items-center justify-between px-2 pb-2">
-              <button className="inline-flex items-center gap-1.5 text-[12px] text-white/45 hover:text-white px-2 py-1 rounded-md">
-                <Plus className="h-3.5 w-3.5" /> Continue with Google
-              </button>
-              <div className="flex items-center gap-1">
-                <span className="text-[11px] text-white/40 px-2">Jeradin 0.1 · Beta</span>
-                <button className="h-8 w-8 rounded-md hover:bg-white/5 flex items-center justify-center text-white/45">
-                  <Mic className="h-3.5 w-3.5" />
-                </button>
-                <button className="h-8 w-8 rounded-md hover:bg-white/5 flex items-center justify-center text-white/45">
-                  <AudioLines className="h-3.5 w-3.5" />
-                </button>
-                <Link to="/app" className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform">
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-          </div>
+          Continue with Google
+        </button>
 
-          <p className="mt-8 text-center text-[12px] text-white/40">
-            Already have an account?{" "}
-            <Link to="/login" className="text-white/70 underline underline-offset-2">
-              Sign in
-            </Link>
-          </p>
-        </motion.div>
-      </main>
+        <div className="my-5 flex items-center gap-3 text-white/40 text-[10px] uppercase tracking-[0.22em] font-mono">
+          <span className="h-px flex-1 bg-white/10" /> or <span className="h-px flex-1 bg-white/10" />
+        </div>
+
+        <form onSubmit={signUp} className="space-y-3">
+          <input
+            type="email"
+            required
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-black border border-white/25 px-3 py-3 text-[13px] focus:outline-none focus:border-white"
+          />
+          <input
+            type="password"
+            required
+            minLength={8}
+            placeholder="Password (min 8 chars)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-black border border-white/25 px-3 py-3 text-[13px] focus:outline-none focus:border-white"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-white text-black px-4 py-3 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white/90 disabled:opacity-50"
+          >
+            {loading ? "Creating…" : "Create account"}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center text-[12px] text-white/60">
+          Have an account?{" "}
+          <Link to="/login" className="text-white underline underline-offset-2">
+            Sign in
+          </Link>
+        </div>
+        <div className="mt-2 text-center">
+          <Link to="/" className="text-[11px] text-white/40 hover:text-white">
+            ← Back home
+          </Link>
+        </div>
+      </motion.div>
     </div>
   );
 }

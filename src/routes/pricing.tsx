@@ -179,6 +179,10 @@ function PricingPage() {
   }, []);
 
   useEffect(() => {
+    if (hydrated) setCycle(state.cycle);
+  }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(t);

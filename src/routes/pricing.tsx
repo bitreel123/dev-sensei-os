@@ -41,6 +41,8 @@ type Tier = {
   perks: string[];
 };
 
+const YEARLY_DISCOUNT = 0.2; // 20% off = ~2 months free
+
 const TIERS: Tier[] = [
   {
     id: "free",
@@ -62,9 +64,9 @@ const TIERS: Tier[] = [
     tagline: "For solo builders shipping every day.",
     image: planBasic,
     options: [
-      { credits: 100, price: 10 },
-      { credits: 250, price: 24 },
-      { credits: 500, price: 45 },
+      { credits: 80, price: 8 },
+      { credits: 200, price: 18 },
+      { credits: 500, price: 40 },
     ],
     features: [
       "Everything in Free",
@@ -81,8 +83,8 @@ const TIERS: Tier[] = [
     tagline: "For power users and small teams.",
     image: planPro,
     options: [
-      { credits: 300, price: 25 },
-      { credits: 700, price: 55 },
+      { credits: 220, price: 20 },
+      { credits: 600, price: 50 },
       { credits: 1500, price: 110 },
     ],
     features: [
@@ -100,9 +102,9 @@ const TIERS: Tier[] = [
     tagline: "For teams operating at scale.",
     image: planElite,
     options: [
-      { credits: 900, price: 60 },
-      { credits: 2000, price: 130 },
-      { credits: 5000, price: 300 },
+      { credits: 600, price: 50 },
+      { credits: 1500, price: 120 },
+      { credits: 4000, price: 300 },
     ],
     features: [
       "Everything in Pro",
@@ -119,20 +121,29 @@ const RANK: Record<TierId, number> = { free: 0, basic: 1, pro: 2, elite: 3 };
 const STORAGE_KEY = "jeradin:billing";
 const TOPUP_RATE = 10; // 1 USD = 10 credits
 
+type Cycle = "monthly" | "yearly";
+
 type BillingState = {
   plan: TierId;
+  cycle: Cycle;
   monthlyCredits: number; // included with the plan
   balance: number; // usable credits (monthly + top-ups)
 };
 
+const DEFAULT_STATE: BillingState = {
+  plan: "free",
+  cycle: "monthly",
+  monthlyCredits: 5,
+  balance: 5,
+};
+
 function loadBilling(): BillingState {
-  if (typeof window === "undefined")
-    return { plan: "free", monthlyCredits: 5, balance: 5 };
+  if (typeof window === "undefined") return DEFAULT_STATE;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as BillingState;
+    if (raw) return { ...DEFAULT_STATE, ...(JSON.parse(raw) as Partial<BillingState>) };
   } catch {}
-  return { plan: "free", monthlyCredits: 5, balance: 5 };
+  return DEFAULT_STATE;
 }
 
 function saveBilling(state: BillingState) {
@@ -141,14 +152,18 @@ function saveBilling(state: BillingState) {
   } catch {}
 }
 
+function yearlyMonthlyPrice(monthly: number) {
+  return Math.round(monthly * (1 - YEARLY_DISCOUNT));
+}
+function yearlyTotal(monthly: number) {
+  return yearlyMonthlyPrice(monthly) * 12;
+}
+
 function PricingPage() {
-  const [state, setState] = useState<BillingState>({
-    plan: "free",
-    monthlyCredits: 5,
-    balance: 5,
-  });
+  const [state, setState] = useState<BillingState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [cycle, setCycle] = useState<Cycle>("monthly");
   const [selectedOption, setSelectedOption] = useState<Record<TierId, number>>({
     free: 0,
     basic: 0,
@@ -164,6 +179,10 @@ function PricingPage() {
   }, []);
 
   useEffect(() => {
+    if (hydrated) setCycle(state.cycle);
+  }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(t);
@@ -176,13 +195,19 @@ function PricingPage() {
 
   function choose(tier: Tier) {
     const opt = tier.options[selectedOption[tier.id]] ?? tier.options[0];
-    if (tier.id === state.plan && opt.credits === state.monthlyCredits) return;
+    if (
+      tier.id === state.plan &&
+      opt.credits === state.monthlyCredits &&
+      cycle === state.cycle
+    )
+      return;
     const prevRank = RANK[state.plan];
     const nextRank = RANK[tier.id];
     // preserve any leftover top-up balance above the previous monthly grant
     const leftover = Math.max(state.balance - state.monthlyCredits, 0);
     const next: BillingState = {
       plan: tier.id,
+      cycle: tier.id === "free" ? "monthly" : cycle,
       monthlyCredits: opt.credits,
       balance: opt.credits + leftover,
     };
@@ -194,7 +219,13 @@ function PricingPage() {
         : nextRank < prevRank
         ? "Downgraded"
         : "Switched";
-    setToast(`${action} to ${tier.name} · ${opt.credits} monthly credits`);
+    const billed =
+      tier.id === "free"
+        ? "free"
+        : next.cycle === "yearly"
+        ? `billed yearly ($${yearlyTotal(opt.price)}/yr)`
+        : `$${opt.price}/mo`;
+    setToast(`${action} to ${tier.name} · ${opt.credits} credits · ${billed}`);
   }
 
   function confirmTopUp() {
@@ -252,7 +283,8 @@ function PricingPage() {
             </div>
             <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/70">
               Balance · {hydrated ? state.balance : 0} credits ·{" "}
-              {hydrated ? state.monthlyCredits : 0} monthly
+              {hydrated ? state.monthlyCredits : 0} monthly ·{" "}
+              {hydrated ? (state.plan === "free" ? "no billing" : `billed ${state.cycle}`) : ""}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -269,12 +301,44 @@ function PricingPage() {
 
       {/* Plan grid — Lovable-style dark cards with credit selector */}
       <section className="mx-auto max-w-[1400px] px-5 py-10">
+        {/* Billing cycle toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex border border-white/25 p-1">
+            {(["monthly", "yearly"] as const).map((c) => (
+              <button
+                key={c}
+                onClick={() => setCycle(c)}
+                className={`px-5 py-2 font-mono text-[11px] uppercase tracking-[0.22em] transition-colors ${
+                  cycle === c
+                    ? "bg-white text-black"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                {c}
+                {c === "yearly" && (
+                  <span className="ml-2 text-[9.5px] tracking-[0.18em] opacity-80">
+                    −{Math.round(YEARLY_DISCOUNT * 100)}%
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {TIERS.map((t) => {
             const optIdx = selectedOption[t.id] ?? 0;
             const opt = t.options[optIdx];
+            const isFree = t.id === "free";
+            const effectiveCycle: Cycle = isFree ? "monthly" : cycle;
+            const displayPrice =
+              effectiveCycle === "yearly"
+                ? yearlyMonthlyPrice(opt.price)
+                : opt.price;
             const isCurrent =
-              t.id === state.plan && opt.credits === state.monthlyCredits;
+              t.id === state.plan &&
+              opt.credits === state.monthlyCredits &&
+              effectiveCycle === state.cycle;
             const isUpgrade = RANK[t.id] > RANK[state.plan];
             const label = isCurrent
               ? "Your current plan"
@@ -307,11 +371,18 @@ function PricingPage() {
                       fontWeight: 400,
                     }}
                   >
-                    ${opt.price}
+                    ${displayPrice}
                   </div>
                   <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/60">
                     /mo
                   </div>
+                </div>
+                <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/45 min-h-[14px]">
+                  {isFree
+                    ? "Forever"
+                    : effectiveCycle === "yearly"
+                    ? `$${yearlyTotal(opt.price)} billed yearly · save $${(opt.price - displayPrice) * 12}`
+                    : "Billed monthly"}
                 </div>
 
                 {/* Credit selector */}
@@ -330,11 +401,17 @@ function PricingPage() {
                     disabled={t.options.length === 1}
                     className="mt-1.5 w-full bg-black border border-white/25 px-3 py-2.5 font-mono text-[12px] text-white focus:outline-none focus:border-white disabled:opacity-60"
                   >
-                    {t.options.map((o, i) => (
-                      <option key={i} value={i} className="bg-black text-white">
-                        {o.credits} credits · ${o.price}/mo
-                      </option>
-                    ))}
+                    {t.options.map((o, i) => {
+                      const p =
+                        effectiveCycle === "yearly"
+                          ? yearlyMonthlyPrice(o.price)
+                          : o.price;
+                      return (
+                        <option key={i} value={i} className="bg-black text-white">
+                          {o.credits} credits · ${p}/mo
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

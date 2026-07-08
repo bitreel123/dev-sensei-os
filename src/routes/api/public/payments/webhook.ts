@@ -61,8 +61,8 @@ async function handleSubscriptionCreated(data: any, env: PaddleEnv) {
       .eq("user_id", userId)
       .maybeSingle();
 
-    const prevMonthly = (current?.monthly_credits as number | undefined) ?? 0;
-    const prevBalance = (current?.balance as number | undefined) ?? 0;
+    const prevMonthly = current?.monthly_credits ?? 0;
+    const prevBalance = current?.balance ?? 0;
     const leftover = Math.max(prevBalance - prevMonthly, 0);
 
     await supabase.from("user_credits").upsert(

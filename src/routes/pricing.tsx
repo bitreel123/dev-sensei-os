@@ -121,20 +121,29 @@ const RANK: Record<TierId, number> = { free: 0, basic: 1, pro: 2, elite: 3 };
 const STORAGE_KEY = "jeradin:billing";
 const TOPUP_RATE = 10; // 1 USD = 10 credits
 
+type Cycle = "monthly" | "yearly";
+
 type BillingState = {
   plan: TierId;
+  cycle: Cycle;
   monthlyCredits: number; // included with the plan
   balance: number; // usable credits (monthly + top-ups)
 };
 
+const DEFAULT_STATE: BillingState = {
+  plan: "free",
+  cycle: "monthly",
+  monthlyCredits: 5,
+  balance: 5,
+};
+
 function loadBilling(): BillingState {
-  if (typeof window === "undefined")
-    return { plan: "free", monthlyCredits: 5, balance: 5 };
+  if (typeof window === "undefined") return DEFAULT_STATE;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as BillingState;
+    if (raw) return { ...DEFAULT_STATE, ...(JSON.parse(raw) as Partial<BillingState>) };
   } catch {}
-  return { plan: "free", monthlyCredits: 5, balance: 5 };
+  return DEFAULT_STATE;
 }
 
 function saveBilling(state: BillingState) {
@@ -143,14 +152,18 @@ function saveBilling(state: BillingState) {
   } catch {}
 }
 
+function yearlyMonthlyPrice(monthly: number) {
+  return Math.round(monthly * (1 - YEARLY_DISCOUNT));
+}
+function yearlyTotal(monthly: number) {
+  return yearlyMonthlyPrice(monthly) * 12;
+}
+
 function PricingPage() {
-  const [state, setState] = useState<BillingState>({
-    plan: "free",
-    monthlyCredits: 5,
-    balance: 5,
-  });
+  const [state, setState] = useState<BillingState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [cycle, setCycle] = useState<Cycle>("monthly");
   const [selectedOption, setSelectedOption] = useState<Record<TierId, number>>({
     free: 0,
     basic: 0,

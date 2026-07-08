@@ -35,6 +35,7 @@ export function useUserData(userId: string | null) {
         .from("user_credits")
         .select("plan, monthly_credits, balance")
         .eq("user_id", userId)
+        .eq("environment", env)
         .maybeSingle(),
       supabase
         .from("subscriptions")

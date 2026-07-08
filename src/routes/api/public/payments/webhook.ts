@@ -117,16 +117,16 @@ async function handleSubscriptionUpdated(data: any, env: PaddleEnv) {
   const { data: credits } = await supabase
     .from("user_credits")
     .select("balance, monthly_credits")
-    .eq("user_id", row.user_id as string)
+    .eq("user_id", row.user_id)
     .maybeSingle();
 
-  const prevMonthly = (credits?.monthly_credits as number | undefined) ?? 0;
-  const prevBalance = (credits?.balance as number | undefined) ?? 0;
+  const prevMonthly = credits?.monthly_credits ?? 0;
+  const prevBalance = credits?.balance ?? 0;
   const leftover = Math.max(prevBalance - prevMonthly, 0);
 
   await supabase.from("user_credits").upsert(
     {
-      user_id: row.user_id as string,
+      user_id: row.user_id,
       plan: entry.plan,
       monthly_credits: entry.credits,
       balance: entry.credits + leftover,

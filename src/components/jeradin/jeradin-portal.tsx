@@ -49,8 +49,7 @@ export function JeradinPortal() {
           transition={{ duration: 0.7, delay: 0.15 }}
           className="mx-auto mt-8 max-w-xl font-mono text-[12px] leading-[1.9] tracking-[0.14em] uppercase text-white/90"
         >
-          All paid tiers include monthly credits for use in Jeradin Agent,
-          access to 300+ cutting-edge models and built-in tool use
+          All paid tiers include monthly credits for use in Jeradin Agent
         </motion.p>
 
         <motion.div

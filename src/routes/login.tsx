@@ -29,7 +29,7 @@ function LoginPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Signed in");
-    navigate({ to: "/pricing" });
+    navigate({ to: "/account" });
   }
 
   async function signInGoogle() {
@@ -93,6 +93,15 @@ function LoginPage() {
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
+
+        <div className="mt-4 text-center">
+          <Link
+            to="/forgot-password"
+            className="text-[11px] text-white/50 hover:text-white underline underline-offset-2"
+          >
+            Forgot password?
+          </Link>
+        </div>
 
         <div className="mt-6 text-center text-[12px] text-white/60">
           No account?{" "}

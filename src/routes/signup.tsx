@@ -25,15 +25,11 @@ function SignupPage() {
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/pricing` },
-    });
+    const { error } = await supabase.auth.signUp({ email, password });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Account created — check your email to confirm");
-    navigate({ to: "/pricing" });
+    toast.success("Account created");
+    navigate({ to: "/account" });
   }
 
   async function signInGoogle() {

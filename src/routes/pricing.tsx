@@ -186,9 +186,12 @@ function PricingPage() {
         </Link>
         <div className="flex items-center gap-3 text-[12px]">
           {user ? (
-            <span className="text-white/60 font-mono text-[11px] tracking-[0.15em] uppercase">
-              {user.email}
-            </span>
+            <Link
+              to="/account"
+              className="border border-white/70 px-3 py-1.5 font-mono text-[11px] tracking-[0.22em] uppercase hover:bg-white hover:text-black transition-colors"
+            >
+              Account
+            </Link>
           ) : (
             <>
               <span className="text-white/60">Already have an account?</span>
@@ -202,6 +205,18 @@ function PricingPage() {
           )}
         </div>
       </div>
+
+      {subscription?.status === "past_due" && (
+        <div className="mx-auto max-w-[1400px] px-5 pt-4">
+          <div className="border border-red-500/50 bg-red-500/10 p-4 text-[13px] text-red-100">
+            <strong className="font-mono uppercase tracking-[0.18em] text-[11px]">
+              Payment failed
+            </strong>{" "}
+            — <Link to="/account" className="underline underline-offset-2">update your payment method</Link>{" "}
+            to keep your plan active.
+          </div>
+        </div>
+      )}
 
       {/* Current plan strip */}
       <section className="mx-auto max-w-[1400px] px-5 pt-6">

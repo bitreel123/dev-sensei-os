@@ -89,6 +89,7 @@ export type Database = {
       user_credits: {
         Row: {
           balance: number
+          environment: string
           monthly_credits: number
           plan: string
           updated_at: string
@@ -96,6 +97,7 @@ export type Database = {
         }
         Insert: {
           balance?: number
+          environment?: string
           monthly_credits?: number
           plan?: string
           updated_at?: string
@@ -103,6 +105,7 @@ export type Database = {
         }
         Update: {
           balance?: number
+          environment?: string
           monthly_credits?: number
           plan?: string
           updated_at?: string
@@ -115,6 +118,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      expire_canceled_subscriptions: { Args: never; Returns: number }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean

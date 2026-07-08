@@ -301,6 +301,30 @@ function PricingPage() {
 
       {/* Plan grid — Lovable-style dark cards with credit selector */}
       <section className="mx-auto max-w-[1400px] px-5 py-10">
+        {/* Billing cycle toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex border border-white/25 p-1">
+            {(["monthly", "yearly"] as const).map((c) => (
+              <button
+                key={c}
+                onClick={() => setCycle(c)}
+                className={`px-5 py-2 font-mono text-[11px] uppercase tracking-[0.22em] transition-colors ${
+                  cycle === c
+                    ? "bg-white text-black"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                {c}
+                {c === "yearly" && (
+                  <span className="ml-2 text-[9.5px] tracking-[0.18em] opacity-80">
+                    −{Math.round(YEARLY_DISCOUNT * 100)}%
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {TIERS.map((t) => {
             const optIdx = selectedOption[t.id] ?? 0;

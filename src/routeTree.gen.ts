@@ -18,6 +18,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
@@ -68,6 +69,11 @@ const DocsRoute = DocsRouteImport.update({
   path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/app': typeof AppRoute
+  '/chat': typeof ChatRoute
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/app': typeof AppRoute
+  '/chat': typeof ChatRoute
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/app': typeof AppRoute
+  '/chat': typeof ChatRoute
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/app'
+    | '/chat'
     | '/docs'
     | '/download'
     | '/forgot-password'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/app'
+    | '/chat'
     | '/docs'
     | '/download'
     | '/forgot-password'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/app'
+    | '/chat'
     | '/docs'
     | '/download'
     | '/forgot-password'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
   AppRoute: typeof AppRoute
+  ChatRoute: typeof ChatRoute
   DocsRoute: typeof DocsRoute
   DownloadRoute: typeof DownloadRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
@@ -265,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app': {
       id: '/app'
       path: '/app'
@@ -300,6 +320,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
   AppRoute: AppRoute,
+  ChatRoute: ChatRoute,
   DocsRoute: DocsRoute,
   DownloadRoute: DownloadRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
@@ -314,13 +335,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

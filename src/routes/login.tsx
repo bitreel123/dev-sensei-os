@@ -29,7 +29,7 @@ function LoginPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Signed in");
-    navigate({ to: "/account" });
+    navigate({ to: "/chat" });
   }
 
   async function signInGoogle() {

@@ -3,12 +3,7 @@ import { Download } from "lucide-react";
 import { LogoLockup } from "./logo";
 import { useAuth } from "@/hooks/use-auth";
 
-const nav = [
-  { label: "Product", href: "/product" },
-  { label: "Workflow", href: "/workflow" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Docs", href: "/docs" },
-];
+const nav: { label: string; href: string }[] = [];
 
 export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }) {
   const isDark = variant === "dark";

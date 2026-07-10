@@ -104,11 +104,12 @@ function AccountPage() {
 
       <div className="pt-24 pb-2 mx-auto max-w-[900px] px-5 flex items-center justify-between">
         <Link
-          to="/"
+          to="/chat"
           className="font-mono text-[11px] tracking-[0.22em] uppercase text-white/60 hover:text-white"
         >
           ← Home
         </Link>
+
         <button
           onClick={handleSignOut}
           className="border border-white/30 px-3 py-1.5 font-mono text-[11px] tracking-[0.22em] uppercase hover:bg-white hover:text-black transition-colors"

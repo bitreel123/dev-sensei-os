@@ -3,7 +3,7 @@ import { Download } from "lucide-react";
 import { LogoLockup } from "./logo";
 import { useAuth } from "@/hooks/use-auth";
 
-const nav: { label: string; href: string }[] = [];
+
 
 export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }) {
   const isDark = variant === "dark";
@@ -19,17 +19,6 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-5">
         <div className="flex items-center gap-10">
           <LogoLockup />
-          <nav className="hidden md:flex items-center gap-7">
-            {nav.map((n) => (
-              <Link
-                key={n.href}
-                to={n.href}
-                className={`text-[13px] font-medium ${isDark ? "text-white/70 hover:text-white" : "text-black/70 hover:text-black"} transition-colors`}
-              >
-                {n.label}
-              </Link>
-            ))}
-          </nav>
         </div>
         <div className="flex items-center gap-2">
           <Link

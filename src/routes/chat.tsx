@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { addHistoryEntry } from "@/lib/chat-history";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({

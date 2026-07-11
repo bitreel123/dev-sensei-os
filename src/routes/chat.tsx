@@ -316,34 +316,43 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
   );
 }
 
-function Capability({
-  onClick,
-  icon,
-  title,
-  desc,
-  active,
-}: {
-  onClick: () => void;
-  icon: React.ReactNode;
+type CapabilityKey = "screen" | "system" | "knowledge" | "repo";
+
+const CAPABILITIES: Array<{
+  key: CapabilityKey;
   title: string;
   desc: string;
-  active?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`text-left border p-3 rounded transition-colors ${
-        active
-          ? "border-red-500/60 bg-red-500/10"
-          : "border-white/15 hover:border-white/40 hover:bg-white/[0.03]"
-      }`}
-    >
-      <div className="flex items-center gap-2 text-white/90">
-        {icon}
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.2em]">{title}</span>
-      </div>
-      <p className="mt-1.5 text-[11.5px] leading-snug text-white/55">{desc}</p>
-    </button>
-  );
-}
+  cta: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}> = [
+  {
+    key: "screen",
+    title: "Screen Intelligence",
+    desc: "Record your screen so Jeradin sees exactly what you see — clicks, errors, network traffic and console output are captured together so the agent can reproduce the bug instead of guessing.",
+    cta: "Start recording",
+    Icon: Monitor,
+  },
+  {
+    key: "system",
+    title: "System Intelligence",
+    desc: "Upload your codebase or connect GitHub and Jeradin will build a semantic map of your architecture — routes, modules, data flow and dependencies — so fixes account for the whole system, not one file.",
+    cta: "Connect codebase",
+    Icon: Network,
+  },
+  {
+    key: "knowledge",
+    title: "Knowledge Intelligence",
+    desc: "Pulls in docs, tickets, prior PR discussions and past decisions relevant to the current issue so you don't have to hunt for context across five tools.",
+    cta: "Enable knowledge",
+    Icon: BookOpen,
+  },
+  {
+    key: "repo",
+    title: "Repo Intelligence",
+    desc: "Connect your GitHub account and Jeradin reads commit history, branches, PRs and diffs to trace root causes — perfect for regressions and 'it worked last week' bugs.",
+    cta: "Connect GitHub",
+    Icon: Github,
+  },
+];
+
 

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
-import { Monitor, Square, Send, Paperclip, Mic, Image as ImageIcon, ClipboardPaste, X } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/chat")({

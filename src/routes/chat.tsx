@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
+import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
 import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry } from "@/lib/chat-history";
@@ -25,6 +26,7 @@ function ChatPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { credits } = useUserData(user?.id ?? null);
+  const { connection: github } = useGithubConnection(user?.id ?? null);
   const [prompt, setPrompt] = useState("");
   const [recording, setRecording] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -270,21 +272,32 @@ function ChatPage() {
                       </span>
                     </div>
                     <p className="text-[13px] leading-relaxed text-white/70">{c.desc}</p>
+                    {(c.key === "repo" || c.key === "system") && github && (
+                      <p className="mt-2 text-[11px] font-mono text-white/50">
+                        connected as <span className="text-white/80">{github.login}</span>
+                      </p>
+                    )}
                     <button
                       onClick={() => {
                         if (c.key === "screen") {
                           isRec ? stopRecording() : startRecording();
-                        } else if (c.key === "repo") {
-                          toast("Connect your GitHub in Account settings to enable Repo Intelligence");
-                        } else if (c.key === "system") {
-                          toast("Upload your codebase or connect GitHub, then System Intelligence will map it");
+                        } else if (c.key === "repo" || c.key === "system") {
+                          if (github) {
+                            toast.success(`GitHub connected as ${github.login}. Indexing coming next.`);
+                          } else {
+                            startGithubOAuth("connect", "/chat");
+                          }
                         } else {
                           toast("Knowledge Intelligence coming soon");
                         }
                       }}
                       className="mt-4 inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
                     >
-                      {isRec ? "Stop recording" : c.cta}
+                      {isRec
+                        ? "Stop recording"
+                        : (c.key === "repo" || c.key === "system") && github
+                          ? "Run analysis"
+                          : c.cta}
                       <ArrowRight className="h-3 w-3" />
                     </button>
                   </div>

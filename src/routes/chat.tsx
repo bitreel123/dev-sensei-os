@@ -269,13 +269,34 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
   );
 }
 
-function Quick({ onClick, label }: { onClick: () => void; label: string }) {
+function Capability({
+  onClick,
+  icon,
+  title,
+  desc,
+  active,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  active?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
-      className="border border-white/15 hover:border-white/40 px-3 py-1.5 rounded-full text-[12px] text-white/70 hover:text-white transition-colors"
+      className={`text-left border p-3 rounded transition-colors ${
+        active
+          ? "border-red-500/60 bg-red-500/10"
+          : "border-white/15 hover:border-white/40 hover:bg-white/[0.03]"
+      }`}
     >
-      {label}
+      <div className="flex items-center gap-2 text-white/90">
+        {icon}
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.2em]">{title}</span>
+      </div>
+      <p className="mt-1.5 text-[11.5px] leading-snug text-white/55">{desc}</p>
     </button>
   );
 }
+

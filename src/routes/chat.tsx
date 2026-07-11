@@ -28,6 +28,7 @@ function ChatPage() {
   const [prompt, setPrompt] = useState("");
   const [recording, setRecording] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [activeCapability, setActiveCapability] = useState<CapabilityKey | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);

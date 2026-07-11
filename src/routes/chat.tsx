@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight, Sparkles, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry } from "@/lib/chat-history";
+import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion } from "@/lib/screen-intel.functions";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -31,11 +33,51 @@ function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [activeCapability, setActiveCapability] = useState<CapabilityKey | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
+
+  async function captureFrameAndAnalyze() {
+    if (!streamRef.current) {
+      toast.error("Start a screen recording first");
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const video = document.createElement("video");
+      video.srcObject = streamRef.current;
+      video.muted = true;
+      await video.play();
+      // wait one frame
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+      const maxW = 1280;
+      const scale = Math.min(1, maxW / video.videoWidth);
+      const w = Math.floor(video.videoWidth * scale);
+      const h = Math.floor(video.videoHeight * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas unavailable");
+      ctx.drawImage(video, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/png");
+      video.pause();
+
+      const result = await runAnalyze({ data: { imageBase64: dataUrl, note: prompt.trim() } });
+      setAnalysisResult(result);
+      toast.success("Analysis complete");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Analysis failed");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });

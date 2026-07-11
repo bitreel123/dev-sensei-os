@@ -20,6 +20,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KnowledgeIntelligenceRouteImport } from './routes/knowledge-intelligence'
+import { Route as GithubIntelligenceRouteImport } from './routes/github-intelligence'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as DocsRouteImport } from './routes/docs'
@@ -86,6 +87,11 @@ const KnowledgeIntelligenceRoute = KnowledgeIntelligenceRouteImport.update({
   path: '/knowledge-intelligence',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GithubIntelligenceRoute = GithubIntelligenceRouteImport.update({
+  id: '/github-intelligence',
+  path: '/github-intelligence',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/github-intelligence': typeof GithubIntelligenceRoute
   '/knowledge-intelligence': typeof KnowledgeIntelligenceRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/github-intelligence': typeof GithubIntelligenceRoute
   '/knowledge-intelligence': typeof KnowledgeIntelligenceRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/github-intelligence': typeof GithubIntelligenceRoute
   '/knowledge-intelligence': typeof KnowledgeIntelligenceRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
@@ -219,6 +228,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/download'
     | '/forgot-password'
+    | '/github-intelligence'
     | '/knowledge-intelligence'
     | '/login'
     | '/pricing'
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/download'
     | '/forgot-password'
+    | '/github-intelligence'
     | '/knowledge-intelligence'
     | '/login'
     | '/pricing'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/download'
     | '/forgot-password'
+    | '/github-intelligence'
     | '/knowledge-intelligence'
     | '/login'
     | '/pricing'
@@ -289,6 +301,7 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   DownloadRoute: typeof DownloadRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  GithubIntelligenceRoute: typeof GithubIntelligenceRoute
   KnowledgeIntelligenceRoute: typeof KnowledgeIntelligenceRoute
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
@@ -384,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KnowledgeIntelligenceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/github-intelligence': {
+      id: '/github-intelligence'
+      path: '/github-intelligence'
+      fullPath: '/github-intelligence'
+      preLoaderRoute: typeof GithubIntelligenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password': {
       id: '/forgot-password'
       path: '/forgot-password'
@@ -465,6 +485,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   DownloadRoute: DownloadRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  GithubIntelligenceRoute: GithubIntelligenceRoute,
   KnowledgeIntelligenceRoute: KnowledgeIntelligenceRoute,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,

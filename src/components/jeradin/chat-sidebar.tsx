@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   PanelLeft,
   Plus,
@@ -8,17 +8,29 @@ import {
   Download,
   User as UserIcon,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { LogoMark } from "./logo";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  loadHistory,
+  removeHistoryEntry,
+  subscribeHistory,
+  type ChatHistoryEntry,
+} from "@/lib/chat-history";
 
 export function ChatSidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [history, setHistory] = useState<ChatHistoryEntry[]>([]);
   const { user } = useAuth();
   const { pathname } = useLocation();
 
-  const initial =
-    user?.email?.[0]?.toUpperCase() ?? "J";
+  useEffect(() => {
+    setHistory(loadHistory());
+    return subscribeHistory(() => setHistory(loadHistory()));
+  }, []);
+
+  const initial = user?.email?.[0]?.toUpperCase() ?? "J";
 
   return (
     <aside
@@ -53,11 +65,33 @@ export function ChatSidebar() {
             Recents
           </div>
         )}
-        {!collapsed && (
+        {!collapsed && history.length === 0 && (
           <div className="px-2 py-2 text-[12px] text-white/40 italic">
             No recent chats
           </div>
         )}
+        {!collapsed &&
+          history.map((h) => (
+            <div
+              key={h.id}
+              className="group flex items-center gap-1 px-2 py-1.5 rounded hover:bg-white/10"
+            >
+              <Link
+                to="/chat"
+                className="flex-1 min-w-0 text-[12.5px] text-white/75 truncate"
+                title={h.title}
+              >
+                {h.title}
+              </Link>
+              <button
+                onClick={() => removeHistoryEntry(h.id)}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
+                aria-label="Delete"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
       </div>
 
       <div className="border-t border-white/10 p-2 space-y-1">

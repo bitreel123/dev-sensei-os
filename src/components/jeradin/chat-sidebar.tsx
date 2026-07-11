@@ -62,6 +62,8 @@ export function ChatSidebar() {
         <SideItem to="/chat" icon={<MessagesSquare className="h-4 w-4" />} label="Chats" collapsed={collapsed} />
         <SideItem to="/chat" icon={<FolderKanban className="h-4 w-4" />} label="Projects" collapsed={collapsed} />
         <SideItem to="/system-intelligence" icon={<Brain className="h-4 w-4" />} label="System Intelligence" collapsed={collapsed} active={pathname === "/system-intelligence"} />
+        <SideItem to="/knowledge-intelligence" icon={<Library className="h-4 w-4" />} label="Knowledge Intelligence" collapsed={collapsed} active={pathname === "/knowledge-intelligence"} />
+        <SideItem to="/github-intelligence" icon={<Github className="h-4 w-4" />} label="GitHub Intelligence" collapsed={collapsed} active={pathname === "/github-intelligence"} />
         <SideItem to="/pricing" icon={<Sparkles className="h-4 w-4" />} label="Upgrade" collapsed={collapsed} />
 
         {!collapsed && (

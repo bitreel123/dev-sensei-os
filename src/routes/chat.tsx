@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight, Sparkles, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry } from "@/lib/chat-history";
+import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion } from "@/lib/screen-intel.functions";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -31,11 +33,51 @@ function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [activeCapability, setActiveCapability] = useState<CapabilityKey | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
+
+  async function captureFrameAndAnalyze() {
+    if (!streamRef.current) {
+      toast.error("Start a screen recording first");
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const video = document.createElement("video");
+      video.srcObject = streamRef.current;
+      video.muted = true;
+      await video.play();
+      // wait one frame
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+      const maxW = 1280;
+      const scale = Math.min(1, maxW / video.videoWidth);
+      const w = Math.floor(video.videoWidth * scale);
+      const h = Math.floor(video.videoHeight * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas unavailable");
+      ctx.drawImage(video, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/png");
+      video.pause();
+
+      const result = await runAnalyze({ data: { imageBase64: dataUrl, note: prompt.trim() } });
+      setAnalysisResult(result);
+      toast.success("Analysis complete");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Analysis failed");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -277,33 +319,61 @@ function ChatPage() {
                         connected as <span className="text-white/80">{github.login}</span>
                       </p>
                     )}
-                    <button
-                      onClick={() => {
-                        if (c.key === "screen") {
-                          isRec ? stopRecording() : startRecording();
-                        } else if (c.key === "repo" || c.key === "system") {
-                          if (github) {
-                            toast.success(`GitHub connected as ${github.login}. Indexing coming next.`);
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (c.key === "screen") {
+                            isRec ? stopRecording() : startRecording();
+                          } else if (c.key === "repo" || c.key === "system") {
+                            if (github) {
+                              toast.success(`GitHub connected as ${github.login}. Indexing coming next.`);
+                            } else {
+                              startGithubOAuth("connect", "/chat");
+                            }
                           } else {
-                            startGithubOAuth("connect", "/chat");
+                            toast("Knowledge Intelligence coming soon");
                           }
-                        } else {
-                          toast("Knowledge Intelligence coming soon");
-                        }
-                      }}
-                      className="mt-4 inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
-                    >
-                      {isRec
-                        ? "Stop recording"
-                        : (c.key === "repo" || c.key === "system") && github
-                          ? "Run analysis"
-                          : c.cta}
-                      <ArrowRight className="h-3 w-3" />
-                    </button>
+                        }}
+                        className="inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
+                      >
+                        {isRec
+                          ? "Stop recording"
+                          : (c.key === "repo" || c.key === "system") && github
+                            ? "Run analysis"
+                            : c.cta}
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                      {c.key === "screen" && isRec && (
+                        <button
+                          disabled={analyzing}
+                          onClick={captureFrameAndAnalyze}
+                          className="inline-flex items-center gap-1.5 border border-white/40 bg-black text-white px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors disabled:opacity-50"
+                        >
+                          {analyzing ? (
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Analyzing…
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3 w-3" />
+                              Analyze now
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    {c.key === "screen" && analysisResult && (
+                      <AnalysisReport
+                        result={analysisResult}
+                        onClose={() => setAnalysisResult(null)}
+                      />
+                    )}
                   </div>
                 );
               })()}
             </div>
+
 
 
 
@@ -328,6 +398,127 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
     </button>
   );
 }
+
+function AnalysisReport({
+  result,
+  onClose,
+}: {
+  result: { analysis: ScreenAnalysis; fix: FixSuggestion };
+  onClose: () => void;
+}) {
+  const { analysis, fix } = result;
+  return (
+    <div className="mt-4 border border-white/20 bg-black/60 rounded-lg p-4 space-y-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 text-white/90">
+          <Sparkles className="h-4 w-4" />
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.2em]">
+            Gemini 3 · Claude analysis
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
+          aria-label="Dismiss"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-1">
+          What's on screen
+        </div>
+        <p className="text-[13px] text-white/80 leading-relaxed">{analysis.summary}</p>
+        {(analysis.editor || analysis.language) && (
+          <p className="mt-1 text-[11px] font-mono text-white/50">
+            {analysis.editor ?? "editor"} · {analysis.language ?? "unknown lang"}
+          </p>
+        )}
+      </div>
+
+      {analysis.errors.length > 0 && (
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-2">
+            Errors detected
+          </div>
+          <ul className="space-y-1.5">
+            {analysis.errors.map((err, i) => (
+              <li
+                key={i}
+                className="flex gap-2 text-[12.5px] text-white/80 border border-white/10 bg-white/[0.02] p-2 rounded"
+              >
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-red-400" />
+                <div className="min-w-0">
+                  <div className="break-words">{err.message}</div>
+                  <div className="mt-0.5 text-[10.5px] font-mono text-white/45">
+                    [{err.source}]
+                    {err.file ? ` ${err.file}${err.line ? `:${err.line}` : ""}` : ""}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {analysis.suspectFiles.length > 0 && (
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-1">
+            Suspect files
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {analysis.suspectFiles.map((f, i) => (
+              <span
+                key={i}
+                className="font-mono text-[11px] text-white/80 border border-white/15 px-2 py-0.5 rounded"
+              >
+                {f}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="border-t border-white/10 pt-3">
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-1">
+          Plain-English explanation
+        </div>
+        <p className="text-[13px] text-white/85 leading-relaxed">{fix.plainExplanation}</p>
+        <p className="mt-2 text-[13px] text-white/70 leading-relaxed">{fix.whyItHappened}</p>
+      </div>
+
+      <div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-2">
+          Step-by-step fix
+        </div>
+        <ol className="space-y-2">
+          {fix.steps.map((s, i) => (
+            <li key={i} className="border border-white/10 bg-white/[0.02] p-2.5 rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono text-[10px] text-white/50">STEP {i + 1}</span>
+                <span className="font-mono text-[11px] text-white/85 truncate">{s.file}</span>
+              </div>
+              <p className="text-[12.5px] text-white/80 leading-relaxed">{s.change}</p>
+              {s.codeAfter && (
+                <pre className="mt-2 text-[11px] font-mono bg-black/60 border border-white/10 p-2 rounded overflow-x-auto text-white/85 whitespace-pre">
+                  {s.codeAfter}
+                </pre>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {fix.additionalNotes && (
+        <p className="text-[12px] text-white/60 italic border-t border-white/10 pt-3">
+          {fix.additionalNotes}
+        </p>
+      )}
+    </div>
+  );
+}
+
 
 type CapabilityKey = "screen" | "system" | "knowledge" | "repo";
 

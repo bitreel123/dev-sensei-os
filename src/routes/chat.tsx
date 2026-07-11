@@ -113,7 +113,8 @@ function ChatPage() {
       toast.error("Add a prompt or an attachment");
       return;
     }
-    addHistoryEntry(prompt || attachments[0]?.kind === "recording" ? "Screen recording" : "New chat");
+    const title = prompt.trim() || (attachments[0]?.kind === "recording" ? "Screen recording" : "New chat");
+    addHistoryEntry(title);
     toast.success("Sent — worker pickup coming soon");
     setPrompt("");
   }

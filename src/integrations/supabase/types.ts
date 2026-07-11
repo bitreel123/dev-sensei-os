@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      github_connections: {
+        Row: {
+          access_token: string
+          avatar_url: string | null
+          created_at: string
+          github_id: number
+          login: string
+          scopes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          avatar_url?: string | null
+          created_at?: string
+          github_id: number
+          login: string
+          scopes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          avatar_url?: string | null
+          created_at?: string
+          github_id?: number
+          login?: string
+          scopes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

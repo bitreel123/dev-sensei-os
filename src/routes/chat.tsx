@@ -222,33 +222,76 @@ function ChatPage() {
                 Intelligence modes
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <Capability
-                  onClick={recording ? stopRecording : startRecording}
-                  icon={recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-4 w-4" />}
-                  title="Screen Intelligence"
-                  desc={recording ? "Recording… click to stop" : "Record your screen so Jeradin sees exactly what you see."}
-                  active={recording}
-                />
-                <Capability
-                  onClick={() => toast("Semantic System Intelligence coming soon")}
-                  icon={<Network className="h-4 w-4" />}
-                  title="System Intelligence"
-                  desc="Deep understanding of your architecture, dependencies and workflows."
-                />
-                <Capability
-                  onClick={() => toast("Knowledge Intelligence coming soon")}
-                  icon={<BookOpen className="h-4 w-4" />}
-                  title="Knowledge Intelligence"
-                  desc="Discovers docs, tickets and prior decisions relevant to the issue."
-                />
-                <Capability
-                  onClick={() => toast("Repo Intelligence coming soon")}
-                  icon={<Github className="h-4 w-4" />}
-                  title="Repo Intelligence"
-                  desc="Reads your GitHub history, PRs and diffs to trace root causes."
-                />
+                {CAPABILITIES.map((c) => {
+                  const isRec = c.key === "screen" && recording;
+                  return (
+                    <button
+                      key={c.key}
+                      onClick={() => setActiveCapability(activeCapability === c.key ? null : c.key)}
+                      className={`text-left border p-3 rounded transition-colors ${
+                        isRec
+                          ? "border-red-500/60 bg-red-500/10"
+                          : activeCapability === c.key
+                          ? "border-white/50 bg-white/[0.05]"
+                          : "border-white/15 hover:border-white/40 hover:bg-white/[0.03]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-white/90">
+                        {isRec ? (
+                          <Square className="h-3.5 w-3.5 fill-current text-red-400" />
+                        ) : (
+                          <c.Icon className="h-4 w-4" />
+                        )}
+                        <span className="font-mono text-[10.5px] uppercase tracking-[0.2em]">
+                          {c.title}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
+
+              {activeCapability && (() => {
+                const c = CAPABILITIES.find((x) => x.key === activeCapability)!;
+                const isRec = c.key === "screen" && recording;
+                return (
+                  <div className="mt-3 border border-white/20 bg-white/[0.03] rounded-lg p-4 relative">
+                    <button
+                      onClick={() => setActiveCapability(null)}
+                      className="absolute top-2 right-2 p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
+                      aria-label="Close"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                    <div className="flex items-center gap-2 mb-2">
+                      <c.Icon className="h-4 w-4 text-white/80" />
+                      <span className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80">
+                        {c.title}
+                      </span>
+                    </div>
+                    <p className="text-[13px] leading-relaxed text-white/70">{c.desc}</p>
+                    <button
+                      onClick={() => {
+                        if (c.key === "screen") {
+                          isRec ? stopRecording() : startRecording();
+                        } else if (c.key === "repo") {
+                          toast("Connect your GitHub in Account settings to enable Repo Intelligence");
+                        } else if (c.key === "system") {
+                          toast("Upload your codebase or connect GitHub, then System Intelligence will map it");
+                        } else {
+                          toast("Knowledge Intelligence coming soon");
+                        }
+                      }}
+                      className="mt-4 inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
+                    >
+                      {isRec ? "Stop recording" : c.cta}
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
+
 
 
             <div className="mt-6 text-center font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/40">

@@ -64,6 +64,14 @@ function LoginPage() {
           Continue with Google
         </button>
 
+        <button
+          onClick={() => { window.location.href = "/api/public/github/authorize?mode=login&return_to=/chat"; }}
+          className="mt-2 w-full border border-white/25 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors inline-flex items-center justify-center gap-2"
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 007.86 10.92c.58.1.79-.25.79-.55v-2.02c-3.2.7-3.88-1.36-3.88-1.36-.53-1.35-1.29-1.71-1.29-1.71-1.05-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.79 2.72 1.27 3.38.97.1-.75.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11 11 0 015.79 0c2.2-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.77.11 3.06.74.8 1.19 1.83 1.19 3.08 0 4.41-2.69 5.38-5.25 5.67.41.35.78 1.05.78 2.12v3.15c0 .3.21.66.8.55A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+          Continue with GitHub
+        </button>
+
         <div className="my-5 flex items-center gap-3 text-white/40 text-[10px] uppercase tracking-[0.22em] font-mono">
           <span className="h-px flex-1 bg-white/10" /> or <span className="h-px flex-1 bg-white/10" />
         </div>

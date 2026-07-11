@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
-import { Monitor, Square, Send, Paperclip, Mic, Image as ImageIcon, ClipboardPaste, X } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/chat")({
@@ -186,21 +186,7 @@ function ChatPage() {
               />
               <div className="flex items-center justify-between px-3 py-2 border-t border-white/10 flex-wrap gap-2">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {recording ? (
-                    <button
-                      onClick={stopRecording}
-                      className="inline-flex items-center gap-1.5 border border-red-500/60 bg-red-500/10 px-3 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] text-red-200 hover:bg-red-500/20 transition-colors"
-                    >
-                      <Square className="h-3 w-3 fill-current" />
-                      Stop recording
-                    </button>
-                  ) : (
-                    <ToolButton onClick={startRecording} icon={<Monitor className="h-3.5 w-3.5" />} label="Record screen" />
-                  )}
                   <ToolButton onClick={() => fileInputRef.current?.click()} icon={<Paperclip className="h-3.5 w-3.5" />} label="Attach" />
-                  <ToolButton onClick={() => imageInputRef.current?.click()} icon={<ImageIcon className="h-3.5 w-3.5" />} label="Image" />
-                  <ToolButton onClick={pasteFromClipboard} icon={<ClipboardPaste className="h-3.5 w-3.5" />} label="Paste" />
-                  <ToolButton onClick={() => toast("Voice input coming soon")} icon={<Mic className="h-3.5 w-3.5" />} label="Voice" />
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -227,12 +213,39 @@ function ChatPage() {
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2 justify-center">
-              <Quick onClick={() => setPrompt("Here's the stack trace I'm getting:\n\n")} label="Paste stack trace" />
-              <Quick onClick={() => setPrompt("Explain what this code does:\n\n")} label="Explain code" />
-              <Quick onClick={() => setPrompt("Why is my build failing?\n\n")} label="Fix build error" />
-              <Quick onClick={startRecording} label="Show me on screen" />
+            <div className="mt-5">
+              <div className="text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-3">
+                Intelligence modes
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <Capability
+                  onClick={recording ? stopRecording : startRecording}
+                  icon={recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-4 w-4" />}
+                  title="Screen Intelligence"
+                  desc={recording ? "Recording… click to stop" : "Record your screen so Jeradin sees exactly what you see."}
+                  active={recording}
+                />
+                <Capability
+                  onClick={() => toast("Semantic System Intelligence coming soon")}
+                  icon={<Network className="h-4 w-4" />}
+                  title="System Intelligence"
+                  desc="Deep understanding of your architecture, dependencies and workflows."
+                />
+                <Capability
+                  onClick={() => toast("Knowledge Intelligence coming soon")}
+                  icon={<BookOpen className="h-4 w-4" />}
+                  title="Knowledge Intelligence"
+                  desc="Discovers docs, tickets and prior decisions relevant to the issue."
+                />
+                <Capability
+                  onClick={() => toast("Repo Intelligence coming soon")}
+                  icon={<Github className="h-4 w-4" />}
+                  title="Repo Intelligence"
+                  desc="Reads your GitHub history, PRs and diffs to trace root causes."
+                />
+              </div>
             </div>
+
 
             <div className="mt-6 text-center font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/40">
               {credits?.balance ?? 0} credits remaining
@@ -256,13 +269,34 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
   );
 }
 
-function Quick({ onClick, label }: { onClick: () => void; label: string }) {
+function Capability({
+  onClick,
+  icon,
+  title,
+  desc,
+  active,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  active?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
-      className="border border-white/15 hover:border-white/40 px-3 py-1.5 rounded-full text-[12px] text-white/70 hover:text-white transition-colors"
+      className={`text-left border p-3 rounded transition-colors ${
+        active
+          ? "border-red-500/60 bg-red-500/10"
+          : "border-white/15 hover:border-white/40 hover:bg-white/[0.03]"
+      }`}
     >
-      {label}
+      <div className="flex items-center gap-2 text-white/90">
+        {icon}
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.2em]">{title}</span>
+      </div>
+      <p className="mt-1.5 text-[11.5px] leading-snug text-white/55">{desc}</p>
     </button>
   );
 }
+

@@ -319,33 +319,61 @@ function ChatPage() {
                         connected as <span className="text-white/80">{github.login}</span>
                       </p>
                     )}
-                    <button
-                      onClick={() => {
-                        if (c.key === "screen") {
-                          isRec ? stopRecording() : startRecording();
-                        } else if (c.key === "repo" || c.key === "system") {
-                          if (github) {
-                            toast.success(`GitHub connected as ${github.login}. Indexing coming next.`);
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (c.key === "screen") {
+                            isRec ? stopRecording() : startRecording();
+                          } else if (c.key === "repo" || c.key === "system") {
+                            if (github) {
+                              toast.success(`GitHub connected as ${github.login}. Indexing coming next.`);
+                            } else {
+                              startGithubOAuth("connect", "/chat");
+                            }
                           } else {
-                            startGithubOAuth("connect", "/chat");
+                            toast("Knowledge Intelligence coming soon");
                           }
-                        } else {
-                          toast("Knowledge Intelligence coming soon");
-                        }
-                      }}
-                      className="mt-4 inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
-                    >
-                      {isRec
-                        ? "Stop recording"
-                        : (c.key === "repo" || c.key === "system") && github
-                          ? "Run analysis"
-                          : c.cta}
-                      <ArrowRight className="h-3 w-3" />
-                    </button>
+                        }}
+                        className="inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
+                      >
+                        {isRec
+                          ? "Stop recording"
+                          : (c.key === "repo" || c.key === "system") && github
+                            ? "Run analysis"
+                            : c.cta}
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                      {c.key === "screen" && isRec && (
+                        <button
+                          disabled={analyzing}
+                          onClick={captureFrameAndAnalyze}
+                          className="inline-flex items-center gap-1.5 border border-white/40 bg-black text-white px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors disabled:opacity-50"
+                        >
+                          {analyzing ? (
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Analyzing…
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3 w-3" />
+                              Analyze now
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    {c.key === "screen" && analysisResult && (
+                      <AnalysisReport
+                        result={analysisResult}
+                        onClose={() => setAnalysisResult(null)}
+                      />
+                    )}
                   </div>
                 );
               })()}
             </div>
+
 
 
 

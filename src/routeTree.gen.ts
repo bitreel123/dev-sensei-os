@@ -26,6 +26,8 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicGithubCallbackRouteImport } from './routes/api/public/github.callback'
+import { Route as ApiPublicGithubAuthorizeRouteImport } from './routes/api/public/github.authorize'
 
 const WorkflowRoute = WorkflowRouteImport.update({
   id: '/workflow',
@@ -113,6 +115,17 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicGithubCallbackRoute = ApiPublicGithubCallbackRouteImport.update({
+  id: '/api/public/github/callback',
+  path: '/api/public/github/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicGithubAuthorizeRoute =
+  ApiPublicGithubAuthorizeRouteImport.update({
+    id: '/api/public/github/authorize',
+    path: '/api/public/github/authorize',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -131,6 +144,8 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
+  '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
+  '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -150,6 +165,8 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
+  '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
+  '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
@@ -170,6 +187,8 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
+  '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
+  '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
@@ -191,6 +210,8 @@ export interface FileRouteTypes {
     | '/signup'
     | '/terms'
     | '/workflow'
+    | '/api/public/github/authorize'
+    | '/api/public/github/callback'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -210,6 +231,8 @@ export interface FileRouteTypes {
     | '/signup'
     | '/terms'
     | '/workflow'
+    | '/api/public/github/authorize'
+    | '/api/public/github/callback'
     | '/api/public/payments/webhook'
   id:
     | '__root__'
@@ -229,6 +252,8 @@ export interface FileRouteTypes {
     | '/signup'
     | '/terms'
     | '/workflow'
+    | '/api/public/github/authorize'
+    | '/api/public/github/callback'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -249,6 +274,8 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
   WorkflowRoute: typeof WorkflowRoute
+  ApiPublicGithubAuthorizeRoute: typeof ApiPublicGithubAuthorizeRoute
+  ApiPublicGithubCallbackRoute: typeof ApiPublicGithubCallbackRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -373,6 +400,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/github/callback': {
+      id: '/api/public/github/callback'
+      path: '/api/public/github/callback'
+      fullPath: '/api/public/github/callback'
+      preLoaderRoute: typeof ApiPublicGithubCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/github/authorize': {
+      id: '/api/public/github/authorize'
+      path: '/api/public/github/authorize'
+      fullPath: '/api/public/github/authorize'
+      preLoaderRoute: typeof ApiPublicGithubAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -393,6 +434,8 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
   WorkflowRoute: WorkflowRoute,
+  ApiPublicGithubAuthorizeRoute: ApiPublicGithubAuthorizeRoute,
+  ApiPublicGithubCallbackRoute: ApiPublicGithubCallbackRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport

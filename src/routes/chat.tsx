@@ -399,6 +399,127 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
   );
 }
 
+function AnalysisReport({
+  result,
+  onClose,
+}: {
+  result: { analysis: ScreenAnalysis; fix: FixSuggestion };
+  onClose: () => void;
+}) {
+  const { analysis, fix } = result;
+  return (
+    <div className="mt-4 border border-white/20 bg-black/60 rounded-lg p-4 space-y-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 text-white/90">
+          <Sparkles className="h-4 w-4" />
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.2em]">
+            Gemini 3 · Claude analysis
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
+          aria-label="Dismiss"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-1">
+          What's on screen
+        </div>
+        <p className="text-[13px] text-white/80 leading-relaxed">{analysis.summary}</p>
+        {(analysis.editor || analysis.language) && (
+          <p className="mt-1 text-[11px] font-mono text-white/50">
+            {analysis.editor ?? "editor"} · {analysis.language ?? "unknown lang"}
+          </p>
+        )}
+      </div>
+
+      {analysis.errors.length > 0 && (
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-2">
+            Errors detected
+          </div>
+          <ul className="space-y-1.5">
+            {analysis.errors.map((err, i) => (
+              <li
+                key={i}
+                className="flex gap-2 text-[12.5px] text-white/80 border border-white/10 bg-white/[0.02] p-2 rounded"
+              >
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-red-400" />
+                <div className="min-w-0">
+                  <div className="break-words">{err.message}</div>
+                  <div className="mt-0.5 text-[10.5px] font-mono text-white/45">
+                    [{err.source}]
+                    {err.file ? ` ${err.file}${err.line ? `:${err.line}` : ""}` : ""}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {analysis.suspectFiles.length > 0 && (
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-1">
+            Suspect files
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {analysis.suspectFiles.map((f, i) => (
+              <span
+                key={i}
+                className="font-mono text-[11px] text-white/80 border border-white/15 px-2 py-0.5 rounded"
+              >
+                {f}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="border-t border-white/10 pt-3">
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-1">
+          Plain-English explanation
+        </div>
+        <p className="text-[13px] text-white/85 leading-relaxed">{fix.plainExplanation}</p>
+        <p className="mt-2 text-[13px] text-white/70 leading-relaxed">{fix.whyItHappened}</p>
+      </div>
+
+      <div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-2">
+          Step-by-step fix
+        </div>
+        <ol className="space-y-2">
+          {fix.steps.map((s, i) => (
+            <li key={i} className="border border-white/10 bg-white/[0.02] p-2.5 rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono text-[10px] text-white/50">STEP {i + 1}</span>
+                <span className="font-mono text-[11px] text-white/85 truncate">{s.file}</span>
+              </div>
+              <p className="text-[12.5px] text-white/80 leading-relaxed">{s.change}</p>
+              {s.codeAfter && (
+                <pre className="mt-2 text-[11px] font-mono bg-black/60 border border-white/10 p-2 rounded overflow-x-auto text-white/85 whitespace-pre">
+                  {s.codeAfter}
+                </pre>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {fix.additionalNotes && (
+        <p className="text-[12px] text-white/60 italic border-t border-white/10 pt-3">
+          {fix.additionalNotes}
+        </p>
+      )}
+    </div>
+  );
+}
+
+
 type CapabilityKey = "screen" | "system" | "knowledge" | "repo";
 
 const CAPABILITIES: Array<{

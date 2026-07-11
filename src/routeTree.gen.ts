@@ -19,6 +19,7 @@ import { Route as ProductRouteImport } from './routes/product'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as KnowledgeIntelligenceRouteImport } from './routes/knowledge-intelligence'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as DocsRouteImport } from './routes/docs'
@@ -78,6 +79,11 @@ const PricingRoute = PricingRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KnowledgeIntelligenceRoute = KnowledgeIntelligenceRouteImport.update({
+  id: '/knowledge-intelligence',
+  path: '/knowledge-intelligence',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/knowledge-intelligence': typeof KnowledgeIntelligenceRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/knowledge-intelligence': typeof KnowledgeIntelligenceRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/knowledge-intelligence': typeof KnowledgeIntelligenceRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/download'
     | '/forgot-password'
+    | '/knowledge-intelligence'
     | '/login'
     | '/pricing'
     | '/privacy'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/download'
     | '/forgot-password'
+    | '/knowledge-intelligence'
     | '/login'
     | '/pricing'
     | '/privacy'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/download'
     | '/forgot-password'
+    | '/knowledge-intelligence'
     | '/login'
     | '/pricing'
     | '/privacy'
@@ -277,6 +289,7 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   DownloadRoute: typeof DownloadRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  KnowledgeIntelligenceRoute: typeof KnowledgeIntelligenceRoute
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -364,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/knowledge-intelligence': {
+      id: '/knowledge-intelligence'
+      path: '/knowledge-intelligence'
+      fullPath: '/knowledge-intelligence'
+      preLoaderRoute: typeof KnowledgeIntelligenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password': {
       id: '/forgot-password'
       path: '/forgot-password'
@@ -445,6 +465,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   DownloadRoute: DownloadRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  KnowledgeIntelligenceRoute: KnowledgeIntelligenceRoute,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,

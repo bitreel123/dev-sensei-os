@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRouteImport } from './routes/workflow'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SystemIntelligenceRouteImport } from './routes/system-intelligence'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RefundsRouteImport } from './routes/refunds'
@@ -37,6 +38,11 @@ const WorkflowRoute = WorkflowRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SystemIntelligenceRoute = SystemIntelligenceRouteImport.update({
+  id: '/system-intelligence',
+  path: '/system-intelligence',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/refunds': typeof RefundsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/system-intelligence': typeof SystemIntelligenceRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/refunds': typeof RefundsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/system-intelligence': typeof SystemIntelligenceRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/refunds': typeof RefundsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/system-intelligence': typeof SystemIntelligenceRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/refunds'
     | '/reset-password'
     | '/signup'
+    | '/system-intelligence'
     | '/terms'
     | '/workflow'
     | '/api/public/github/authorize'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/refunds'
     | '/reset-password'
     | '/signup'
+    | '/system-intelligence'
     | '/terms'
     | '/workflow'
     | '/api/public/github/authorize'
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/refunds'
     | '/reset-password'
     | '/signup'
+    | '/system-intelligence'
     | '/terms'
     | '/workflow'
     | '/api/public/github/authorize'
@@ -272,6 +284,7 @@ export interface RootRouteChildren {
   RefundsRoute: typeof RefundsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  SystemIntelligenceRoute: typeof SystemIntelligenceRoute
   TermsRoute: typeof TermsRoute
   WorkflowRoute: typeof WorkflowRoute
   ApiPublicGithubAuthorizeRoute: typeof ApiPublicGithubAuthorizeRoute
@@ -293,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/system-intelligence': {
+      id: '/system-intelligence'
+      path: '/system-intelligence'
+      fullPath: '/system-intelligence'
+      preLoaderRoute: typeof SystemIntelligenceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -432,6 +452,7 @@ const rootRouteChildren: RootRouteChildren = {
   RefundsRoute: RefundsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  SystemIntelligenceRoute: SystemIntelligenceRoute,
   TermsRoute: TermsRoute,
   WorkflowRoute: WorkflowRoute,
   ApiPublicGithubAuthorizeRoute: ApiPublicGithubAuthorizeRoute,

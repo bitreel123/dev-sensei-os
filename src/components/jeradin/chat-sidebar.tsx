@@ -8,6 +8,7 @@ import {
   Download,
   User as UserIcon,
   Sparkles,
+  Brain,
   Trash2,
 } from "lucide-react";
 import { LogoMark } from "./logo";

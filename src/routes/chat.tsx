@@ -26,6 +26,7 @@ function ChatPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { credits } = useUserData(user?.id ?? null);
+  const { connection: github } = useGithubConnection(user?.id ?? null);
   const [prompt, setPrompt] = useState("");
   const [recording, setRecording] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);

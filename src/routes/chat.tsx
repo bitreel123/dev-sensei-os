@@ -399,7 +399,9 @@ function ChatPage() {
           </div>
         </div>
       </main>
+      </div>
     </div>
+
   );
 }
 

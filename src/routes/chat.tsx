@@ -154,15 +154,61 @@ function ChatPage() {
     });
   }
 
-  function send() {
+  async function send() {
     if (!prompt.trim() && attachments.length === 0) {
       toast.error("Add a prompt or an attachment");
       return;
     }
     const title = prompt.trim() || (attachments[0]?.kind === "recording" ? "Screen recording" : "New chat");
     addHistoryEntry(title);
-    toast.success("Sent — worker pickup coming soon");
-    setPrompt("");
+
+    // If we have a screen recording in progress, grab a frame and analyze
+    if (streamRef.current) {
+      await captureFrameAndAnalyze();
+      return;
+    }
+
+    // If there's an image attachment, run Screen Intelligence on it
+    const imageAttachment = attachments.find(
+      (a) => a.kind === "file" && a.file.type.startsWith("image/"),
+    );
+    if (imageAttachment && imageAttachment.kind === "file") {
+      setAnalyzing(true);
+      try {
+        const base64 = await fileToBase64(imageAttachment.file);
+        const result = await runAnalyze({ data: { imageBase64: base64, note: prompt.trim() } });
+        setAnalysisResult(result);
+        setActiveCapability("screen");
+        toast.success("Analysis complete");
+        setPrompt("");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Analysis failed");
+      } finally {
+        setAnalyzing(false);
+      }
+      return;
+    }
+
+    // Recording attachment: analyze first frame
+    const recAttachment = attachments.find((a) => a.kind === "recording");
+    if (recAttachment && recAttachment.kind === "recording") {
+      setAnalyzing(true);
+      try {
+        const base64 = await videoBlobToFrameBase64(recAttachment.blob);
+        const result = await runAnalyze({ data: { imageBase64: base64, note: prompt.trim() } });
+        setAnalysisResult(result);
+        setActiveCapability("screen");
+        toast.success("Analysis complete");
+        setPrompt("");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Analysis failed");
+      } finally {
+        setAnalyzing(false);
+      }
+      return;
+    }
+
+    toast.message("Attach a screenshot, recording, or start Screen recording to analyze");
   }
 
   if (loading || !user) {
@@ -186,7 +232,12 @@ function ChatPage() {
         activeCapability={activeCapability}
         setActiveCapability={setActiveCapability}
         onSend={send}
+        onAttach={(files) => addFiles(files)}
+        attachments={attachments}
+        onRemoveAttachment={removeAttachment}
+        analyzing={analyzing}
       />
+
 
       {/* ============= DESKTOP LAYOUT ============= */}
       <div className="hidden md:flex h-full">
@@ -405,6 +456,50 @@ function ChatPage() {
   );
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const s = String(reader.result || "");
+      resolve(s.replace(/^data:image\/[a-zA-Z+]+;base64,/, ""));
+    };
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function videoBlobToFrameBase64(blob: Blob): Promise<string> {
+  const url = URL.createObjectURL(blob);
+  try {
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    await new Promise<void>((resolve, reject) => {
+      video.onloadeddata = () => resolve();
+      video.onerror = () => reject(new Error("Could not load recording"));
+    });
+    // seek near start to get a valid frame
+    await new Promise<void>((resolve) => {
+      video.onseeked = () => resolve();
+      video.currentTime = Math.min(0.1, (video.duration || 1) / 2);
+    });
+    const maxW = 1280;
+    const scale = Math.min(1, maxW / (video.videoWidth || maxW));
+    const w = Math.floor((video.videoWidth || maxW) * scale);
+    const h = Math.floor((video.videoHeight || 720) * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas unavailable");
+    ctx.drawImage(video, 0, 0, w, h);
+    return canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
     <button
@@ -593,6 +688,10 @@ function MobileChat({
   activeCapability,
   setActiveCapability,
   onSend,
+  onAttach,
+  attachments,
+  onRemoveAttachment,
+  analyzing,
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;
@@ -601,7 +700,12 @@ function MobileChat({
   activeCapability: CapabilityKey | null;
   setActiveCapability: (v: CapabilityKey | null) => void;
   onSend: () => void;
+  onAttach: (files: FileList | null) => void;
+  attachments: Attachment[];
+  onRemoveAttachment: (idx: number) => void;
+  analyzing: boolean;
 }) {
+  const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const selected = activeCapability ?? "screen";
@@ -653,6 +757,30 @@ function MobileChat({
 
       {/* Composer */}
       <div className="p-3 shrink-0">
+        {attachments.length > 0 && (
+          <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
+            {attachments.map((a, i) => (
+              <div key={i} className="relative shrink-0 border border-white/15 bg-white/[0.03] rounded-lg p-1.5">
+                <button
+                  onClick={() => onRemoveAttachment(i)}
+                  className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-black border border-white/20 text-white/80 flex items-center justify-center"
+                  aria-label="Remove"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+                {a.kind === "recording" ? (
+                  <video src={a.url} className="h-16 w-24 rounded object-cover" />
+                ) : a.file.type.startsWith("image/") ? (
+                  <img src={a.url} alt={a.file.name} className="h-16 w-24 rounded object-cover" />
+                ) : (
+                  <div className="h-16 w-24 rounded flex items-center justify-center p-1 text-[10px] text-white/70 text-center">
+                    <span className="truncate">{a.file.name}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         <div className="rounded-3xl bg-white/[0.04] border border-white/10 p-3">
           <textarea
             value={prompt}
@@ -662,9 +790,17 @@ function MobileChat({
             className="w-full bg-transparent px-2 py-1 text-[15px] resize-none focus:outline-none placeholder:text-white/40 text-white"
           />
           <div className="mt-2 flex items-center gap-2">
+            <input
+              ref={mobileFileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => { onAttach(e.target.files); e.target.value = ""; }}
+            />
             <button
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/80"
-              aria-label="Add"
+              onClick={() => mobileFileInputRef.current?.click()}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/80 hover:bg-white/20"
+              aria-label="Attach"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -682,14 +818,16 @@ function MobileChat({
             </button>
             <button
               onClick={onSend}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-black"
+              disabled={analyzing}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-black disabled:opacity-60"
               aria-label="Send"
             >
-              <Send className="h-4 w-4" />
+              {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </button>
           </div>
         </div>
       </div>
+
 
       {/* Capability picker sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

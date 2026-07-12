@@ -139,14 +139,37 @@ function ChatPage() {
       });
       streamRef.current = stream;
       chunksRef.current = [];
-      const rec = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp9,opus" });
+
+      // Pick a supported mimeType (Safari/Firefox may not support vp9)
+      const candidates = [
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+        "video/mp4",
+      ];
+      const mimeType = candidates.find((m) =>
+        typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m),
+      );
+      const rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       rec.ondataavailable = (e) => e.data.size && chunksRef.current.push(e.data);
-      rec.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+      rec.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" });
         const url = URL.createObjectURL(blob);
         setAttachments((prev) => [...prev, { kind: "recording", url, blob }]);
         stopStream();
         setRecording(false);
+        // Auto-analyze immediately so the user doesn't have to click Send
+        try {
+          const base64 = await videoBlobToFrameBase64(blob);
+          await analyzeImageBase64(
+            base64,
+            prompt.trim(),
+            prompt.trim() || "Screen recording",
+          );
+        } catch (e) {
+          console.error("[auto-analyze on stop] failed:", e);
+          toast.error(e instanceof Error ? e.message : "Could not analyze recording");
+        }
       };
       stream.getVideoTracks()[0].addEventListener("ended", () => rec.state !== "inactive" && rec.stop());
       recorderRef.current = rec;
@@ -191,59 +214,53 @@ function ChatPage() {
 
   async function send() {
     if (!prompt.trim() && attachments.length === 0) {
-      toast.error("Add a prompt or an attachment");
+      toast.error("Add a prompt or a screenshot / recording");
       return;
     }
-    const title = prompt.trim() || (attachments[0]?.kind === "recording" ? "Screen recording" : "New chat");
-    addHistoryEntry(title);
 
-    // If we have a screen recording in progress, grab a frame and analyze
+    // Recording still in progress → grab a live frame
     if (streamRef.current) {
       await captureFrameAndAnalyze();
       return;
     }
 
-    // If there's an image attachment, run Screen Intelligence on it
+    // Image attachment → analyze it
     const imageAttachment = attachments.find(
       (a) => a.kind === "file" && a.file.type.startsWith("image/"),
     );
     if (imageAttachment && imageAttachment.kind === "file") {
-      setAnalyzing(true);
       try {
         const base64 = await fileToBase64(imageAttachment.file);
-        const result = await runAnalyze({ data: { imageBase64: base64, note: prompt.trim() } });
-        setAnalysisResult(result);
-        setActiveCapability("screen");
-        toast.success("Analysis complete");
-        setPrompt("");
+        await analyzeImageBase64(
+          base64,
+          prompt.trim(),
+          prompt.trim() || imageAttachment.file.name,
+        );
       } catch (e) {
+        console.error("[send image] failed:", e);
         toast.error(e instanceof Error ? e.message : "Analysis failed");
-      } finally {
-        setAnalyzing(false);
       }
       return;
     }
 
-    // Recording attachment: analyze first frame
+    // Recording attachment → analyze first frame
     const recAttachment = attachments.find((a) => a.kind === "recording");
     if (recAttachment && recAttachment.kind === "recording") {
-      setAnalyzing(true);
       try {
         const base64 = await videoBlobToFrameBase64(recAttachment.blob);
-        const result = await runAnalyze({ data: { imageBase64: base64, note: prompt.trim() } });
-        setAnalysisResult(result);
-        setActiveCapability("screen");
-        toast.success("Analysis complete");
-        setPrompt("");
+        await analyzeImageBase64(
+          base64,
+          prompt.trim(),
+          prompt.trim() || "Screen recording",
+        );
       } catch (e) {
+        console.error("[send recording] failed:", e);
         toast.error(e instanceof Error ? e.message : "Analysis failed");
-      } finally {
-        setAnalyzing(false);
       }
       return;
     }
 
-    toast.message("Attach a screenshot, recording, or start Screen recording to analyze");
+    toast.message("Attach a screenshot or start Screen recording, then Send.");
   }
 
   if (loading || !user) {

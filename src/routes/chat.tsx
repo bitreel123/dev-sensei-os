@@ -154,15 +154,61 @@ function ChatPage() {
     });
   }
 
-  function send() {
+  async function send() {
     if (!prompt.trim() && attachments.length === 0) {
       toast.error("Add a prompt or an attachment");
       return;
     }
     const title = prompt.trim() || (attachments[0]?.kind === "recording" ? "Screen recording" : "New chat");
     addHistoryEntry(title);
-    toast.success("Sent — worker pickup coming soon");
-    setPrompt("");
+
+    // If we have a screen recording in progress, grab a frame and analyze
+    if (streamRef.current) {
+      await captureFrameAndAnalyze();
+      return;
+    }
+
+    // If there's an image attachment, run Screen Intelligence on it
+    const imageAttachment = attachments.find(
+      (a) => a.kind === "file" && a.file.type.startsWith("image/"),
+    );
+    if (imageAttachment && imageAttachment.kind === "file") {
+      setAnalyzing(true);
+      try {
+        const base64 = await fileToBase64(imageAttachment.file);
+        const result = await runAnalyze({ data: { imageBase64: base64, note: prompt.trim() } });
+        setAnalysisResult(result);
+        setActiveCapability("screen");
+        toast.success("Analysis complete");
+        setPrompt("");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Analysis failed");
+      } finally {
+        setAnalyzing(false);
+      }
+      return;
+    }
+
+    // Recording attachment: analyze first frame
+    const recAttachment = attachments.find((a) => a.kind === "recording");
+    if (recAttachment && recAttachment.kind === "recording") {
+      setAnalyzing(true);
+      try {
+        const base64 = await videoBlobToFrameBase64(recAttachment.blob);
+        const result = await runAnalyze({ data: { imageBase64: base64, note: prompt.trim() } });
+        setAnalysisResult(result);
+        setActiveCapability("screen");
+        toast.success("Analysis complete");
+        setPrompt("");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Analysis failed");
+      } finally {
+        setAnalyzing(false);
+      }
+      return;
+    }
+
+    toast.message("Attach a screenshot, recording, or start Screen recording to analyze");
   }
 
   if (loading || !user) {

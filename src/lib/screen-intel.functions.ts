@@ -31,6 +31,33 @@ export type ScreenAnalysis = Diagnosis & {
 
 export type FixSuggestion = FixPlan;
 
+function normalizeScreenAnalysis(value: ScreenAnalysis): ScreenAnalysis {
+  return {
+    ...value,
+    category: value.category ?? "unknown",
+    severity: value.severity ?? "info",
+    summary: value.summary || "I analyzed the screen, but the model did not return a summary.",
+    evidence: Array.isArray(value.evidence) ? value.evidence : [],
+    suspectFiles: Array.isArray(value.suspectFiles) ? value.suspectFiles : [],
+    hypothesis: value.hypothesis || value.rootCauseHypothesis || "No root-cause hypothesis was returned.",
+    rootCauseHypothesis: value.rootCauseHypothesis || value.hypothesis || "No root-cause hypothesis was returned.",
+    errors: Array.isArray(value.errors) ? value.errors : [],
+    observedCodeSnippet: value.observedCodeSnippet ?? null,
+    editor: value.editor ?? null,
+    language: value.language ?? null,
+  };
+}
+
+function normalizeFixPlan(value: FixPlan): FixPlan {
+  return {
+    plainExplanation: value.plainExplanation || "The fixer completed, but did not return a plain-English explanation.",
+    whyItHappened: value.whyItHappened || "No cause explanation was returned.",
+    steps: Array.isArray(value.steps) ? value.steps : [],
+    references: Array.isArray(value.references) ? value.references : [],
+    additionalNotes: value.additionalNotes ?? null,
+  };
+}
+
 const SCREEN_ANALYST_SYSTEM = `You are a senior debugging engineer analyzing a screenshot of a developer's IDE, code editor, browser devtools, or terminal.
 
 ${TAXONOMY_PROMPT}
@@ -66,7 +93,7 @@ export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
     // Step 1 — Gemini 3 Pro visual analyst
-    const analysis = (await callGeminiAnalyst(lovableKey, SCREEN_ANALYST_SYSTEM, [
+    const analysis = normalizeScreenAnalysis((await callGeminiAnalyst(lovableKey, SCREEN_ANALYST_SYSTEM, [
       {
         type: "text",
         text: data.note
@@ -74,7 +101,7 @@ export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
           : "Analyze this screen frame from a developer's workstation.",
       },
       { type: "image_url", image_url: { url: `data:image/png;base64,${data.imageBase64}` } },
-    ])) as ScreenAnalysis;
+    ])) as ScreenAnalysis);
 
     // Legacy field alias for the UI
     analysis.rootCauseHypothesis = analysis.hypothesis;
@@ -102,11 +129,11 @@ export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
 
     let fix: FixPlan;
     try {
-      fix = JSON.parse(text) as FixPlan;
+      fix = normalizeFixPlan(JSON.parse(text) as FixPlan);
     } catch {
       const m = text.match(/\{[\s\S]*\}/);
       if (!m) throw new Error("Claude fixer returned unparseable output");
-      fix = JSON.parse(m[0]) as FixPlan;
+      fix = normalizeFixPlan(JSON.parse(m[0]) as FixPlan);
     }
 
     return { analysis, fix };

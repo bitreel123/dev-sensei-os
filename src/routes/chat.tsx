@@ -451,6 +451,50 @@ function ChatPage() {
   );
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const s = String(reader.result || "");
+      resolve(s.replace(/^data:image\/[a-zA-Z+]+;base64,/, ""));
+    };
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function videoBlobToFrameBase64(blob: Blob): Promise<string> {
+  const url = URL.createObjectURL(blob);
+  try {
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    await new Promise<void>((resolve, reject) => {
+      video.onloadeddata = () => resolve();
+      video.onerror = () => reject(new Error("Could not load recording"));
+    });
+    // seek near start to get a valid frame
+    await new Promise<void>((resolve) => {
+      video.onseeked = () => resolve();
+      video.currentTime = Math.min(0.1, (video.duration || 1) / 2);
+    });
+    const maxW = 1280;
+    const scale = Math.min(1, maxW / (video.videoWidth || maxW));
+    const w = Math.floor((video.videoWidth || maxW) * scale);
+    const h = Math.floor((video.videoHeight || 720) * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas unavailable");
+    ctx.drawImage(video, 0, 0, w, h);
+    return canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
     <button

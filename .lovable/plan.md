@@ -1,104 +1,84 @@
-## What I'll change
 
-### 1. Auth completeness
-- **Auto-confirm signups** — flip Supabase auth so email confirmation is not required. New users log in immediately after clicking "Create account".
-- **Configure Google provider** in Supabase so Google sign-in actually works (currently would error `Unsupported provider` on first attempt).
-- **Forgot / reset password**:
-  - New route `/forgot-password` — email input, calls `resetPasswordForEmail(email, { redirectTo: ${origin}/reset-password })`.
-  - New route `/reset-password` — password input, reads recovery token from URL, calls `updateUser({ password })`.
-  - Add "Forgot password?" link on `/login`.
+## Scope
 
-### 2. New signed-in Account page (`/account`)
-- Shows: email, current plan, monthly credits, current balance, billing cycle, current period end, cancel status.
-- **Manage billing** button → opens Paddle customer portal in a new tab (server fn creates portal session using `getPaddleClient(env)`).
-- **Cancel plan** button → calls a server fn that hits Paddle `POST /subscriptions/{id}/cancel` with `effective_from: "next_billing_period"` (grace period).
-- **Sign out** button → `supabase.auth.signOut()`.
-- Link to `/pricing` for upgrades.
-- Header on `/pricing` gets an "Account" link when signed in (replaces the plain email badge).
-
-### 3. Business logic fixes in the webhook
-- **Renewal credit refill**: on `subscription.updated`, detect a new billing period (`current_period_start` differs from stored value) and **reset** `user_credits.balance = monthly_credits` for the current plan (per your choice: no leftover carry-over).
-- **Cancel → Free at period end**: add a scheduled sweep that downgrades expired canceled subscriptions to Free with 5 credits.
-  - New DB function `expire_canceled_subscriptions()` — for every row where `status='canceled'` AND `current_period_end < now()` AND not yet reconciled, reset `user_credits` to `{ plan:'free', monthly_credits:5, balance:5 }`.
-  - Wire it to run every 15 min via `pg_cron`.
-  - Also invoke it opportunistically at the top of `useUserData.refetch()` via a server fn, so a returning user immediately sees Free instead of waiting for cron.
-- **Dunning**: handle `transaction.payment_failed` → set `subscriptions.status='past_due'`; `subscription.updated` with `status='past_due'` already flows through the update handler. Show a red banner on `/account` and `/pricing` when `status='past_due'` with a "Update payment method" link into the customer portal.
-
-### 4. Environment isolation for credits
-- Add `environment text not null default 'sandbox'` to `user_credits`, drop unique on `user_id`, add unique on `(user_id, environment)`.
-- Update `handle_new_user` trigger to seed both `sandbox` and `live` rows.
-- Update webhook writes and `useUserData` reads to filter by current env, using the same `getPaddleEnvironment()` helper as `subscriptions`.
-
-### 5. Small correctness bits
-- `/pricing` current-plan strip: pull `credits` filtered by env so preview stops reading live plan state.
-- `subscription.updated` handler: also reset credits when Paddle sends a plan change *and* period rollover on the same event.
+Three tightly related changes to `/chat`. All work stays in that route + the three server functions + the sidebar. No new tables, no new routes.
 
 ---
 
-## Technical detail (implementer notes)
+## 1. Agentic backend-debugging upgrade
 
-**Files to add**
-- `src/routes/forgot-password.tsx`
-- `src/routes/reset-password.tsx`
-- `src/routes/account.tsx`
-- `src/lib/account.functions.ts` — `openBillingPortal`, `cancelSubscription`, `reconcileExpiredCanceled` (all `.middleware([requireSupabaseAuth])`).
+New shared capability across `screen-intel`, `system-intel`, and `github-intel` (renamed from repo intel in UI). All three become **two-role agent pipelines** so results are consistent.
 
-**Files to edit**
-- `src/routes/api/public/payments/webhook.ts` — add renewal detection + payment_failed handler.
-- `src/hooks/use-user-data.ts` — env filter on `user_credits`, opportunistic reconcile call.
-- `src/routes/login.tsx` — "Forgot password?" link.
-- `src/routes/pricing.tsx` — account link when signed in, past_due banner.
-- `src/components/jeradin/header.tsx` — Account link when signed in.
+**Role split (same for all three):**
 
-**Migration**
-```sql
--- environment on user_credits
-alter table public.user_credits add column environment text not null default 'sandbox';
-alter table public.user_credits drop constraint user_credits_pkey; -- if PK is user_id
-alter table public.user_credits add primary key (user_id, environment);
+- **Gemini 3 Pro** = *Analyst.* Reads raw evidence (screenshot / repo files / commits) and produces a structured "diagnosis" JSON: what's broken, in which category (runtime, API, DB, auth, env, deps, perf, deployment, log root-cause), suspect files, evidence snippets, severity. Cheap, huge context, strong multimodal.
+- **Claude Sonnet 4.5** = *Fixer.* Takes Gemini's diagnosis as input and, with tool access (`search_github_repos`, `search_github_code`, `read_repo_file`), produces a step-by-step fix plan: file-by-file suggestions, and — for each step — an optional `codeAfter` block only when the user won't be able to write it themselves. Uses Vercel AI SDK `generateText` + `tool()` + `stopWhen: stepCountIs(50)`.
 
--- seed both envs on signup: update handle_new_user()
--- expire_canceled_subscriptions() SECURITY DEFINER function
--- pg_cron: every 15 minutes call the function
+**Backend-debugging taxonomy** (added to Gemini prompt + Claude prompt so both know the 9 categories):
+runtime · API · database · auth · env/config · dependencies · performance · logs · deployment.
+
+Each server fn returns:
+```
+{ diagnosis: { category, summary, evidence[], suspectFiles[], severity },
+  fix: { plainExplanation, whyItHappened, steps[{file, change, codeAfter?}], references[] } }
 ```
 
-**Auth config calls**
-- `configure_auth({ auto_confirm_email: true, disable_signup: false, external_anonymous_users_enabled: false, password_hibp_enabled: true })`
-- `configure_social_auth` for Google.
+**Files touched:**
+- `src/lib/screen-intel.functions.ts` — swap Gemini model to `google/gemini-3-pro-image`… actually keep chat model `google/gemini-3.1-pro-preview` (already used), extend prompt with the 9-category taxonomy; hand off to Claude via AI SDK agent loop with GitHub tools.
+- `src/lib/system-intel.functions.ts` — add Gemini pre-pass (analyst) before Claude (fixer). Currently Claude does both; split them.
+- `src/lib/github-intel.functions.ts` — same split.
+
+Shared helper `src/lib/intel-shared.ts` — the 9-category taxonomy string, Zod schemas, GitHub tool definitions, so all three fns stay in sync.
 
 ---
 
-## How to test in the preview
+## 2. Sidebar cleanup
 
-The preview always runs against **test mode** — an orange banner shows this at the top of `/pricing`. All test purchases hit the sandbox environment and never charge real cards.
+`src/components/jeradin/chat-sidebar.tsx`: delete the three `SideItem` entries for System / Knowledge / GitHub Intelligence (lines 64-66) and drop unused `Brain`, `Library`, `Github` imports. The routes stay reachable via the new mobile picker + direct URL.
 
-1. **New user flow**
-   - Go to `/signup`, create `test@example.com` / any password. You're logged in immediately (auto-confirm is on).
-   - Land on `/pricing`. Current plan strip shows "Free · 5 credits".
+---
 
-2. **Buy a plan**
-   - Pick any tier (Basic/Pro/Elite), pick a credit option, click Subscribe.
-   - In the Paddle checkout overlay use test card **`4242 4242 4242 4242`**, CVC **`123`**, any future expiry.
-   - After success you're redirected back to `/pricing?checkout=success`. Within a few seconds the current plan strip updates to the new tier and credit count (realtime).
+## 3. Mobile chat UI — Claude-style bottom sheet
 
-3. **Password reset**
-   - `/login` → "Forgot password?" → enter your email → check inbox → click link → set new password → sign in with it.
+Rebuild `/chat` mobile layout to match the uploaded screenshots.
 
-4. **Account page**
-   - Click "Account" in the header. You see plan, credits, period end, and a "Manage billing" button that opens the Paddle customer portal in a new tab.
+**Mobile navbar (top):**
+- Left: hamburger icon → opens sidebar as a slide-in drawer.
+- Center: empty.
+- Right: ghost-face avatar icon → account menu.
+- Below navbar: "Get more with Jeradin Pro / Upgrade" thin banner (link to `/pricing`).
 
-5. **Cancel & downgrade**
-   - Click "Cancel plan". Confirmation appears; row flips to `cancel_at_period_end=true` and shows "Cancels at <date>".
-   - To simulate the period ending in the preview: use the Paddle test-mode Subscriptions API to fast-forward `next_billed_at` (I can add a hidden dev button on `/account` for this if you want). Within 15 minutes (cron) or after refreshing `/account` (opportunistic reconcile) the user drops to Free / 5 credits.
+**Empty state (center):**
+- Small orange spark/asterisk icon (reuse `Sparkles` from lucide, orange).
+- Greeting: `"{firstName} returns!"` in serif (`Instrument Serif`), matching Claude's typography.
 
-6. **Failed payment (dunning)**
-   - Subscribe with card **`4000 0027 6000 3184`** (succeeds initially, declines on renewal).
-   - Fast-forward the billing date. On the next renewal attempt the webhook fires `past_due`; a red banner appears on `/account` and `/pricing` with "Update payment method".
+**Composer (bottom, pill-shape):**
+- Rounded 2xl container, dark surface.
+- Placeholder: "Chat with Jeradin…"
+- Row below input: `[+]` attach button · **capability pill** (shows current mode name, e.g. "Screen Intelligence") · mic button · send button.
+- Tapping the **capability pill** opens a **bottom sheet** (`Sheet` from `@/components/ui/sheet` side="bottom") titled **"Select capability"** listing:
+  - Screen Intelligence — "See your screen, diagnose bugs" ✓
+  - System Intelligence — "Map your whole codebase"
+  - Knowledge Intelligence — "Find repos, APIs, models"
+  - GitHub Intelligence — "Analyze commits & PRs"
+  Each row: title + one-line description, checkmark on current selection, tap = select + close sheet.
 
-7. **Renewal credits**
-   - After a successful renewal (fast-forward), balance resets to the plan's `monthly_credits` value — leftover is not carried over.
+**Desktop unchanged** — keep the existing 4-tile grid + sidebar. All new mobile UI lives inside `md:hidden` / new `<div className="md:hidden">` blocks; the current desktop block gets `hidden md:flex`.
 
-8. **Going live**
-   - When you finish Paddle verification and publish the app, the production build uses the live token automatically. Products sync live. Test-mode banner disappears. Real cards work.
+---
 
-Say go and I'll implement all of this in one pass.
+## Technical notes
+
+- Vercel AI SDK stays. Agent loop pattern: `generateText({ model: claude, tools, stopWhen: stepCountIs(50) })` where tools' `execute` calls GitHub REST.
+- No schema bounds in tool inputSchemas (per AI SDK rules) — only types + descriptions.
+- Gemini call stays raw `fetch` to gateway (already works). Claude call moves to AI SDK with `createAnthropic`.
+- Selected capability is stored in `useState<CapabilityKey>("screen")`; drives both the pill label and which server fn `send()` triggers.
+- No changes to auth, DB, or routes.
+
+---
+
+## Out of scope (call out if you want them next)
+
+- Actually wiring System/Knowledge/GitHub runs from the mobile composer (currently only Screen runs end-to-end from `/chat`). I'll leave those pill selections wired to open their dedicated routes on tap of Send, unless you want inline execution.
+- Sidebar drawer animation polish.
+- Renaming the `/github-intelligence` route to `/repo-intelligence`.

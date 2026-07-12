@@ -757,6 +757,30 @@ function MobileChat({
 
       {/* Composer */}
       <div className="p-3 shrink-0">
+        {attachments.length > 0 && (
+          <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
+            {attachments.map((a, i) => (
+              <div key={i} className="relative shrink-0 border border-white/15 bg-white/[0.03] rounded-lg p-1.5">
+                <button
+                  onClick={() => onRemoveAttachment(i)}
+                  className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-black border border-white/20 text-white/80 flex items-center justify-center"
+                  aria-label="Remove"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+                {a.kind === "recording" ? (
+                  <video src={a.url} className="h-16 w-24 rounded object-cover" />
+                ) : a.file.type.startsWith("image/") ? (
+                  <img src={a.url} alt={a.file.name} className="h-16 w-24 rounded object-cover" />
+                ) : (
+                  <div className="h-16 w-24 rounded flex items-center justify-center p-1 text-[10px] text-white/70 text-center">
+                    <span className="truncate">{a.file.name}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         <div className="rounded-3xl bg-white/[0.04] border border-white/10 p-3">
           <textarea
             value={prompt}
@@ -766,9 +790,17 @@ function MobileChat({
             className="w-full bg-transparent px-2 py-1 text-[15px] resize-none focus:outline-none placeholder:text-white/40 text-white"
           />
           <div className="mt-2 flex items-center gap-2">
+            <input
+              ref={mobileFileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => { onAttach(e.target.files); e.target.value = ""; }}
+            />
             <button
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/80"
-              aria-label="Add"
+              onClick={() => mobileFileInputRef.current?.click()}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/80 hover:bg-white/20"
+              aria-label="Attach"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -786,14 +818,16 @@ function MobileChat({
             </button>
             <button
               onClick={onSend}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-black"
+              disabled={analyzing}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-black disabled:opacity-60"
               aria-label="Send"
             >
-              <Send className="h-4 w-4" />
+              {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </button>
           </div>
         </div>
       </div>
+
 
       {/* Capability picker sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

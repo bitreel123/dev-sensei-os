@@ -291,7 +291,6 @@ function ChatPage() {
         analysisResult={analysisResult}
         onClearAnalysis={() => { setAnalysisResult(null); setCurrentEntryId(null); }}
       />
-      />
 
 
       {/* ============= DESKTOP LAYOUT ============= */}

@@ -5,10 +5,12 @@ import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight, Sparkles, Loader2, AlertTriangle } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Check, Plus, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion } from "@/lib/screen-intel.functions";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -174,7 +176,20 @@ function ChatPage() {
   }
 
   return (
-    <div className="h-screen bg-black text-white flex overflow-hidden">
+    <div className="h-screen bg-black text-white overflow-hidden">
+      {/* ============= MOBILE LAYOUT ============= */}
+      <MobileChat
+        user={user}
+        credits={credits}
+        prompt={prompt}
+        setPrompt={setPrompt}
+        activeCapability={activeCapability}
+        setActiveCapability={setActiveCapability}
+        onSend={send}
+      />
+
+      {/* ============= DESKTOP LAYOUT ============= */}
+      <div className="hidden md:flex h-full">
       <ChatSidebar />
 
       <main className="flex-1 flex flex-col overflow-y-auto">
@@ -185,6 +200,7 @@ function ChatPage() {
             Upgrade
           </Link>
         </div>
+
 
         <div className="flex-1 flex flex-col items-center justify-center px-5 py-10">
           <div className="w-full max-w-[720px]">
@@ -383,7 +399,9 @@ function ChatPage() {
           </div>
         </div>
       </main>
+      </div>
     </div>
+
   );
 }
 
@@ -558,5 +576,172 @@ const CAPABILITIES: Array<{
     Icon: Github,
   },
 ];
+
+const CAPABILITY_SHORT: Record<CapabilityKey, string> = {
+  screen: "See your screen, diagnose bugs",
+  system: "Map your whole codebase",
+  knowledge: "Find repos, APIs, models",
+  repo: "Analyze commits & PRs",
+};
+
+// ============= MOBILE LAYOUT =============
+function MobileChat({
+  user,
+  credits,
+  prompt,
+  setPrompt,
+  activeCapability,
+  setActiveCapability,
+  onSend,
+}: {
+  user: { email?: string | null } | null;
+  credits: { plan?: string | null; balance?: number | null } | null | undefined;
+  prompt: string;
+  setPrompt: (v: string) => void;
+  activeCapability: CapabilityKey | null;
+  setActiveCapability: (v: CapabilityKey | null) => void;
+  onSend: () => void;
+}) {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const selected = activeCapability ?? "screen";
+  const selectedTitle = CAPABILITIES.find((c) => c.key === selected)?.title ?? "Screen Intelligence";
+  const firstName = (user?.email ?? "there").split("@")[0].split(/[._-]/)[0];
+  const greetName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+
+  return (
+    <div className="md:hidden flex flex-col h-full bg-black text-white">
+      {/* Top navbar */}
+      <div className="flex items-center justify-between px-4 h-14 shrink-0">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 -ml-2 text-white/80 hover:text-white"
+          aria-label="Menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <Link to="/account" className="p-2 -mr-2 text-white/80 hover:text-white" aria-label="Account">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10">
+            <UserIcon className="h-4 w-4" />
+          </span>
+        </Link>
+      </div>
+
+      {/* Upgrade banner */}
+      <div className="mx-4 mb-2 shrink-0 rounded-xl border border-white/10 px-4 py-3 flex items-center justify-between">
+        <span className="text-[13.5px] text-white/80">Get more with Jeradin Pro</span>
+        <Link to="/pricing" className="text-[13.5px] text-sky-400 hover:text-sky-300 font-medium">
+          Upgrade
+        </Link>
+      </div>
+
+      {/* Empty state */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+        <div className="mb-4">
+          <Sparkles className="h-10 w-10 text-orange-400" strokeWidth={1.2} />
+        </div>
+        <h1
+          className="text-[36px] leading-tight tracking-[-0.02em] text-white"
+          style={{ fontFamily: "'Instrument Serif', serif" }}
+        >
+          {greetName} returns!
+        </h1>
+        <p className="mt-2 text-[12px] text-white/40">
+          {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
+        </p>
+      </div>
+
+      {/* Composer */}
+      <div className="p-3 shrink-0">
+        <div className="rounded-3xl bg-white/[0.04] border border-white/10 p-3">
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder={`Chat with ${selectedTitle.split(" ")[0]}…`}
+            rows={2}
+            className="w-full bg-transparent px-2 py-1 text-[15px] resize-none focus:outline-none placeholder:text-white/40 text-white"
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/80"
+              aria-label="Add"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setSheetOpen(true)}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-full bg-white/10 text-[13px] text-white/90 truncate"
+            >
+              <span className="truncate">{selectedTitle}</span>
+            </button>
+            <button
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/80"
+              aria-label="Voice"
+            >
+              <Mic className="h-4 w-4" />
+            </button>
+            <button
+              onClick={onSend}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-black"
+              aria-label="Send"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Capability picker sheet */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent
+          side="bottom"
+          className="bg-[#0a0a0a] border-white/10 text-white rounded-t-3xl px-0 pt-2"
+        >
+          <div className="flex justify-center pt-1 pb-2">
+            <div className="h-1 w-10 rounded-full bg-white/20" />
+          </div>
+          <SheetHeader className="px-6">
+            <SheetTitle className="text-center text-white text-[17px] font-semibold">
+              Select capability
+            </SheetTitle>
+          </SheetHeader>
+          <div className="px-2 pt-2 pb-6">
+            {CAPABILITIES.map((c) => {
+              const isSelected = selected === c.key;
+              return (
+                <button
+                  key={c.key}
+                  onClick={() => {
+                    setActiveCapability(c.key);
+                    setSheetOpen(false);
+                  }}
+                  className="w-full flex items-start justify-between text-left px-4 py-4 hover:bg-white/5 rounded-xl"
+                >
+                  <div className="min-w-0">
+                    <div className={`text-[17px] font-medium ${isSelected ? "text-sky-400" : "text-white"}`}>
+                      {c.title}
+                    </div>
+                    <div className={`text-[13.5px] mt-0.5 ${isSelected ? "text-sky-400/80" : "text-white/50"}`}>
+                      {CAPABILITY_SHORT[c.key]}
+                    </div>
+                  </div>
+                  {isSelected && <Check className="h-5 w-5 text-sky-400 shrink-0 mt-1" />}
+                </button>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Sidebar drawer */}
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <SheetContent side="left" className="p-0 w-[260px] bg-[#0a0a0a] border-white/10">
+          <ChatSidebar />
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}
+
 
 

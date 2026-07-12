@@ -176,7 +176,20 @@ function ChatPage() {
   }
 
   return (
-    <div className="h-screen bg-black text-white flex overflow-hidden">
+    <div className="h-screen bg-black text-white overflow-hidden">
+      {/* ============= MOBILE LAYOUT ============= */}
+      <MobileChat
+        user={user}
+        credits={credits}
+        prompt={prompt}
+        setPrompt={setPrompt}
+        activeCapability={activeCapability}
+        setActiveCapability={setActiveCapability}
+        onSend={send}
+      />
+
+      {/* ============= DESKTOP LAYOUT ============= */}
+      <div className="hidden md:flex h-full">
       <ChatSidebar />
 
       <main className="flex-1 flex flex-col overflow-y-auto">
@@ -187,6 +200,7 @@ function ChatPage() {
             Upgrade
           </Link>
         </div>
+
 
         <div className="flex-1 flex flex-col items-center justify-center px-5 py-10">
           <div className="w-full max-w-[720px]">

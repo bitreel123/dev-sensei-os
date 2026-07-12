@@ -31,7 +31,22 @@ export type ScreenAnalysis = Diagnosis & {
 
 export type FixSuggestion = FixPlan;
 
-const SCREEN_ANALYST_SYSTEM = `You are a senior debugging engineer analyzing a screenshot of a developer's IDE, code editor, browser devtools, or terminal.
+export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { imageBase64: string; note?: string }) => {
+    if (!input?.imageBase64 || typeof input.imageBase64 !== "string") {
+      throw new Error("imageBase64 is required");
+    }
+    const cleaned = input.imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, "");
+    return { imageBase64: cleaned, note: (input.note ?? "").slice(0, 2000) };
+  })
+  .handler(async ({ data, context }) => {
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
+    if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
+
+    const screenAnalystSystem = `You are a senior debugging engineer analyzing a screenshot of a developer's IDE, code editor, browser devtools, or terminal.
 
 ${TAXONOMY_PROMPT}
 
@@ -50,23 +65,31 @@ Additional fields for this specific analyst:
 - "errors": [{"message": string, "file": string|null, "line": number|null, "severity": "error"|"warning"|"info", "source": "console"|"network"|"code"|"ui"}]
 - "observedCodeSnippet": string|null   (short, ~40 lines max)`;
 
-export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: { imageBase64: string; note?: string }) => {
-    if (!input?.imageBase64 || typeof input.imageBase64 !== "string") {
-      throw new Error("imageBase64 is required");
-    }
-    const cleaned = input.imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, "");
-    return { imageBase64: cleaned, note: (input.note ?? "").slice(0, 2000) };
-  })
-  .handler(async ({ data, context }) => {
-    const lovableKey = process.env.LOVABLE_API_KEY;
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
-    if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
+    const normalizeScreenAnalysis = (value: ScreenAnalysis): ScreenAnalysis => ({
+      ...value,
+      category: value.category ?? "unknown",
+      severity: value.severity ?? "info",
+      summary: value.summary || "I analyzed the screen, but the model did not return a summary.",
+      evidence: Array.isArray(value.evidence) ? value.evidence : [],
+      suspectFiles: Array.isArray(value.suspectFiles) ? value.suspectFiles : [],
+      hypothesis: value.hypothesis || value.rootCauseHypothesis || "No root-cause hypothesis was returned.",
+      rootCauseHypothesis: value.rootCauseHypothesis || value.hypothesis || "No root-cause hypothesis was returned.",
+      errors: Array.isArray(value.errors) ? value.errors : [],
+      observedCodeSnippet: value.observedCodeSnippet ?? null,
+      editor: value.editor ?? null,
+      language: value.language ?? null,
+    });
+
+    const normalizeFixPlan = (value: FixPlan): FixPlan => ({
+      plainExplanation: value.plainExplanation || "The fixer completed, but did not return a plain-English explanation.",
+      whyItHappened: value.whyItHappened || "No cause explanation was returned.",
+      steps: Array.isArray(value.steps) ? value.steps : [],
+      references: Array.isArray(value.references) ? value.references : [],
+      additionalNotes: value.additionalNotes ?? null,
+    });
 
     // Step 1 — Gemini 3 Pro visual analyst
-    const analysis = (await callGeminiAnalyst(lovableKey, SCREEN_ANALYST_SYSTEM, [
+    const analysis = normalizeScreenAnalysis((await callGeminiAnalyst(lovableKey, screenAnalystSystem, [
       {
         type: "text",
         text: data.note
@@ -74,7 +97,7 @@ export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
           : "Analyze this screen frame from a developer's workstation.",
       },
       { type: "image_url", image_url: { url: `data:image/png;base64,${data.imageBase64}` } },
-    ])) as ScreenAnalysis;
+    ])) as ScreenAnalysis);
 
     // Legacy field alias for the UI
     analysis.rootCauseHypothesis = analysis.hypothesis;
@@ -102,11 +125,11 @@ export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
 
     let fix: FixPlan;
     try {
-      fix = JSON.parse(text) as FixPlan;
+      fix = normalizeFixPlan(JSON.parse(text) as FixPlan);
     } catch {
       const m = text.match(/\{[\s\S]*\}/);
       if (!m) throw new Error("Claude fixer returned unparseable output");
-      fix = JSON.parse(m[0]) as FixPlan;
+      fix = normalizeFixPlan(JSON.parse(m[0]) as FixPlan);
     }
 
     return { analysis, fix };

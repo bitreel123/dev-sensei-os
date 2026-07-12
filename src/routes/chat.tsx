@@ -40,6 +40,7 @@ function ChatPage() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [activeCapability, setActiveCapability] = useState<CapabilityKey | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -62,18 +63,22 @@ function ChatPage() {
 
   async function analyzeImageBase64(base64: string, note: string, title: string) {
     setAnalyzing(true);
+    setAnalysisError(null);
     try {
       const result = await runAnalyze({ data: { imageBase64: base64, note } });
       setAnalysisResult(result);
       setActiveCapability("screen");
       const entry = addHistoryEntry(title, result);
       setCurrentEntryId(entry.id);
+      navigate({ to: "/chat", search: { id: entry.id } });
       toast.success("Analysis complete");
       setPrompt("");
       return result;
     } catch (e) {
       console.error("[analyzeImageBase64] failed:", e);
-      toast.error(e instanceof Error ? e.message : "Analysis failed");
+      const message = formatAnalysisError(e);
+      setAnalysisError(message);
+      toast.error(message);
       return null;
     } finally {
       setAnalyzing(false);
@@ -85,12 +90,14 @@ function ChatPage() {
       toast.error("Start a screen recording first");
       return;
     }
+    setAnalyzing(true);
+    setAnalysisError(null);
     try {
       const video = document.createElement("video");
       video.srcObject = streamRef.current;
       video.muted = true;
-      await video.play();
-      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await withTimeout(video.play(), 5000, "Could not preview the screen recording");
+      await withTimeout(new Promise((r) => requestAnimationFrame(() => r(null))), 1500, "Could not capture a screen frame");
 
       const maxW = 1280;
       const scale = Math.min(1, maxW / video.videoWidth);
@@ -112,7 +119,10 @@ function ChatPage() {
       );
     } catch (e) {
       console.error("[captureFrameAndAnalyze] failed:", e);
-      toast.error(e instanceof Error ? e.message : "Analysis failed");
+      const message = formatAnalysisError(e);
+      setAnalysisError(message);
+      toast.error(message);
+      setAnalyzing(false);
     }
   }
 
@@ -153,6 +163,8 @@ function ChatPage() {
       const rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       rec.ondataavailable = (e) => e.data.size && chunksRef.current.push(e.data);
       rec.onstop = async () => {
+        setAnalyzing(true);
+        setAnalysisError(null);
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" });
         const url = URL.createObjectURL(blob);
         setAttachments((prev) => [...prev, { kind: "recording", url, blob }]);
@@ -168,7 +180,10 @@ function ChatPage() {
           );
         } catch (e) {
           console.error("[auto-analyze on stop] failed:", e);
-          toast.error(e instanceof Error ? e.message : "Could not analyze recording");
+          const message = formatAnalysisError(e);
+          setAnalysisError(message);
+          toast.error(message);
+          setAnalyzing(false);
         }
       };
       stream.getVideoTracks()[0].addEventListener("ended", () => rec.state !== "inactive" && rec.stop());
@@ -176,7 +191,9 @@ function ChatPage() {
       rec.start();
       setRecording(true);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not start recording");
+      const message = e instanceof Error ? e.message : "Could not start recording";
+      setAnalysisError(message);
+      toast.error(message);
     }
   }
 
@@ -217,6 +234,7 @@ function ChatPage() {
       toast.error("Add a prompt or a screenshot / recording");
       return;
     }
+    setAnalysisError(null);
 
     // Recording still in progress → grab a live frame
     if (streamRef.current) {
@@ -246,6 +264,7 @@ function ChatPage() {
     // Recording attachment → analyze first frame
     const recAttachment = attachments.find((a) => a.kind === "recording");
     if (recAttachment && recAttachment.kind === "recording") {
+      setAnalyzing(true);
       try {
         const base64 = await videoBlobToFrameBase64(recAttachment.blob);
         await analyzeImageBase64(
@@ -255,7 +274,10 @@ function ChatPage() {
         );
       } catch (e) {
         console.error("[send recording] failed:", e);
-        toast.error(e instanceof Error ? e.message : "Analysis failed");
+        const message = formatAnalysisError(e);
+        setAnalysisError(message);
+        toast.error(message);
+        setAnalyzing(false);
       }
       return;
     }
@@ -287,9 +309,12 @@ function ChatPage() {
         onAttach={(files) => addFiles(files)}
         attachments={attachments}
         onRemoveAttachment={removeAttachment}
+        recording={recording}
+        onToggleRecording={recording ? stopRecording : startRecording}
         analyzing={analyzing}
+        analysisError={analysisError}
         analysisResult={analysisResult}
-        onClearAnalysis={() => { setAnalysisResult(null); setCurrentEntryId(null); }}
+        onClearAnalysis={() => { setAnalysisResult(null); setAnalysisError(null); setCurrentEntryId(null); }}
       />
 
 
@@ -308,7 +333,7 @@ function ChatPage() {
             <>
               <span className="text-white/25">·</span>
               <button
-                onClick={() => { setAnalysisResult(null); setCurrentEntryId(null); setPrompt(""); }}
+                onClick={() => { setAnalysisResult(null); setAnalysisError(null); setCurrentEntryId(null); setPrompt(""); }}
                 className="underline underline-offset-2 hover:text-white"
               >
                 New chat
@@ -329,10 +354,14 @@ function ChatPage() {
               </div>
             )}
 
+            {analysisError && !analysisResult && (
+              <AnalysisError message={analysisError} />
+            )}
+
             {analysisResult ? (
               <AnalysisReport
                 result={analysisResult}
-                onClose={() => { setAnalysisResult(null); setCurrentEntryId(null); }}
+                onClose={() => { setAnalysisResult(null); setAnalysisError(null); setCurrentEntryId(null); }}
               />
             ) : !analyzing ? (
               <div className="flex flex-col items-center justify-center min-h-[40vh]">
@@ -456,21 +485,26 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 async function videoBlobToFrameBase64(blob: Blob): Promise<string> {
+  if (!blob.size) throw new Error("The screen recording is empty. Try recording again for a few seconds.");
   const url = URL.createObjectURL(blob);
   try {
     const video = document.createElement("video");
     video.src = url;
     video.muted = true;
     video.playsInline = true;
-    await new Promise<void>((resolve, reject) => {
+    await withTimeout(new Promise<void>((resolve, reject) => {
       video.onloadeddata = () => resolve();
       video.onerror = () => reject(new Error("Could not load recording"));
-    });
-    // seek near start to get a valid frame
-    await new Promise<void>((resolve) => {
-      video.onseeked = () => resolve();
-      video.currentTime = Math.min(0.1, (video.duration || 1) / 2);
-    });
+    }), 8000, "Could not load the screen recording");
+
+    // Some browsers never fire `seeked` for freshly-recorded WebM blobs. Draw the
+    // first loaded frame immediately, and only attempt a short best-effort seek.
+    if (Number.isFinite(video.duration) && video.duration > 0.2) {
+      await withTimeout(new Promise<void>((resolve) => {
+        video.onseeked = () => resolve();
+        video.currentTime = Math.min(0.1, video.duration / 2);
+      }), 1200, "").catch(() => undefined);
+    }
     const maxW = 1280;
     const scale = Math.min(1, maxW / (video.videoWidth || maxW));
     const w = Math.floor((video.videoWidth || maxW) * scale);
@@ -485,6 +519,31 @@ async function videoBlobToFrameBase64(blob: Blob): Promise<string> {
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(message || "Timed out")), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+function formatAnalysisError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error || "Analysis failed");
+  const lower = raw.toLowerCase();
+  if (raw.includes("429") || lower.includes("rate limit")) {
+    return "AI is rate limited right now. Please wait a moment and try again, or upgrade/add credits for higher usage.";
+  }
+  if (raw.includes("402") || lower.includes("credit")) {
+    return "AI credits are exhausted. Add credits or upgrade, then run the analysis again.";
+  }
+  if (raw.includes("403")) {
+    return "The AI request was blocked by the gateway. Check that Lovable AI is enabled and try again.";
+  }
+  return raw;
 }
 
 function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
@@ -619,6 +678,20 @@ function AnalysisReport({
   );
 }
 
+function AnalysisError({ message }: { message: string }) {
+  return (
+    <div className="mt-4 border border-red-400/25 bg-red-500/10 rounded-lg p-4 text-sm text-red-100 flex gap-3">
+      <AlertTriangle className="h-4 w-4 shrink-0 text-red-300 mt-0.5" />
+      <div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-red-200/80 mb-1">
+          Analysis did not run
+        </div>
+        <p className="leading-relaxed">{message}</p>
+      </div>
+    </div>
+  );
+}
+
 
 type CapabilityKey = "screen" | "system" | "knowledge" | "repo";
 
@@ -678,7 +751,10 @@ function MobileChat({
   onAttach,
   attachments,
   onRemoveAttachment,
+  recording,
+  onToggleRecording,
   analyzing,
+  analysisError,
   analysisResult,
   onClearAnalysis,
 }: {
@@ -692,7 +768,10 @@ function MobileChat({
   onAttach: (files: FileList | null) => void;
   attachments: Attachment[];
   onRemoveAttachment: (idx: number) => void;
+  recording: boolean;
+  onToggleRecording: () => void;
   analyzing: boolean;
+  analysisError: string | null;
   analysisResult: { analysis: ScreenAnalysis; fix: FixSuggestion } | null;
   onClearAnalysis: () => void;
 }) {
@@ -734,6 +813,10 @@ function MobileChat({
       {analysisResult ? (
         <div className="flex-1 overflow-y-auto px-3 pb-3">
           <AnalysisReport result={analysisResult} onClose={onClearAnalysis} />
+        </div>
+      ) : analysisError ? (
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <AnalysisError message={analysisError} />
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
@@ -812,10 +895,12 @@ function MobileChat({
               <span className="truncate">{selectedTitle}</span>
             </button>
             <button
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/80"
-              aria-label="Voice"
+              onClick={onToggleRecording}
+              disabled={analyzing}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${recording ? "bg-red-500/20 text-red-300" : "bg-white/10 text-white/80"} disabled:opacity-60`}
+              aria-label={recording ? "Stop recording" : "Record screen"}
             >
-              <Mic className="h-4 w-4" />
+              {recording ? <Square className="h-4 w-4 fill-current" /> : <Monitor className="h-4 w-4" />}
             </button>
             <button
               onClick={onSend}

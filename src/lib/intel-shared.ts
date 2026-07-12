@@ -137,6 +137,8 @@ export async function callGeminiAnalyst(
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent },
     ],
+    max_tokens: 8192,
+    temperature: 0.2,
     response_format: { type: "json_object" },
   };
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -149,6 +151,13 @@ export async function callGeminiAnalyst(
   }
   const json = await res.json();
   const text = json.choices?.[0]?.message?.content ?? "";
+  const finishReason = json.choices?.[0]?.finish_reason;
+  if (!text && finishReason) {
+    throw new Error(`Gemini analyst returned no content (finish reason: ${finishReason})`);
+  }
+  if (finishReason === "length" || finishReason === "MAX_TOKENS") {
+    throw new Error("Gemini analyst response was cut off. Try a shorter recording or attach a screenshot of the error area.");
+  }
   try {
     return JSON.parse(text) as Diagnosis;
   } catch {

@@ -232,7 +232,12 @@ function ChatPage() {
         activeCapability={activeCapability}
         setActiveCapability={setActiveCapability}
         onSend={send}
+        onAttach={(files) => addFiles(files)}
+        attachments={attachments}
+        onRemoveAttachment={removeAttachment}
+        analyzing={analyzing}
       />
+
 
       {/* ============= DESKTOP LAYOUT ============= */}
       <div className="hidden md:flex h-full">

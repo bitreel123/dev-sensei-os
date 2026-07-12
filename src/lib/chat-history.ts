@@ -1,7 +1,15 @@
+import type { ScreenAnalysis, FixSuggestion } from "@/lib/screen-intel.functions";
+
+export type ChatHistoryPayload = {
+  analysis: ScreenAnalysis;
+  fix: FixSuggestion;
+};
+
 export type ChatHistoryEntry = {
   id: string;
   title: string;
   createdAt: number;
+  payload?: ChatHistoryPayload | null;
 };
 
 const KEY = "jeradin.chat.history.v1";
@@ -25,15 +33,25 @@ export function saveHistory(items: ChatHistoryEntry[]) {
   window.dispatchEvent(new Event(EVENT));
 }
 
-export function addHistoryEntry(title: string): ChatHistoryEntry {
+export function addHistoryEntry(title: string, payload?: ChatHistoryPayload | null): ChatHistoryEntry {
   const entry: ChatHistoryEntry = {
     id: crypto.randomUUID(),
     title: title.trim().slice(0, 80) || "Untitled chat",
     createdAt: Date.now(),
+    payload: payload ?? null,
   };
   const next = [entry, ...loadHistory()];
   saveHistory(next);
   return entry;
+}
+
+export function updateHistoryEntry(id: string, patch: Partial<ChatHistoryEntry>) {
+  const next = loadHistory().map((e) => (e.id === id ? { ...e, ...patch } : e));
+  saveHistory(next);
+}
+
+export function getHistoryEntry(id: string): ChatHistoryEntry | undefined {
+  return loadHistory().find((e) => e.id === id);
 }
 
 export function removeHistoryEntry(id: string) {

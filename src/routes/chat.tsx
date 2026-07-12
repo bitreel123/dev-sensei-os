@@ -688,6 +688,10 @@ function MobileChat({
   activeCapability,
   setActiveCapability,
   onSend,
+  onAttach,
+  attachments,
+  onRemoveAttachment,
+  analyzing,
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;
@@ -696,7 +700,12 @@ function MobileChat({
   activeCapability: CapabilityKey | null;
   setActiveCapability: (v: CapabilityKey | null) => void;
   onSend: () => void;
+  onAttach: (files: FileList | null) => void;
+  attachments: Attachment[];
+  onRemoveAttachment: (idx: number) => void;
+  analyzing: boolean;
 }) {
+  const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const selected = activeCapability ?? "screen";

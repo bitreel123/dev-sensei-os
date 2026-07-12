@@ -60,9 +60,7 @@ export function ChatSidebar() {
         <SideItem to="/chat" icon={<FolderKanban className="h-4 w-4" />} label="Projects" collapsed={collapsed} />
         <SideItem to="/pricing" icon={<Sparkles className="h-4 w-4" />} label="Upgrade" collapsed={collapsed} />
 
-        <SideItem to="/knowledge-intelligence" icon={<Library className="h-4 w-4" />} label="Knowledge Intelligence" collapsed={collapsed} active={pathname === "/knowledge-intelligence"} />
-        <SideItem to="/github-intelligence" icon={<Github className="h-4 w-4" />} label="GitHub Intelligence" collapsed={collapsed} active={pathname === "/github-intelligence"} />
-        <SideItem to="/pricing" icon={<Sparkles className="h-4 w-4" />} label="Upgrade" collapsed={collapsed} />
+
 
         {!collapsed && (
           <div className="mt-6 px-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/35">

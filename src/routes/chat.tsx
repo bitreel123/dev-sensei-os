@@ -85,13 +85,11 @@ function ChatPage() {
       toast.error("Start a screen recording first");
       return;
     }
-    setAnalyzing(true);
     try {
       const video = document.createElement("video");
       video.srcObject = streamRef.current;
       video.muted = true;
       await video.play();
-      // wait one frame
       await new Promise((r) => requestAnimationFrame(() => r(null)));
 
       const maxW = 1280;
@@ -107,13 +105,14 @@ function ChatPage() {
       const dataUrl = canvas.toDataURL("image/png");
       video.pause();
 
-      const result = await runAnalyze({ data: { imageBase64: dataUrl, note: prompt.trim() } });
-      setAnalysisResult(result);
-      toast.success("Analysis complete");
+      await analyzeImageBase64(
+        dataUrl.replace(/^data:image\/png;base64,/, ""),
+        prompt.trim(),
+        prompt.trim() || "Screen frame analysis",
+      );
     } catch (e) {
+      console.error("[captureFrameAndAnalyze] failed:", e);
       toast.error(e instanceof Error ? e.message : "Analysis failed");
-    } finally {
-      setAnalyzing(false);
     }
   }
 

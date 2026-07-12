@@ -288,6 +288,9 @@ function ChatPage() {
         attachments={attachments}
         onRemoveAttachment={removeAttachment}
         analyzing={analyzing}
+        analysisResult={analysisResult}
+        onClearAnalysis={() => { setAnalysisResult(null); setCurrentEntryId(null); }}
+      />
       />
 
 

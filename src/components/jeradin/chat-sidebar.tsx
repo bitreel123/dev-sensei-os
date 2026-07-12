@@ -80,6 +80,7 @@ export function ChatSidebar() {
             >
               <Link
                 to="/chat"
+                search={{ id: h.id }}
                 className="flex-1 min-w-0 text-[12.5px] text-white/75 truncate"
                 title={h.title}
               >

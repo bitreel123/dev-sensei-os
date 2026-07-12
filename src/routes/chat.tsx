@@ -797,21 +797,31 @@ function MobileChat({
         </Link>
       </div>
 
-      {/* Empty state */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-        <div className="mb-4">
-          <Sparkles className="h-10 w-10 text-orange-400" strokeWidth={1.2} />
+      {/* Content area: analysis result OR empty state */}
+      {analysisResult ? (
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <AnalysisReport result={analysisResult} onClose={onClearAnalysis} />
         </div>
-        <h1
-          className="text-[36px] leading-tight tracking-[-0.02em] text-white"
-          style={{ fontFamily: "'Instrument Serif', serif" }}
-        >
-          {greetName} returns!
-        </h1>
-        <p className="mt-2 text-[12px] text-white/40">
-          {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
-        </p>
-      </div>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+          <div className="mb-4">
+            {analyzing ? (
+              <Loader2 className="h-10 w-10 text-orange-400 animate-spin" strokeWidth={1.2} />
+            ) : (
+              <Sparkles className="h-10 w-10 text-orange-400" strokeWidth={1.2} />
+            )}
+          </div>
+          <h1
+            className="text-[36px] leading-tight tracking-[-0.02em] text-white"
+            style={{ fontFamily: "'Instrument Serif', serif" }}
+          >
+            {analyzing ? "Analyzing…" : `${greetName} returns!`}
+          </h1>
+          <p className="mt-2 text-[12px] text-white/40">
+            {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
+          </p>
+        </div>
+      )}
 
       {/* Composer */}
       <div className="p-3 shrink-0">

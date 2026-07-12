@@ -34,18 +34,51 @@ function ChatPage() {
   const { user, loading } = useAuth();
   const { credits } = useUserData(user?.id ?? null);
   const { connection: github } = useGithubConnection(user?.id ?? null);
+  const search = Route.useSearch();
   const [prompt, setPrompt] = useState("");
   const [recording, setRecording] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [activeCapability, setActiveCapability] = useState<CapabilityKey | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
+  const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
+
+  // Restore a saved chat when ?id=... is in the URL
+  useEffect(() => {
+    if (!search.id) return;
+    const entry = getHistoryEntry(search.id);
+    if (entry?.payload) {
+      setAnalysisResult(entry.payload);
+      setActiveCapability("screen");
+      setCurrentEntryId(entry.id);
+    }
+  }, [search.id]);
+
+  async function analyzeImageBase64(base64: string, note: string, title: string) {
+    setAnalyzing(true);
+    try {
+      const result = await runAnalyze({ data: { imageBase64: base64, note } });
+      setAnalysisResult(result);
+      setActiveCapability("screen");
+      const entry = addHistoryEntry(title, result);
+      setCurrentEntryId(entry.id);
+      toast.success("Analysis complete");
+      setPrompt("");
+      return result;
+    } catch (e) {
+      console.error("[analyzeImageBase64] failed:", e);
+      toast.error(e instanceof Error ? e.message : "Analysis failed");
+      return null;
+    } finally {
+      setAnalyzing(false);
+    }
+  }
 
   async function captureFrameAndAnalyze() {
     if (!streamRef.current) {

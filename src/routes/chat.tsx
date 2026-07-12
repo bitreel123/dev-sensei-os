@@ -297,47 +297,80 @@ function ChatPage() {
       <div className="hidden md:flex h-full">
       <ChatSidebar />
 
-      <main className="flex-1 flex flex-col overflow-y-auto">
-        <div className="flex items-center justify-center gap-3 py-3 text-[12px] text-white/70 border-b border-white/5">
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex items-center justify-center gap-3 py-3 text-[12px] text-white/70 border-b border-white/5 shrink-0">
           <span className="capitalize">{credits?.plan ?? "free"} plan</span>
           <span className="text-white/25">·</span>
           <Link to="/pricing" className="underline underline-offset-2 hover:text-white">
             Upgrade
           </Link>
+          {analysisResult && (
+            <>
+              <span className="text-white/25">·</span>
+              <button
+                onClick={() => { setAnalysisResult(null); setCurrentEntryId(null); setPrompt(""); }}
+                className="underline underline-offset-2 hover:text-white"
+              >
+                New chat
+              </button>
+            </>
+          )}
         </div>
 
+        {/* Top: scrollable analysis / greeting area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[820px] px-5 py-8">
+            {analyzing && !analysisResult && (
+              <div className="flex items-center justify-center gap-3 py-10 text-white/70">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
+                  Gemini 3 · Claude analyzing…
+                </span>
+              </div>
+            )}
 
-        <div className="flex-1 flex flex-col items-center justify-center px-5 py-10">
-          <div className="w-full max-w-[720px]">
-            <h1
-              className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
-              style={{ fontFamily: "'Instrument Serif', serif" }}
-            >
-              What are we doing today?
-            </h1>
-            <p className="mt-2 text-center text-[13px] text-white/55">
-              Describe the issue, let Jeradin solve it for you.
-            </p>
+            {analysisResult ? (
+              <AnalysisReport
+                result={analysisResult}
+                onClose={() => { setAnalysisResult(null); setCurrentEntryId(null); }}
+              />
+            ) : !analyzing ? (
+              <div className="flex flex-col items-center justify-center min-h-[40vh]">
+                <h1
+                  className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
+                  style={{ fontFamily: "'Instrument Serif', serif" }}
+                >
+                  What are we doing today?
+                </h1>
+                <p className="mt-2 text-center text-[13px] text-white/55">
+                  Describe the issue, let Jeradin solve it for you.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </div>
 
+        {/* Bottom: sticky composer */}
+        <div className="border-t border-white/10 shrink-0">
+          <div className="mx-auto w-full max-w-[820px] px-5 py-4">
             {attachments.length > 0 && (
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
                 {attachments.map((a, i) => (
-                  <div key={i} className="relative border border-white/15 bg-white/[0.02] p-2">
+                  <div key={i} className="relative shrink-0 border border-white/15 bg-white/[0.02] p-1.5 rounded">
                     <button
                       onClick={() => removeAttachment(i)}
-                      className="absolute top-1.5 right-1.5 p-1 rounded bg-black/60 hover:bg-black text-white/80 hover:text-white"
+                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-black border border-white/20 text-white/80 flex items-center justify-center"
                       aria-label="Remove"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-2.5 w-2.5" />
                     </button>
                     {a.kind === "recording" ? (
-                      <video src={a.url} controls className="w-full rounded" />
+                      <video src={a.url} className="h-16 w-24 rounded object-cover" />
                     ) : a.file.type.startsWith("image/") ? (
-                      <img src={a.url} alt={a.file.name} className="w-full rounded object-cover max-h-40" />
+                      <img src={a.url} alt={a.file.name} className="h-16 w-24 rounded object-cover" />
                     ) : (
-                      <div className="p-3 text-[12px] text-white/70 truncate">
-                        <Paperclip className="inline h-3 w-3 mr-1.5" />
-                        {a.file.name}
+                      <div className="h-16 w-24 rounded flex items-center justify-center p-1 text-[10px] text-white/70 text-center">
+                        <span className="truncate">{a.file.name}</span>
                       </div>
                     )}
                   </div>
@@ -345,12 +378,12 @@ function ChatPage() {
               </div>
             )}
 
-            <div className="mt-6 border border-white/20 bg-white/[0.03] focus-within:border-white/40 transition-colors rounded-lg">
+            <div className="border border-white/20 bg-white/[0.03] focus-within:border-white/40 transition-colors rounded-lg">
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Paste an error, describe the bug, or start a screen recording…"
-                rows={4}
+                rows={2}
                 className="w-full bg-transparent p-4 text-[14px] resize-none focus:outline-none placeholder:text-white/35"
               />
               <div className="flex items-center justify-between px-3 py-2 border-t border-white/10 flex-wrap gap-2">
@@ -371,135 +404,34 @@ function ChatPage() {
                     className="hidden"
                     onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
                   />
+                  <ToolButton
+                    onClick={recording ? stopRecording : startRecording}
+                    icon={recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
+                    label={recording ? "Stop recording" : "Record screen"}
+                  />
                 </div>
                 <button
                   onClick={send}
-                  className="inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
+                  disabled={analyzing}
+                  className="inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors disabled:opacity-60"
                 >
-                  Send
-                  <Send className="h-3 w-3" />
+                  {analyzing ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Analyzing
+                    </>
+                  ) : (
+                    <>
+                      Send
+                      <Send className="h-3 w-3" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>
 
-            <div className="mt-5">
-              <div className="text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-3">
-                Intelligence modes
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {CAPABILITIES.map((c) => {
-                  const isRec = c.key === "screen" && recording;
-                  return (
-                    <button
-                      key={c.key}
-                      onClick={() => setActiveCapability(activeCapability === c.key ? null : c.key)}
-                      className={`text-left border p-3 rounded transition-colors ${
-                        isRec
-                          ? "border-red-500/60 bg-red-500/10"
-                          : activeCapability === c.key
-                          ? "border-white/50 bg-white/[0.05]"
-                          : "border-white/15 hover:border-white/40 hover:bg-white/[0.03]"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 text-white/90">
-                        {isRec ? (
-                          <Square className="h-3.5 w-3.5 fill-current text-red-400" />
-                        ) : (
-                          <c.Icon className="h-4 w-4" />
-                        )}
-                        <span className="font-mono text-[10.5px] uppercase tracking-[0.2em]">
-                          {c.title}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {activeCapability && (() => {
-                const c = CAPABILITIES.find((x) => x.key === activeCapability)!;
-                const isRec = c.key === "screen" && recording;
-                return (
-                  <div className="mt-3 border border-white/20 bg-white/[0.03] rounded-lg p-4 relative">
-                    <button
-                      onClick={() => setActiveCapability(null)}
-                      className="absolute top-2 right-2 p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
-                      aria-label="Close"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                    <div className="flex items-center gap-2 mb-2">
-                      <c.Icon className="h-4 w-4 text-white/80" />
-                      <span className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80">
-                        {c.title}
-                      </span>
-                    </div>
-                    <p className="text-[13px] leading-relaxed text-white/70">{c.desc}</p>
-                    {(c.key === "repo" || c.key === "system") && github && (
-                      <p className="mt-2 text-[11px] font-mono text-white/50">
-                        connected as <span className="text-white/80">{github.login}</span>
-                      </p>
-                    )}
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() => {
-                          if (c.key === "screen") {
-                            isRec ? stopRecording() : startRecording();
-                          } else if (c.key === "repo" || c.key === "system") {
-                            if (github) {
-                              toast.success(`GitHub connected as ${github.login}. Indexing coming next.`);
-                            } else {
-                              startGithubOAuth("connect", "/chat");
-                            }
-                          } else {
-                            toast("Knowledge Intelligence coming soon");
-                          }
-                        }}
-                        className="inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
-                      >
-                        {isRec
-                          ? "Stop recording"
-                          : (c.key === "repo" || c.key === "system") && github
-                            ? "Run analysis"
-                            : c.cta}
-                        <ArrowRight className="h-3 w-3" />
-                      </button>
-                      {c.key === "screen" && isRec && (
-                        <button
-                          disabled={analyzing}
-                          onClick={captureFrameAndAnalyze}
-                          className="inline-flex items-center gap-1.5 border border-white/40 bg-black text-white px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors disabled:opacity-50"
-                        >
-                          {analyzing ? (
-                            <>
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                              Analyzing…
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-3 w-3" />
-                              Analyze now
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                    {c.key === "screen" && analysisResult && (
-                      <AnalysisReport
-                        result={analysisResult}
-                        onClose={() => setAnalysisResult(null)}
-                      />
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-
-
-
-
-            <div className="mt-6 text-center font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/40">
-              {credits?.balance ?? 0} credits remaining
+            <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
+              {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
             </div>
           </div>
         </div>
@@ -509,6 +441,7 @@ function ChatPage() {
 
   );
 }
+
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

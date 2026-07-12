@@ -746,6 +746,8 @@ function MobileChat({
   attachments,
   onRemoveAttachment,
   analyzing,
+  analysisResult,
+  onClearAnalysis,
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;
@@ -758,6 +760,8 @@ function MobileChat({
   attachments: Attachment[];
   onRemoveAttachment: (idx: number) => void;
   analyzing: boolean;
+  analysisResult: { analysis: ScreenAnalysis; fix: FixSuggestion } | null;
+  onClearAnalysis: () => void;
 }) {
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);

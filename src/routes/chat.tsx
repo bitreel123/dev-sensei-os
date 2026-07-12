@@ -7,12 +7,15 @@ import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
 import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Check, Plus, Mic } from "lucide-react";
 import { toast } from "sonner";
-import { addHistoryEntry } from "@/lib/chat-history";
+import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion } from "@/lib/screen-intel.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 
 export const Route = createFileRoute("/chat")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    id: typeof s.id === "string" ? s.id : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "New chat · Jeradin" },
@@ -31,12 +34,14 @@ function ChatPage() {
   const { user, loading } = useAuth();
   const { credits } = useUserData(user?.id ?? null);
   const { connection: github } = useGithubConnection(user?.id ?? null);
+  const search = Route.useSearch();
   const [prompt, setPrompt] = useState("");
   const [recording, setRecording] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [activeCapability, setActiveCapability] = useState<CapabilityKey | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
+  const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -44,18 +49,47 @@ function ChatPage() {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
 
+  // Restore a saved chat when ?id=... is in the URL
+  useEffect(() => {
+    if (!search.id) return;
+    const entry = getHistoryEntry(search.id);
+    if (entry?.payload) {
+      setAnalysisResult(entry.payload);
+      setActiveCapability("screen");
+      setCurrentEntryId(entry.id);
+    }
+  }, [search.id]);
+
+  async function analyzeImageBase64(base64: string, note: string, title: string) {
+    setAnalyzing(true);
+    try {
+      const result = await runAnalyze({ data: { imageBase64: base64, note } });
+      setAnalysisResult(result);
+      setActiveCapability("screen");
+      const entry = addHistoryEntry(title, result);
+      setCurrentEntryId(entry.id);
+      toast.success("Analysis complete");
+      setPrompt("");
+      return result;
+    } catch (e) {
+      console.error("[analyzeImageBase64] failed:", e);
+      toast.error(e instanceof Error ? e.message : "Analysis failed");
+      return null;
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   async function captureFrameAndAnalyze() {
     if (!streamRef.current) {
       toast.error("Start a screen recording first");
       return;
     }
-    setAnalyzing(true);
     try {
       const video = document.createElement("video");
       video.srcObject = streamRef.current;
       video.muted = true;
       await video.play();
-      // wait one frame
       await new Promise((r) => requestAnimationFrame(() => r(null)));
 
       const maxW = 1280;
@@ -71,13 +105,14 @@ function ChatPage() {
       const dataUrl = canvas.toDataURL("image/png");
       video.pause();
 
-      const result = await runAnalyze({ data: { imageBase64: dataUrl, note: prompt.trim() } });
-      setAnalysisResult(result);
-      toast.success("Analysis complete");
+      await analyzeImageBase64(
+        dataUrl.replace(/^data:image\/png;base64,/, ""),
+        prompt.trim(),
+        prompt.trim() || "Screen frame analysis",
+      );
     } catch (e) {
+      console.error("[captureFrameAndAnalyze] failed:", e);
       toast.error(e instanceof Error ? e.message : "Analysis failed");
-    } finally {
-      setAnalyzing(false);
     }
   }
 
@@ -104,14 +139,37 @@ function ChatPage() {
       });
       streamRef.current = stream;
       chunksRef.current = [];
-      const rec = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp9,opus" });
+
+      // Pick a supported mimeType (Safari/Firefox may not support vp9)
+      const candidates = [
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+        "video/mp4",
+      ];
+      const mimeType = candidates.find((m) =>
+        typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m),
+      );
+      const rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       rec.ondataavailable = (e) => e.data.size && chunksRef.current.push(e.data);
-      rec.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+      rec.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" });
         const url = URL.createObjectURL(blob);
         setAttachments((prev) => [...prev, { kind: "recording", url, blob }]);
         stopStream();
         setRecording(false);
+        // Auto-analyze immediately so the user doesn't have to click Send
+        try {
+          const base64 = await videoBlobToFrameBase64(blob);
+          await analyzeImageBase64(
+            base64,
+            prompt.trim(),
+            prompt.trim() || "Screen recording",
+          );
+        } catch (e) {
+          console.error("[auto-analyze on stop] failed:", e);
+          toast.error(e instanceof Error ? e.message : "Could not analyze recording");
+        }
       };
       stream.getVideoTracks()[0].addEventListener("ended", () => rec.state !== "inactive" && rec.stop());
       recorderRef.current = rec;
@@ -156,59 +214,53 @@ function ChatPage() {
 
   async function send() {
     if (!prompt.trim() && attachments.length === 0) {
-      toast.error("Add a prompt or an attachment");
+      toast.error("Add a prompt or a screenshot / recording");
       return;
     }
-    const title = prompt.trim() || (attachments[0]?.kind === "recording" ? "Screen recording" : "New chat");
-    addHistoryEntry(title);
 
-    // If we have a screen recording in progress, grab a frame and analyze
+    // Recording still in progress → grab a live frame
     if (streamRef.current) {
       await captureFrameAndAnalyze();
       return;
     }
 
-    // If there's an image attachment, run Screen Intelligence on it
+    // Image attachment → analyze it
     const imageAttachment = attachments.find(
       (a) => a.kind === "file" && a.file.type.startsWith("image/"),
     );
     if (imageAttachment && imageAttachment.kind === "file") {
-      setAnalyzing(true);
       try {
         const base64 = await fileToBase64(imageAttachment.file);
-        const result = await runAnalyze({ data: { imageBase64: base64, note: prompt.trim() } });
-        setAnalysisResult(result);
-        setActiveCapability("screen");
-        toast.success("Analysis complete");
-        setPrompt("");
+        await analyzeImageBase64(
+          base64,
+          prompt.trim(),
+          prompt.trim() || imageAttachment.file.name,
+        );
       } catch (e) {
+        console.error("[send image] failed:", e);
         toast.error(e instanceof Error ? e.message : "Analysis failed");
-      } finally {
-        setAnalyzing(false);
       }
       return;
     }
 
-    // Recording attachment: analyze first frame
+    // Recording attachment → analyze first frame
     const recAttachment = attachments.find((a) => a.kind === "recording");
     if (recAttachment && recAttachment.kind === "recording") {
-      setAnalyzing(true);
       try {
         const base64 = await videoBlobToFrameBase64(recAttachment.blob);
-        const result = await runAnalyze({ data: { imageBase64: base64, note: prompt.trim() } });
-        setAnalysisResult(result);
-        setActiveCapability("screen");
-        toast.success("Analysis complete");
-        setPrompt("");
+        await analyzeImageBase64(
+          base64,
+          prompt.trim(),
+          prompt.trim() || "Screen recording",
+        );
       } catch (e) {
+        console.error("[send recording] failed:", e);
         toast.error(e instanceof Error ? e.message : "Analysis failed");
-      } finally {
-        setAnalyzing(false);
       }
       return;
     }
 
-    toast.message("Attach a screenshot, recording, or start Screen recording to analyze");
+    toast.message("Attach a screenshot or start Screen recording, then Send.");
   }
 
   if (loading || !user) {
@@ -236,6 +288,8 @@ function ChatPage() {
         attachments={attachments}
         onRemoveAttachment={removeAttachment}
         analyzing={analyzing}
+        analysisResult={analysisResult}
+        onClearAnalysis={() => { setAnalysisResult(null); setCurrentEntryId(null); }}
       />
 
 
@@ -692,6 +746,8 @@ function MobileChat({
   attachments,
   onRemoveAttachment,
   analyzing,
+  analysisResult,
+  onClearAnalysis,
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;
@@ -704,6 +760,8 @@ function MobileChat({
   attachments: Attachment[];
   onRemoveAttachment: (idx: number) => void;
   analyzing: boolean;
+  analysisResult: { analysis: ScreenAnalysis; fix: FixSuggestion } | null;
+  onClearAnalysis: () => void;
 }) {
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -739,21 +797,31 @@ function MobileChat({
         </Link>
       </div>
 
-      {/* Empty state */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-        <div className="mb-4">
-          <Sparkles className="h-10 w-10 text-orange-400" strokeWidth={1.2} />
+      {/* Content area: analysis result OR empty state */}
+      {analysisResult ? (
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <AnalysisReport result={analysisResult} onClose={onClearAnalysis} />
         </div>
-        <h1
-          className="text-[36px] leading-tight tracking-[-0.02em] text-white"
-          style={{ fontFamily: "'Instrument Serif', serif" }}
-        >
-          {greetName} returns!
-        </h1>
-        <p className="mt-2 text-[12px] text-white/40">
-          {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
-        </p>
-      </div>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+          <div className="mb-4">
+            {analyzing ? (
+              <Loader2 className="h-10 w-10 text-orange-400 animate-spin" strokeWidth={1.2} />
+            ) : (
+              <Sparkles className="h-10 w-10 text-orange-400" strokeWidth={1.2} />
+            )}
+          </div>
+          <h1
+            className="text-[36px] leading-tight tracking-[-0.02em] text-white"
+            style={{ fontFamily: "'Instrument Serif', serif" }}
+          >
+            {analyzing ? "Analyzing…" : `${greetName} returns!`}
+          </h1>
+          <p className="mt-2 text-[12px] text-white/40">
+            {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
+          </p>
+        </div>
+      )}
 
       {/* Composer */}
       <div className="p-3 shrink-0">

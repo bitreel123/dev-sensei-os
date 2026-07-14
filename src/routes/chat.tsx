@@ -510,6 +510,7 @@ function ChatPage() {
       {analysisResult && overlayOpen && (
         <div className="hidden md:block">
           <ScreenIntelOverlay
+            key={currentEntryId ?? "new"}
             analysis={analysisResult.analysis}
             fix={analysisResult.fix}
             initialMessages={overlayMessages}

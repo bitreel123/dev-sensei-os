@@ -470,7 +470,7 @@ function ChatPage() {
                     <DesktopPromptBlock
                       prompt={prompt}
                       setPrompt={setPrompt}
-                      current={activeCapability ?? "screen"}
+                      current={activeCapability}
                       attachments={attachments}
                       onRemoveAttachment={removeAttachment}
                       onAttach={() => fileInputRef.current?.click()}
@@ -501,12 +501,12 @@ function ChatPage() {
 
         {/* Bottom composer only stays after a result/panel is open */}
         {(analysisResult || openedCapabilityPanel) && (
-          <div className="border-t border-white/10 shrink-0">
+          <div className="shrink-0">
             <div className="mx-auto w-full max-w-[820px] px-5 py-4">
               <DesktopPromptBlock
                 prompt={prompt}
                 setPrompt={setPrompt}
-                current={activeCapability ?? "screen"}
+                current={activeCapability}
                 attachments={attachments}
                 onRemoveAttachment={removeAttachment}
                 onAttach={() => fileInputRef.current?.click()}

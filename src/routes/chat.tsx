@@ -9,9 +9,10 @@ import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRi
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
+import { SystemPanel, KnowledgePanel, RepoPanel } from "@/components/jeradin/capability-panels";
 
 
 export const Route = createFileRoute("/chat")({

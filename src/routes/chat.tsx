@@ -386,7 +386,9 @@ function ChatPage() {
 
         {/* Top: scrollable analysis / greeting area */}
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[820px] px-5 py-8">
+          <div className="mx-auto w-full max-w-[820px] px-5 py-8 space-y-6">
+            <MonitorPanel />
+
             {(activeCapability ?? "screen") === "screen" ? (
               <>
                 {analyzing && !analysisResult && (

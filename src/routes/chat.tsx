@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ScreenIntelOverlay } from "@/components/jeradin/screen-intel-overlay";
+import { ScreenIntelOverlay, AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
+import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
 
 
 export const Route = createFileRoute("/chat")({

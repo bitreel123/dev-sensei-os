@@ -70,9 +70,9 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    const lovableKey = process.env.LOVABLE_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-    if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
+    if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin

@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
+import { callGeminiText } from "./intel-shared";
 
 // ---------------- Types ----------------
 export type RepoRisk = {
@@ -70,9 +70,9 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    const lovableKey = process.env.LOVABLE_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-    if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
+    if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin
@@ -235,18 +235,11 @@ Rules:
     const parsed = JSON.parse(jsonMatch[0]) as Omit<GithubIntelReport, "repo">;
 
     // Optional: Gemini re-writes summary in even simpler language
-    const gateway = createOpenAICompatible({
-      name: "lovable",
-      baseURL: "https://ai.gateway.lovable.dev/v1",
-      headers: { "Lovable-API-Key": lovableKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-    });
-    const gemini = gateway("google/gemini-3.1-flash-lite");
-    const { text: laymanSummary } = await generateText({
-      model: gemini,
-      system:
-        "Rewrite technical summaries in friendly plain English for a non-technical reader. Define every abbreviation the first time, e.g. 'PR (Pull Request — a proposed code change)'.",
-      prompt: `Original summary of ${data.repo}:\n${parsed.summary}\n\nRewrite in 2-3 short sentences.`,
-    });
+    const laymanSummary = await callGeminiText(
+      geminiKey,
+      "Rewrite technical summaries in friendly plain English for a non-technical reader. Define every abbreviation the first time, e.g. 'PR (Pull Request — a proposed code change)'.",
+      `Original summary of ${data.repo}:\n${parsed.summary}\n\nRewrite in 2-3 short sentences.`,
+    );
 
     const report: GithubIntelReport = { repo: data.repo, ...parsed, summary: laymanSummary };
     return { report };

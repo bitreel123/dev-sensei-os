@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
+import { callGeminiText } from "./intel-shared";
 
 // ---------------- Types ----------------
 export type KnowledgeResource = {
@@ -52,9 +52,9 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    const lovableKey = process.env.LOVABLE_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-    if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
+    if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
 
     // Grab user's GitHub token if available (higher rate limit + private search)
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -219,20 +219,13 @@ Rules:
     const partial = JSON.parse(jsonMatch[0]) as Omit<KnowledgeReport, "question" | "laymanSummary">;
 
     // ---------- Step 2: Gemini plain-English summary ----------
-    const gateway = createOpenAICompatible({
-      name: "lovable",
-      baseURL: "https://ai.gateway.lovable.dev/v1",
-      headers: { "Lovable-API-Key": lovableKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-    });
-    const gemini = gateway("google/gemini-3.1-flash-lite");
+    const summary = await callGeminiText(
+      geminiKey,
+      "You write friendly, plain-English summaries for developers who may not be highly technical. 2-3 short paragraphs. Define any abbreviation the first time you use it, e.g. 'API (Application Programming Interface)'.",
+      `Question: ${data.question}\n\nResearch findings (JSON):\n${JSON.stringify(partial).slice(0, 8000)}\n\nWrite a plain-English summary explaining what the developer should build with, why, and how the pieces fit together.`,
+    );
 
-    const { text: summary } = await generateText({
-      model: gemini,
-      system:
-        "You write friendly, plain-English summaries for developers who may not be highly technical. 2-3 short paragraphs. Define any abbreviation the first time you use it, e.g. 'API (Application Programming Interface)'.",
-      prompt:
-        `Question: ${data.question}\n\nResearch findings (JSON):\n${JSON.stringify(partial).slice(0, 8000)}\n\nWrite a plain-English summary explaining what the developer should build with, why, and how the pieces fit together.`,
-    });
+
 
     const report: KnowledgeReport = {
       question: data.question,

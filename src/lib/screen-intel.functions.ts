@@ -41,9 +41,9 @@ export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
     return { imageBase64: cleaned, note: (input.note ?? "").slice(0, 2000) };
   })
   .handler(async ({ data, context }) => {
-    const lovableKey = process.env.LOVABLE_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
+    if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const screenAnalystSystem = `You are a senior debugging engineer analyzing a screenshot of a developer's IDE, code editor, browser devtools, or terminal.
@@ -89,7 +89,7 @@ Additional fields for this specific analyst:
     });
 
     // Step 1 — Gemini 3 Pro visual analyst
-    const analysis = normalizeScreenAnalysis((await callGeminiAnalyst(lovableKey, screenAnalystSystem, [
+    const analysis = normalizeScreenAnalysis((await callGeminiAnalyst(geminiKey, screenAnalystSystem, [
       {
         type: "text",
         text: data.note

@@ -256,7 +256,7 @@ function TabBtn({
   );
 }
 
-function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix: FixSuggestion }) {
+export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix: FixSuggestion }) {
   return (
     <div className="space-y-4">
       <div>

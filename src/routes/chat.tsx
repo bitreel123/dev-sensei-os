@@ -5,11 +5,11 @@ import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Check, Plus, Mic } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
 import { SystemPanel, KnowledgePanel, RepoPanel } from "@/components/jeradin/capability-panels";
@@ -43,6 +43,7 @@ function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [activeCapability, setActiveCapability] = useState<CapabilityKey | null>(null);
+  const [openedCapabilityPanel, setOpenedCapabilityPanel] = useState<Exclude<CapabilityKey, "screen"> | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
@@ -71,6 +72,7 @@ function ChatPage() {
     } else if (p.system || p.knowledge || p.repo) {
       // non-screen restore is handled inside the capability panel via entry id
       setActiveCapability(p.mode ?? "system");
+      setOpenedCapabilityPanel((p.mode === "system" || p.mode === "knowledge" || p.mode === "repo") ? p.mode : "system");
       setCurrentEntryId(entry.id);
     }
   }, [search.id]);
@@ -254,6 +256,12 @@ function ChatPage() {
   }
 
   async function send() {
+    if ((activeCapability ?? "screen") !== "screen") {
+      const selected = CAPABILITIES.find((c) => c.key === activeCapability);
+      toast.message(`${selected?.title ?? "That capability"} is selected — use the action below to start.`);
+      return;
+    }
+
     if (!prompt.trim() && attachments.length === 0) {
       toast.error("Add a prompt or a screenshot / recording");
       return;
@@ -371,7 +379,13 @@ function ChatPage() {
           <div className="mx-auto w-full max-w-[820px] px-5 py-8 space-y-6">
 
 
-            {(activeCapability ?? "screen") === "screen" ? (
+            {openedCapabilityPanel === "system" ? (
+              <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            ) : openedCapabilityPanel === "knowledge" ? (
+              <KnowledgePanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            ) : openedCapabilityPanel === "repo" ? (
+              <RepoPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            ) : (
               <>
                 {analyzing && !analysisResult && (
                   <div className="flex items-center justify-center gap-3 py-10 text-white/70">
@@ -427,34 +441,12 @@ function ChatPage() {
                     </p>
                   </div>
                 ) : null}
-                {!analysisResult && !analyzing && (
-                  <CapabilityCards
-                    current={activeCapability ?? "screen"}
-                    onSelect={(m) => {
-                      if (m === (activeCapability ?? "screen")) return;
-                      setActiveCapability(m);
-                      setAnalysisResult(null);
-                      setAnalysisError(null);
-                      setCurrentEntryId(null);
-                      setPrompt("");
-                      navigate({ to: "/chat" });
-                    }}
-                  />
-                )}
-
               </>
-            ) : activeCapability === "system" ? (
-              <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
-            ) : activeCapability === "knowledge" ? (
-              <KnowledgePanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
-            ) : (
-              <RepoPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
             )}
           </div>
         </div>
 
-        {/* Bottom: sticky composer — only for Screen mode */}
-        {(activeCapability ?? "screen") === "screen" && (
+        {/* Bottom: sticky composer + capability buttons */}
         <div className="border-t border-white/10 shrink-0">
           <div className="mx-auto w-full max-w-[820px] px-5 py-4">
             {attachments.length > 0 && (
@@ -486,7 +478,7 @@ function ChatPage() {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Paste an error, describe the bug, or start a screen recording…"
+                placeholder={(activeCapability ?? "screen") === "screen" ? "Paste an error, describe the bug, or start a screen recording…" : `Describe what you need from ${CAPABILITIES.find((c) => c.key === activeCapability)?.title ?? "this capability"}…`}
                 rows={2}
                 className="w-full bg-transparent p-4 text-[14px] resize-none focus:outline-none placeholder:text-white/35"
               />
@@ -534,12 +526,33 @@ function ChatPage() {
               </div>
             </div>
 
+            <CapabilityPills
+              current={activeCapability ?? "screen"}
+              onSelect={(m) => {
+                setActiveCapability(m);
+                setOpenedCapabilityPanel(null);
+                if (m !== "screen") {
+                  setAnalysisResult(null);
+                  setAnalysisError(null);
+                }
+                navigate({ to: "/chat" });
+              }}
+            />
+
+            <CapabilityDetails
+              current={activeCapability ?? "screen"}
+              recording={recording}
+              analyzing={analyzing}
+              onRecord={recording ? stopRecording : startRecording}
+              onAttach={() => fileInputRef.current?.click()}
+              onOpenPanel={(m) => setOpenedCapabilityPanel(m)}
+            />
+
             <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
               {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
             </div>
           </div>
         </div>
-        )}
       </main>
       </div>
 
@@ -648,31 +661,85 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
   );
 }
 
-function CapabilityCards({ current, onSelect }: { current: CapabilityKey; onSelect: (m: CapabilityKey) => void }) {
+function CapabilityPills({ current, onSelect }: { current: CapabilityKey; onSelect: (m: CapabilityKey) => void }) {
   return (
-    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
       {CAPABILITIES.map((c) => {
         const active = current === c.key;
         return (
           <button
             key={c.key}
             onClick={() => onSelect(c.key)}
-            className={`text-left border rounded-lg p-4 transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
               active
-                ? "border-white/40 bg-white/[0.04]"
-                : "border-white/10 bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.04]"
+                ? "bg-white/15 text-white"
+                : "bg-white/[0.08] text-white/70 hover:bg-white/[0.12] hover:text-white"
             }`}
           >
-            <div className="flex items-center gap-2 mb-1.5">
-              <c.Icon className="h-3.5 w-3.5 text-white/80" />
-              <span className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/90">
-                {c.title.replace(" Intelligence", "")}
-              </span>
-            </div>
-            <p className="text-[12.5px] text-white/60 leading-relaxed">{c.desc}</p>
+            <c.Icon className="h-3.5 w-3.5" />
+            <span>{c.title.replace(" Intelligence", "")}</span>
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function CapabilityDetails({
+  current,
+  recording,
+  analyzing,
+  onRecord,
+  onAttach,
+  onOpenPanel,
+}: {
+  current: CapabilityKey;
+  recording: boolean;
+  analyzing: boolean;
+  onRecord: () => void;
+  onAttach: () => void;
+  onOpenPanel: (m: Exclude<CapabilityKey, "screen">) => void;
+}) {
+  const capability = CAPABILITIES.find((c) => c.key === current) ?? CAPABILITIES[0];
+
+  return (
+    <div className="mx-auto mt-3 max-w-[640px] rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-center">
+      <div className="flex items-center justify-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/70">
+        <capability.Icon className="h-3.5 w-3.5 text-orange-400" />
+        {capability.title}
+      </div>
+      <p className="mx-auto mt-2 max-w-[560px] text-[12.5px] leading-relaxed text-white/55">
+        {capability.desc}
+      </p>
+      <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+        {current === "screen" ? (
+          <>
+            <button
+              onClick={onRecord}
+              disabled={analyzing}
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10 disabled:opacity-50"
+            >
+              {recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
+              {recording ? "Stop recording" : "Record screen"}
+            </button>
+            <button
+              onClick={onAttach}
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10"
+            >
+              <Paperclip className="h-3.5 w-3.5" />
+              Attach screenshot
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => onOpenPanel(current)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-black hover:bg-white/90"
+          >
+            {capability.cta}
+            <Send className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -852,13 +919,6 @@ const CAPABILITIES: Array<{
   },
 ];
 
-const CAPABILITY_SHORT: Record<CapabilityKey, string> = {
-  screen: "See your screen, diagnose bugs",
-  system: "Map your whole codebase",
-  knowledge: "Find repos, APIs, models",
-  repo: "Analyze commits & PRs",
-};
-
 // ============= MOBILE LAYOUT =============
 function MobileChat({
   user,
@@ -896,10 +956,8 @@ function MobileChat({
   onClearAnalysis: () => void;
 }) {
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const selected = activeCapability ?? "screen";
-  const selectedTitle = CAPABILITIES.find((c) => c.key === selected)?.title ?? "Screen Intelligence";
   const firstName = (user?.email ?? "there").split("@")[0].split(/[._-]/)[0];
   const greetName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 
@@ -989,7 +1047,7 @@ function MobileChat({
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder={`Chat with ${selectedTitle.split(" ")[0]}…`}
+            placeholder="How can I help you today?"
             rows={2}
             className="w-full bg-transparent px-2 py-1 text-[15px] resize-none focus:outline-none placeholder:text-white/40 text-white"
           />
@@ -1008,12 +1066,7 @@ function MobileChat({
             >
               <Plus className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => setSheetOpen(true)}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-full bg-white/10 text-[13px] text-white/90 truncate"
-            >
-              <span className="truncate">{selectedTitle}</span>
-            </button>
+            <div className="flex-1" />
             <button
               onClick={onToggleRecording}
               disabled={analyzing}
@@ -1032,50 +1085,22 @@ function MobileChat({
             </button>
           </div>
         </div>
+        <CapabilityPills
+          current={selected}
+          onSelect={(m: CapabilityKey) => setActiveCapability(m)}
+        />
+        <CapabilityDetails
+          current={selected}
+          recording={recording}
+          analyzing={analyzing}
+          onRecord={onToggleRecording}
+          onAttach={() => mobileFileInputRef.current?.click()}
+          onOpenPanel={(m: Exclude<CapabilityKey, "screen">) => {
+            setActiveCapability(m);
+            toast.message(`${CAPABILITIES.find((c) => c.key === m)?.title ?? "This capability"} opens in the desktop workspace.`);
+          }}
+        />
       </div>
-
-
-      {/* Capability picker sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent
-          side="bottom"
-          className="bg-[#0a0a0a] border-white/10 text-white rounded-t-3xl px-0 pt-2"
-        >
-          <div className="flex justify-center pt-1 pb-2">
-            <div className="h-1 w-10 rounded-full bg-white/20" />
-          </div>
-          <SheetHeader className="px-6">
-            <SheetTitle className="text-center text-white text-[17px] font-semibold">
-              Select capability
-            </SheetTitle>
-          </SheetHeader>
-          <div className="px-2 pt-2 pb-6">
-            {CAPABILITIES.map((c) => {
-              const isSelected = selected === c.key;
-              return (
-                <button
-                  key={c.key}
-                  onClick={() => {
-                    setActiveCapability(c.key);
-                    setSheetOpen(false);
-                  }}
-                  className="w-full flex items-start justify-between text-left px-4 py-4 hover:bg-white/5 rounded-xl"
-                >
-                  <div className="min-w-0">
-                    <div className={`text-[17px] font-medium ${isSelected ? "text-sky-400" : "text-white"}`}>
-                      {c.title}
-                    </div>
-                    <div className={`text-[13.5px] mt-0.5 ${isSelected ? "text-sky-400/80" : "text-white/50"}`}>
-                      {CAPABILITY_SHORT[c.key]}
-                    </div>
-                  </div>
-                  {isSelected && <Check className="h-5 w-5 text-sky-400 shrink-0 mt-1" />}
-                </button>
-              );
-            })}
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* Sidebar drawer */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>

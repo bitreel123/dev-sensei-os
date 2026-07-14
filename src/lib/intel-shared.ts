@@ -128,8 +128,8 @@ export function buildGithubTools(ghToken?: string) {
 // ---------- Gemini caller (raw fetch to Google's native Generative Language API) ----------
 // Uses GEMINI_API_KEY from Google AI Studio directly — no Lovable gateway.
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
-const GEMINI_ANALYST_MODEL = "gemini-3-pro-preview";
-const GEMINI_TEXT_MODEL = "gemini-3-pro-preview";
+const GEMINI_ANALYST_MODEL = "gemini-3.1-pro-preview";
+const GEMINI_TEXT_MODEL = "gemini-3.1-pro-preview";
 
 type GeminiPart =
   | { text: string }
@@ -159,7 +159,9 @@ async function callGemini(
     contents: [{ role: "user", parts }],
     generationConfig: {
       temperature: opts.temperature ?? 0.2,
-      maxOutputTokens: opts.maxOutputTokens ?? 8192,
+      // Gemini 3.x Pro consumes many "thoughts" tokens before visible output;
+      // keep a generous ceiling so a big analyst JSON isn't cut off.
+      maxOutputTokens: opts.maxOutputTokens ?? 16384,
       ...(opts.json ? { responseMimeType: "application/json" } : {}),
     },
   };

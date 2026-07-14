@@ -367,12 +367,13 @@ function ChatPage() {
         analysisResult={analysisResult}
         onClearAnalysis={() => { setAnalysisResult(null); setAnalysisError(null); setCurrentEntryId(null); }}
         openedCapabilityPanel={openedCapabilityPanel}
-        onOpenCapabilityPanel={(m) => {
+        onOpenCapabilityPanel={(m: Exclude<CapabilityKey, "screen">) => {
           setActiveCapability(m);
           setAnalysisResult(null);
           setAnalysisError(null);
           setOpenedCapabilityPanel(m);
         }}
+        onCloseCapabilityPanels={() => setOpenedCapabilityPanel(null)}
         currentEntryId={currentEntryId}
         setCurrentEntryId={setCurrentEntryId}
       />

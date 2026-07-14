@@ -28,6 +28,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicGithubCallbackRouteImport } from './routes/api/public/github.callback'
 import { Route as ApiPublicGithubAuthorizeRouteImport } from './routes/api/public/github.authorize'
@@ -127,6 +128,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
     id: '/api/public/payments/webhook',
@@ -168,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
   '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -192,6 +200,7 @@ export interface FileRoutesByTo {
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
   '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -217,6 +226,7 @@ export interface FileRoutesById {
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
   '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/api/public/github/authorize'
     | '/api/public/github/callback'
     | '/api/public/payments/webhook'
+    | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/api/public/github/authorize'
     | '/api/public/github/callback'
     | '/api/public/payments/webhook'
+    | '/lovable/email/queue/process'
   id:
     | '__root__'
     | '/'
@@ -291,6 +303,7 @@ export interface FileRouteTypes {
     | '/api/public/github/authorize'
     | '/api/public/github/callback'
     | '/api/public/payments/webhook'
+    | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -316,6 +329,7 @@ export interface RootRouteChildren {
   ApiPublicGithubAuthorizeRoute: typeof ApiPublicGithubAuthorizeRoute
   ApiPublicGithubCallbackRoute: typeof ApiPublicGithubCallbackRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -453,6 +467,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/webhook': {
       id: '/api/public/payments/webhook'
       path: '/api/public/payments/webhook'
@@ -500,6 +521,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicGithubAuthorizeRoute: ApiPublicGithubAuthorizeRoute,
   ApiPublicGithubCallbackRoute: ApiPublicGithubCallbackRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -673,7 +673,7 @@ function CapabilityPills({ current, onSelect }: { current: CapabilityKey; onSele
             className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
               active
                 ? "bg-white/15 text-white"
-                : "bg-white/8 text-white/70 hover:bg-white/12 hover:text-white"
+                : "bg-white/[0.08] text-white/70 hover:bg-white/[0.12] hover:text-white"
             }`}
           >
             <c.Icon className="h-3.5 w-3.5" />

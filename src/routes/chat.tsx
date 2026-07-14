@@ -661,31 +661,85 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
   );
 }
 
-function CapabilityCards({ current, onSelect }: { current: CapabilityKey; onSelect: (m: CapabilityKey) => void }) {
+function CapabilityPills({ current, onSelect }: { current: CapabilityKey; onSelect: (m: CapabilityKey) => void }) {
   return (
-    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
       {CAPABILITIES.map((c) => {
         const active = current === c.key;
         return (
           <button
             key={c.key}
             onClick={() => onSelect(c.key)}
-            className={`text-left border rounded-lg p-4 transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
               active
-                ? "border-white/40 bg-white/[0.04]"
-                : "border-white/10 bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.04]"
+                ? "bg-white/15 text-white"
+                : "bg-white/8 text-white/70 hover:bg-white/12 hover:text-white"
             }`}
           >
-            <div className="flex items-center gap-2 mb-1.5">
-              <c.Icon className="h-3.5 w-3.5 text-white/80" />
-              <span className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/90">
-                {c.title.replace(" Intelligence", "")}
-              </span>
-            </div>
-            <p className="text-[12.5px] text-white/60 leading-relaxed">{c.desc}</p>
+            <c.Icon className="h-3.5 w-3.5" />
+            <span>{c.title.replace(" Intelligence", "")}</span>
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function CapabilityDetails({
+  current,
+  recording,
+  analyzing,
+  onRecord,
+  onAttach,
+  onOpenPanel,
+}: {
+  current: CapabilityKey;
+  recording: boolean;
+  analyzing: boolean;
+  onRecord: () => void;
+  onAttach: () => void;
+  onOpenPanel: (m: Exclude<CapabilityKey, "screen">) => void;
+}) {
+  const capability = CAPABILITIES.find((c) => c.key === current) ?? CAPABILITIES[0];
+
+  return (
+    <div className="mx-auto mt-3 max-w-[640px] rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-center">
+      <div className="flex items-center justify-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/70">
+        <capability.Icon className="h-3.5 w-3.5 text-orange-400" />
+        {capability.title}
+      </div>
+      <p className="mx-auto mt-2 max-w-[560px] text-[12.5px] leading-relaxed text-white/55">
+        {capability.desc}
+      </p>
+      <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+        {current === "screen" ? (
+          <>
+            <button
+              onClick={onRecord}
+              disabled={analyzing}
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10 disabled:opacity-50"
+            >
+              {recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
+              {recording ? "Stop recording" : "Record screen"}
+            </button>
+            <button
+              onClick={onAttach}
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10"
+            >
+              <Paperclip className="h-3.5 w-3.5" />
+              Attach screenshot
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => onOpenPanel(current)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-black hover:bg-white/90"
+          >
+            {capability.cta}
+            <Send className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

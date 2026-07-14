@@ -409,6 +409,12 @@ function PricingPage() {
         <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.2em] text-white/50 text-center">
           Monthly credits · Prorated upgrades · Access kept until period end on cancel
         </p>
+        <p className="mt-3 font-mono text-[11px] tracking-[0.15em] text-white/50 text-center">
+          All prices are in USD. Taxes may apply and will be calculated at checkout. Plans renew automatically at the price shown above until cancelled. Cancel anytime from your account.
+        </p>
+        <p className="mt-2 font-mono text-[11px] tracking-[0.15em] text-white/40 text-center">
+          Payments are processed by our reseller Paddle.com, the Merchant of Record for all orders.
+        </p>
       </section>
 
       <SiteFooter />

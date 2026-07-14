@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { ScreenIntelOverlay, AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
 import { SystemPanel, KnowledgePanel, RepoPanel } from "@/components/jeradin/capability-panels";
+import { MonitorPanel } from "@/components/jeradin/monitor-panel";
 
 
 export const Route = createFileRoute("/chat")({

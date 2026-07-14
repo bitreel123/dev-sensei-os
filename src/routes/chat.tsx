@@ -77,7 +77,7 @@ function ChatPage() {
   useEffect(() => {
     if (!currentEntryId || !analysisResult) return;
     updateHistoryEntry(currentEntryId, {
-      payload: { analysis: analysisResult.analysis, fix: analysisResult.fix, messages: overlayMessages },
+      payload: { mode: "screen", analysis: analysisResult.analysis, fix: analysisResult.fix, messages: overlayMessages },
     });
   }, [overlayMessages, currentEntryId, analysisResult]);
 

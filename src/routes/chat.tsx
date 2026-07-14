@@ -661,7 +661,7 @@ function DesktopPromptBlock({
 }: {
   prompt: string;
   setPrompt: (value: string) => void;
-  current: CapabilityKey;
+  current: CapabilityKey | null;
   attachments: Attachment[];
   onRemoveAttachment: (idx: number) => void;
   onAttach: () => void;
@@ -675,12 +675,13 @@ function DesktopPromptBlock({
   onSelectCapability: (m: CapabilityKey) => void;
   onOpenPanel: (m: Exclude<CapabilityKey, "screen">) => void;
 }) {
-  const placeholder = current === "screen"
+  const selected = current ?? "screen";
+  const placeholder = selected === "screen"
     ? "Paste an error, describe the bug, or start a screen recording…"
-    : `Describe what you need from ${CAPABILITIES.find((c) => c.key === current)?.title ?? "this capability"}…`;
+    : `Describe what you need from ${CAPABILITIES.find((c) => c.key === selected)?.title ?? "this capability"}…`;
 
   return (
-    <div className="mt-8 w-full">
+    <div className="mt-16 w-full">
       {attachments.length > 0 && (
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {attachments.map((a, i) => (
@@ -732,11 +733,6 @@ function DesktopPromptBlock({
               className="hidden"
               onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
             />
-            <ToolButton
-              onClick={onRecord}
-              icon={recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
-              label={recording ? "Stop recording" : "Record screen"}
-            />
           </div>
           <button
             onClick={onSend}
@@ -759,19 +755,20 @@ function DesktopPromptBlock({
       </div>
 
       <CapabilityPills current={current} onSelect={onSelectCapability} />
-      <CapabilityDetails
-        current={current}
-        recording={recording}
-        analyzing={analyzing}
-        onRecord={onRecord}
-        onAttach={onAttach}
-        onOpenPanel={onOpenPanel}
-      />
+      {current && (
+        <CapabilityDetails
+          current={current}
+          recording={recording}
+          analyzing={analyzing}
+          onRecord={onRecord}
+          onOpenPanel={onOpenPanel}
+        />
+      )}
     </div>
   );
 }
 
-function CapabilityPills({ current, onSelect }: { current: CapabilityKey; onSelect: (m: CapabilityKey) => void }) {
+function CapabilityPills({ current, onSelect }: { current: CapabilityKey | null; onSelect: (m: CapabilityKey) => void }) {
   return (
     <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
       {CAPABILITIES.map((c) => {
@@ -800,14 +797,12 @@ function CapabilityDetails({
   recording,
   analyzing,
   onRecord,
-  onAttach,
   onOpenPanel,
 }: {
   current: CapabilityKey;
   recording: boolean;
   analyzing: boolean;
   onRecord: () => void;
-  onAttach: () => void;
   onOpenPanel: (m: Exclude<CapabilityKey, "screen">) => void;
 }) {
   const capability = CAPABILITIES.find((c) => c.key === current) ?? CAPABILITIES[0];
@@ -823,23 +818,14 @@ function CapabilityDetails({
       </p>
       <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
         {current === "screen" ? (
-          <>
-            <button
-              onClick={onRecord}
-              disabled={analyzing}
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10 disabled:opacity-50"
-            >
-              {recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
-              {recording ? "Stop recording" : "Record screen"}
-            </button>
-            <button
-              onClick={onAttach}
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10"
-            >
-              <Paperclip className="h-3.5 w-3.5" />
-              Attach screenshot
-            </button>
-          </>
+          <button
+            onClick={onRecord}
+            disabled={analyzing}
+            className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10 disabled:opacity-50"
+          >
+            {recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
+            {recording ? "Stop recording" : "Record screen"}
+          </button>
         ) : (
           <button
             onClick={() => onOpenPanel(current)}

@@ -983,6 +983,7 @@ const CAPABILITIES: Array<{
   key: CapabilityKey;
   title: string;
   desc: string;
+  mobileDesc?: string;
   cta: string;
   Icon: React.ComponentType<{ className?: string }>;
 }> = [
@@ -990,6 +991,7 @@ const CAPABILITIES: Array<{
     key: "screen",
     title: "Screen Intelligence",
     desc: "Record your screen so Jeradin sees exactly what you see — clicks, errors, network traffic and console output are captured together so the agent can reproduce the bug instead of guessing.",
+    mobileDesc: "See your screen, diagnose bugs",
     cta: "Start recording",
     Icon: Monitor,
   },
@@ -997,6 +999,7 @@ const CAPABILITIES: Array<{
     key: "system",
     title: "System Intelligence",
     desc: "Upload your codebase or connect GitHub and Jeradin will build a semantic map of your architecture — routes, modules, data flow and dependencies — so fixes account for the whole system, not one file.",
+    mobileDesc: "Map your whole codebase",
     cta: "Connect codebase",
     Icon: Network,
   },
@@ -1004,6 +1007,7 @@ const CAPABILITIES: Array<{
     key: "knowledge",
     title: "Knowledge Intelligence",
     desc: "Pulls in docs, tickets, prior PR discussions and past decisions relevant to the current issue so you don't have to hunt for context across five tools.",
+    mobileDesc: "Find repos, APIs, models",
     cta: "Enable knowledge",
     Icon: BookOpen,
   },
@@ -1011,6 +1015,7 @@ const CAPABILITIES: Array<{
     key: "repo",
     title: "Repo Intelligence",
     desc: "Connect your GitHub account and Jeradin reads commit history, branches, PRs and diffs to trace root causes — perfect for regressions and 'it worked last week' bugs.",
+    mobileDesc: "Analyze commits and PRs",
     cta: "Connect GitHub",
     Icon: Github,
   },

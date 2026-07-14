@@ -375,7 +375,7 @@ function ChatBody({
           Ask a follow-up about the analysis, the fix, or anything adjacent.
         </p>
         <p className="mt-1 text-[10.5px] font-mono uppercase tracking-[0.2em] text-white/35">
-          Claude Sonnet · with full analysis context
+          with full analysis context
         </p>
       </div>
     );

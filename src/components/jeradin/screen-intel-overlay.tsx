@@ -153,7 +153,7 @@ export function ScreenIntelOverlay({
         <GripHorizontal className="h-3.5 w-3.5 text-white/40" />
         <Sparkles className="h-3.5 w-3.5 text-orange-400" />
         <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/70 flex-1 truncate">
-          Screen Intelligence · Gemini 3 + Claude
+          Screen Intelligence
         </span>
         <button
           onClick={() => setPinned((p) => !p)}

@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as typedSupabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+
+// notifications table isn't in the generated types yet; use a loose alias.
+const supabase = typedSupabase as unknown as {
+  from: (table: string) => any;
+  channel: (name: string) => any;
+  removeChannel: (c: unknown) => void;
+  auth: typeof typedSupabase.auth;
+};
 
 export type NotificationRow = {
   id: string;

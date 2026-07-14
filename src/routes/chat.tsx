@@ -963,10 +963,8 @@ function MobileChat({
   onClearAnalysis: () => void;
 }) {
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const selected = activeCapability ?? "screen";
-  const selectedTitle = CAPABILITIES.find((c) => c.key === selected)?.title ?? "Screen Intelligence";
   const firstName = (user?.email ?? "there").split("@")[0].split(/[._-]/)[0];
   const greetName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 
@@ -1056,7 +1054,7 @@ function MobileChat({
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder={`Chat with ${selectedTitle.split(" ")[0]}…`}
+            placeholder="How can I help you today?"
             rows={2}
             className="w-full bg-transparent px-2 py-1 text-[15px] resize-none focus:outline-none placeholder:text-white/40 text-white"
           />
@@ -1075,12 +1073,7 @@ function MobileChat({
             >
               <Plus className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => setSheetOpen(true)}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-full bg-white/10 text-[13px] text-white/90 truncate"
-            >
-              <span className="truncate">{selectedTitle}</span>
-            </button>
+            <div className="flex-1" />
             <button
               onClick={onToggleRecording}
               disabled={analyzing}
@@ -1099,50 +1092,22 @@ function MobileChat({
             </button>
           </div>
         </div>
+        <CapabilityPills
+          current={selected}
+          onSelect={(m: CapabilityKey) => setActiveCapability(m)}
+        />
+        <CapabilityDetails
+          current={selected}
+          recording={recording}
+          analyzing={analyzing}
+          onRecord={onToggleRecording}
+          onAttach={() => mobileFileInputRef.current?.click()}
+          onOpenPanel={(m: Exclude<CapabilityKey, "screen">) => {
+            setActiveCapability(m);
+            toast.message(`${CAPABILITIES.find((c) => c.key === m)?.title ?? "This capability"} opens in the desktop workspace.`);
+          }}
+        />
       </div>
-
-
-      {/* Capability picker sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent
-          side="bottom"
-          className="bg-[#0a0a0a] border-white/10 text-white rounded-t-3xl px-0 pt-2"
-        >
-          <div className="flex justify-center pt-1 pb-2">
-            <div className="h-1 w-10 rounded-full bg-white/20" />
-          </div>
-          <SheetHeader className="px-6">
-            <SheetTitle className="text-center text-white text-[17px] font-semibold">
-              Select capability
-            </SheetTitle>
-          </SheetHeader>
-          <div className="px-2 pt-2 pb-6">
-            {CAPABILITIES.map((c) => {
-              const isSelected = selected === c.key;
-              return (
-                <button
-                  key={c.key}
-                  onClick={() => {
-                    setActiveCapability(c.key);
-                    setSheetOpen(false);
-                  }}
-                  className="w-full flex items-start justify-between text-left px-4 py-4 hover:bg-white/5 rounded-xl"
-                >
-                  <div className="min-w-0">
-                    <div className={`text-[17px] font-medium ${isSelected ? "text-sky-400" : "text-white"}`}>
-                      {c.title}
-                    </div>
-                    <div className={`text-[13.5px] mt-0.5 ${isSelected ? "text-sky-400/80" : "text-white/50"}`}>
-                      {CAPABILITY_SHORT[c.key]}
-                    </div>
-                  </div>
-                  {isSelected && <Check className="h-5 w-5 text-sky-400 shrink-0 mt-1" />}
-                </button>
-              );
-            })}
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* Sidebar drawer */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>

@@ -427,6 +427,21 @@ function ChatPage() {
                     </p>
                   </div>
                 ) : null}
+                {!analysisResult && !analyzing && (
+                  <CapabilityCards
+                    current={activeCapability ?? "screen"}
+                    onSelect={(m) => {
+                      if (m === (activeCapability ?? "screen")) return;
+                      setActiveCapability(m);
+                      setAnalysisResult(null);
+                      setAnalysisError(null);
+                      setCurrentEntryId(null);
+                      setPrompt("");
+                      navigate({ to: "/chat" });
+                    }}
+                  />
+                )}
+
               </>
             ) : activeCapability === "system" ? (
               <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />

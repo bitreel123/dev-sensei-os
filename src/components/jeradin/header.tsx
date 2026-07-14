@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { LogoLockup } from "./logo";
 import { useAuth } from "@/hooks/use-auth";
+import { NotificationsBell } from "./notifications-bell";
 
 export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }) {
   const isDark = variant === "dark";

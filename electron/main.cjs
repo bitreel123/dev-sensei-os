@@ -1,8 +1,7 @@
 // Electron main process — Jeradin desktop agent shell.
-// Loads the local dist build in production, or the Vite dev server in dev.
-// Owns the log-tailer child process and pushes batched events to the renderer.
-
-const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage } = require("electron");
+const {
+  app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, Notification, shell,
+} = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
@@ -12,7 +11,11 @@ const APP_URL = process.env.JERADIN_DEV_URL || null;
 
 let mainWindow = null;
 let tray = null;
-const tailers = new Map(); // path -> ChildProcess
+const tailers = new Map();
+
+function trayIconPath() {
+  return path.join(__dirname, "tray-icon.png");
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -20,6 +23,7 @@ function createWindow() {
     height: 800,
     backgroundColor: "#000000",
     title: "Jeradin",
+    icon: trayIconPath(),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -28,29 +32,37 @@ function createWindow() {
     },
   });
 
-  if (isDev && APP_URL) {
-    mainWindow.loadURL(APP_URL);
-  } else {
-    mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"));
-  }
+  if (isDev && APP_URL) mainWindow.loadURL(APP_URL);
+  else mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"));
 
   mainWindow.on("closed", () => { mainWindow = null; });
 }
 
+function focusMain() {
+  if (!mainWindow) { createWindow(); return; }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
 function createTray() {
   try {
-    const icon = nativeImage.createEmpty();
-    tray = new Tray(icon);
+    let image = nativeImage.createFromPath(trayIconPath());
+    if (image.isEmpty()) image = nativeImage.createEmpty();
+    else image = image.resize({ width: 18, height: 18 });
+    if (process.platform === "darwin") image.setTemplateImage(true);
+    tray = new Tray(image);
     tray.setToolTip("Jeradin — real-time intelligence");
     tray.setContextMenu(
       Menu.buildFromTemplate([
-        { label: "Show Jeradin", click: () => mainWindow?.show() },
+        { label: "Show Jeradin", click: () => focusMain() },
         { type: "separator" },
         { label: "Quit", role: "quit" },
       ]),
     );
-  } catch {
-    // Tray is optional; some Linux distros need libappindicator.
+    tray.on("click", () => focusMain());
+  } catch (err) {
+    console.warn("[jeradin] tray init failed:", err?.message);
   }
 }
 
@@ -69,7 +81,29 @@ app.on("before-quit", () => {
   tailers.clear();
 });
 
-// -------------------- IPC: file & log tailing --------------------
+// -------------------- IPC: notifications & window --------------------
+
+ipcMain.handle("app:focus", () => { focusMain(); return { ok: true }; });
+
+ipcMain.handle("app:notify", (_evt, payload) => {
+  try {
+    if (!Notification.isSupported()) return { ok: false, error: "notifications unsupported" };
+    const n = new Notification({
+      title: String(payload?.title ?? "Jeradin"),
+      body: String(payload?.body ?? "").slice(0, 500),
+      urgency: payload?.severity === "critical" || payload?.severity === "high" ? "critical" : "normal",
+      silent: false,
+      icon: trayIconPath(),
+    });
+    n.on("click", () => focusMain());
+    n.show();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err?.message };
+  }
+});
+
+// -------------------- IPC: log tailing --------------------
 
 ipcMain.handle("monitor:pick-log-file", async () => {
   const res = await dialog.showOpenDialog({
@@ -89,7 +123,6 @@ ipcMain.handle("monitor:tail-start", (_evt, filePath) => {
   if (!fs.existsSync(filePath)) return { ok: false, error: "file not found" };
   if (tailers.has(filePath)) return { ok: true, alreadyTailing: true };
 
-  // Cross-platform: use `tail -F` on macOS/Linux, PowerShell on Windows.
   const isWin = process.platform === "win32";
   const child = isWin
     ? spawn("powershell.exe", ["-NoProfile", "-Command", `Get-Content -Path "${filePath}" -Tail 200 -Wait`])

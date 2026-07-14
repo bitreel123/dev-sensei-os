@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Activity, AlertTriangle, FileText, Loader2, Play, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { analyzeMonitorBatch, type MonitorEvent, type MonitorFinding } from "@/lib/monitor.functions";
+import { createNotification } from "@/hooks/use-notifications";
 
 // Narrow typing for the preload-bridged API. Present only in the Electron shell.
 type JeradinDesktop = {
@@ -80,7 +81,19 @@ export function MonitorPanel({ onClose }: { onClose?: () => void }) {
       setBusy(true);
       try {
         const res = await analyze({ data: { events: batch, context: tailedFile ? `Log file: ${tailedFile}` : "" } });
-        if (res.finding) setFindings((prev) => [res.finding as MonitorFinding, ...prev].slice(0, 20));
+        if (res.finding) {
+          const f = res.finding as MonitorFinding;
+          setFindings((prev) => [f, ...prev].slice(0, 20));
+          // Persist as a notification so users see it via the bell + native OS notification.
+          createNotification({
+            title: `${f.diagnosis.category}: ${f.diagnosis.severity}`,
+            message: f.laymanExplanation,
+            severity: f.diagnosis.severity,
+            category: "monitor",
+            source: tailedFile ?? "log",
+            metadata: { eventCount: f.eventCount, actions: f.suggestedActions },
+          }).catch(() => { /* non-fatal */ });
+        }
       } catch (e) {
         console.warn("[monitor] analyze failed:", e);
       } finally {

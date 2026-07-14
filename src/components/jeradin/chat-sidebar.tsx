@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import {
   PanelLeft,
   Plus,
-  MessagesSquare,
-  FolderKanban,
   Download,
   User as UserIcon,
   Sparkles,
@@ -56,15 +54,13 @@ export function ChatSidebar() {
 
       <div className="p-2 flex-1 overflow-y-auto">
         <SideItem to="/chat" icon={<Plus className="h-4 w-4" />} label="New chat" collapsed={collapsed} active={pathname === "/chat"} />
-        <SideItem to="/chat" icon={<MessagesSquare className="h-4 w-4" />} label="Chats" collapsed={collapsed} />
-        <SideItem to="/chat" icon={<FolderKanban className="h-4 w-4" />} label="Projects" collapsed={collapsed} />
         <SideItem to="/pricing" icon={<Sparkles className="h-4 w-4" />} label="Upgrade" collapsed={collapsed} />
 
 
 
         {!collapsed && (
           <div className="mt-6 px-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/35">
-            Recents
+            History
           </div>
         )}
         {!collapsed && history.length === 0 && (

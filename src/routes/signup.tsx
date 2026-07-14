@@ -21,16 +21,27 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkEmail, setCheckEmail] = useState<string | null>(null);
 
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/chat` },
+    });
     setLoading(false);
     if (error) return toast.error(error.message);
+    if (!data.session) {
+      setCheckEmail(email);
+      toast.success("Check your email to confirm your account");
+      return;
+    }
     toast.success("Account created");
     navigate({ to: "/chat" });
   }
+
 
   async function signInGoogle() {
     const result = await lovable.auth.signInWithOAuth("google", {

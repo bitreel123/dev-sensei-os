@@ -19,6 +19,7 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
           <LogoLockup />
         </div>
         <div className="flex items-center gap-2">
+          {user && <NotificationsBell tone={isDark ? "dark" : "light"} />}
           <Link
             to={user ? "/chat" : "/signup"}
             className={`inline-flex items-center px-3.5 py-1.5 text-[13px] font-medium border transition-all ${

@@ -57,6 +57,23 @@ function ChatPage() {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
 
+  useEffect(() => {
+    const htmlOverflow = document.documentElement.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
+    const htmlHeight = document.documentElement.style.height;
+    const bodyHeight = document.body.style.height;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.height = "100dvh";
+    document.body.style.height = "100dvh";
+    return () => {
+      document.documentElement.style.overflow = htmlOverflow;
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.height = htmlHeight;
+      document.body.style.height = bodyHeight;
+    };
+  }, []);
+
   // Restore a saved chat when ?id=... is in the URL
   useEffect(() => {
     if (!search.id) return;
@@ -256,9 +273,11 @@ function ChatPage() {
   }
 
   async function send() {
-    if ((activeCapability ?? "screen") !== "screen") {
-      const selected = CAPABILITIES.find((c) => c.key === activeCapability);
-      toast.message(`${selected?.title ?? "That capability"} is selected — use the action below to start.`);
+    const selectedCapability = activeCapability ?? "screen";
+    if (selectedCapability !== "screen") {
+      setAnalysisResult(null);
+      setAnalysisError(null);
+      setOpenedCapabilityPanel(selectedCapability);
       return;
     }
 
@@ -347,6 +366,15 @@ function ChatPage() {
         analysisError={analysisError}
         analysisResult={analysisResult}
         onClearAnalysis={() => { setAnalysisResult(null); setAnalysisError(null); setCurrentEntryId(null); }}
+        openedCapabilityPanel={openedCapabilityPanel}
+        onOpenCapabilityPanel={(m) => {
+          setActiveCapability(m);
+          setAnalysisResult(null);
+          setAnalysisError(null);
+          setOpenedCapabilityPanel(m);
+        }}
+        currentEntryId={currentEntryId}
+        setCurrentEntryId={setCurrentEntryId}
       />
 
 

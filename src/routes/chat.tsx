@@ -364,7 +364,7 @@ function ChatPage() {
               <div className="flex items-center justify-center gap-3 py-10 text-white/70">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
-                  Gemini 3 · Claude analyzing…
+                  Analyzing…
                 </span>
               </div>
             )}

@@ -498,6 +498,19 @@ function ChatPage() {
         </div>
       </main>
       </div>
+
+      {/* Floating desktop overlay */}
+      {analysisResult && overlayOpen && (
+        <div className="hidden md:block">
+          <ScreenIntelOverlay
+            analysis={analysisResult.analysis}
+            fix={analysisResult.fix}
+            initialMessages={overlayMessages}
+            onMessagesChange={setOverlayMessages}
+            onClose={() => setOverlayOpen(false)}
+          />
+        </div>
+      )}
     </div>
 
   );

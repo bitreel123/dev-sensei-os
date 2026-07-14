@@ -23,8 +23,9 @@ const cols = [
     title: "Company",
     links: [
       { label: "About", href: "/product" },
-      { label: "Privacy", href: "/docs" },
-      { label: "Terms", href: "/docs" },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+      { label: "Refunds", href: "/refunds" },
     ],
   },
 ];

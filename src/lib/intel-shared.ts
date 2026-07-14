@@ -128,8 +128,8 @@ export function buildGithubTools(ghToken?: string) {
 // ---------- Gemini caller (raw fetch to Google's native Generative Language API) ----------
 // Uses GEMINI_API_KEY from Google AI Studio directly — no Lovable gateway.
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
-const GEMINI_ANALYST_MODEL = "gemini-3-pro-preview";
-const GEMINI_TEXT_MODEL = "gemini-3-pro-preview";
+const GEMINI_ANALYST_MODEL = "gemini-3.1-pro-preview";
+const GEMINI_TEXT_MODEL = "gemini-3.1-pro-preview";
 
 type GeminiPart =
   | { text: string }

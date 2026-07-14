@@ -147,7 +147,10 @@ function SignupPage() {
             ← Back home
           </Link>
         </div>
+        </>
+        )}
       </motion.div>
+
     </div>
   );
 }

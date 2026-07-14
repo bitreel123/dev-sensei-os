@@ -1,9 +1,22 @@
 import type { ScreenAnalysis, FixSuggestion, OverlayChatMessage } from "@/lib/screen-intel.functions";
+import type { SystemAnalysis } from "@/lib/system-intel.functions";
+import type { KnowledgeReport } from "@/lib/knowledge-intel.functions";
+import type { GithubIntelReport } from "@/lib/github-intel.functions";
+
+export type ChatMode = "screen" | "system" | "knowledge" | "repo";
 
 export type ChatHistoryPayload = {
-  analysis: ScreenAnalysis;
-  fix: FixSuggestion;
+  mode?: ChatMode;
+  // screen (also default for legacy entries)
+  analysis?: ScreenAnalysis;
+  fix?: FixSuggestion;
   messages?: OverlayChatMessage[];
+  // system
+  system?: { analysis: SystemAnalysis; filesAnalyzed: number; input: { source: "github" | "upload"; repo?: string; projectHint?: string } };
+  // knowledge
+  knowledge?: { report: KnowledgeReport; input: { question: string; projectContext?: string } };
+  // repo
+  repo?: { report: GithubIntelReport; input: { repo: string; focus?: string } };
 };
 
 export type ChatHistoryEntry = {

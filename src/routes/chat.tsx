@@ -9,9 +9,11 @@ import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRi
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
+import { SystemPanel, KnowledgePanel, RepoPanel } from "@/components/jeradin/capability-panels";
+import { MonitorPanel } from "@/components/jeradin/monitor-panel";
 
 
 export const Route = createFileRoute("/chat")({
@@ -58,11 +60,17 @@ function ChatPage() {
   useEffect(() => {
     if (!search.id) return;
     const entry = getHistoryEntry(search.id);
-    if (entry?.payload) {
-      setAnalysisResult({ analysis: entry.payload.analysis, fix: entry.payload.fix });
-      setOverlayMessages(entry.payload.messages ?? []);
+    if (!entry?.payload) return;
+    const p = entry.payload;
+    if (p.analysis && p.fix) {
+      setAnalysisResult({ analysis: p.analysis, fix: p.fix });
+      setOverlayMessages(p.messages ?? []);
       setOverlayOpen(true);
-      setActiveCapability("screen");
+      setActiveCapability(p.mode ?? "screen");
+      setCurrentEntryId(entry.id);
+    } else if (p.system || p.knowledge || p.repo) {
+      // non-screen restore is handled inside the capability panel via entry id
+      setActiveCapability(p.mode ?? "system");
       setCurrentEntryId(entry.id);
     }
   }, [search.id]);
@@ -71,7 +79,7 @@ function ChatPage() {
   useEffect(() => {
     if (!currentEntryId || !analysisResult) return;
     updateHistoryEntry(currentEntryId, {
-      payload: { analysis: analysisResult.analysis, fix: analysisResult.fix, messages: overlayMessages },
+      payload: { mode: "screen", analysis: analysisResult.analysis, fix: analysisResult.fix, messages: overlayMessages },
     });
   }, [overlayMessages, currentEntryId, analysisResult]);
 
@@ -84,7 +92,7 @@ function ChatPage() {
       setOverlayMessages([]);
       setOverlayOpen(true);
       setActiveCapability("screen");
-      const entry = addHistoryEntry(title, result);
+      const entry = addHistoryEntry(title, { mode: "screen", analysis: result.analysis, fix: result.fix, messages: [] });
       setCurrentEntryId(entry.id);
       navigate({ to: "/chat", search: { id: entry.id } });
       toast.success("Analysis complete");
@@ -358,67 +366,98 @@ function ChatPage() {
           )}
         </div>
 
-        {/* Top: scrollable analysis / greeting area */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[820px] px-5 py-8">
-            {analyzing && !analysisResult && (
-              <div className="flex items-center justify-center gap-3 py-10 text-white/70">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
-                  Analyzing…
-                </span>
-              </div>
-            )}
-
-            {analysisError && !analysisResult && (
-              <AnalysisError message={analysisError} />
-            )}
-
-            {analysisResult ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-white/90">
-                    <Sparkles className="h-4 w-4 text-orange-400" />
-                    <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">
-                      Screen Intelligence
-                    </span>
-                  </div>
-                  {!overlayOpen && (
-                    <button
-                      onClick={() => setOverlayOpen(true)}
-                      className="inline-flex items-center gap-1.5 border border-white/20 px-2.5 py-1 rounded font-mono text-[10px] uppercase tracking-[0.22em] hover:bg-white/10"
-                    >
-                      Open floating assistant
-                    </button>
-                  )}
-                </div>
-                <div className="border border-white/10 rounded-lg p-5 bg-white/[0.02]">
-                  <AnalysisBody analysis={analysisResult.analysis} fix={analysisResult.fix} />
-                </div>
-                <InlineAnalysisChat
-                  analysis={analysisResult.analysis}
-                  fix={analysisResult.fix}
-                  messages={overlayMessages}
-                  onMessagesChange={setOverlayMessages}
-                />
-              </div>
-            ) : !analyzing ? (
-              <div className="flex flex-col items-center justify-center min-h-[40vh]">
-                <h1
-                  className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
-                  style={{ fontFamily: "'Instrument Serif', serif" }}
-                >
-                  What are we doing today?
-                </h1>
-                <p className="mt-2 text-center text-[13px] text-white/55">
-                  Describe the issue, let Jeradin solve it for you.
-                </p>
-              </div>
-            ) : null}
+        {/* Mode tabs */}
+        <div className="border-b border-white/5 shrink-0">
+          <div className="mx-auto w-full max-w-[820px] px-5 py-3">
+            <ModeTabs
+              current={activeCapability ?? "screen"}
+              onChange={(m) => {
+                if (m === (activeCapability ?? "screen")) return;
+                setActiveCapability(m);
+                setAnalysisResult(null);
+                setAnalysisError(null);
+                setCurrentEntryId(null);
+                setPrompt("");
+                navigate({ to: "/chat" });
+              }}
+            />
           </div>
         </div>
 
-        {/* Bottom: sticky composer */}
+        {/* Top: scrollable analysis / greeting area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[820px] px-5 py-8 space-y-6">
+            <MonitorPanel />
+
+            {(activeCapability ?? "screen") === "screen" ? (
+              <>
+                {analyzing && !analysisResult && (
+                  <div className="flex items-center justify-center gap-3 py-10 text-white/70">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
+                      Analyzing…
+                    </span>
+                  </div>
+                )}
+
+                {analysisError && !analysisResult && (
+                  <AnalysisError message={analysisError} />
+                )}
+
+                {analysisResult ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-white/90">
+                        <Sparkles className="h-4 w-4 text-orange-400" />
+                        <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">
+                          Screen Intelligence
+                        </span>
+                      </div>
+                      {!overlayOpen && (
+                        <button
+                          onClick={() => setOverlayOpen(true)}
+                          className="inline-flex items-center gap-1.5 border border-white/20 px-2.5 py-1 rounded font-mono text-[10px] uppercase tracking-[0.22em] hover:bg-white/10"
+                        >
+                          Open floating assistant
+                        </button>
+                      )}
+                    </div>
+                    <div className="border border-white/10 rounded-lg p-5 bg-white/[0.02]">
+                      <AnalysisBody analysis={analysisResult.analysis} fix={analysisResult.fix} />
+                    </div>
+                    <InlineAnalysisChat
+                      analysis={analysisResult.analysis}
+                      fix={analysisResult.fix}
+                      messages={overlayMessages}
+                      onMessagesChange={setOverlayMessages}
+                    />
+                  </div>
+                ) : !analyzing ? (
+                  <div className="flex flex-col items-center justify-center min-h-[40vh]">
+                    <h1
+                      className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
+                      style={{ fontFamily: "'Instrument Serif', serif" }}
+                    >
+                      What are we doing today?
+                    </h1>
+                    <p className="mt-2 text-center text-[13px] text-white/55">
+                      Describe the issue, let Jeradin solve it for you.
+                    </p>
+                  </div>
+                ) : null}
+              </>
+            ) : activeCapability === "system" ? (
+              <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            ) : activeCapability === "knowledge" ? (
+              <KnowledgePanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            ) : (
+              <RepoPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            )}
+          </div>
+        </div>
+
+        {/* Bottom: sticky composer — only for Screen mode */}
+        {(activeCapability ?? "screen") === "screen" && (
         <div className="border-t border-white/10 shrink-0">
           <div className="mx-auto w-full max-w-[820px] px-5 py-4">
             {attachments.length > 0 && (
@@ -503,6 +542,7 @@ function ChatPage() {
             </div>
           </div>
         </div>
+        )}
       </main>
       </div>
 
@@ -608,6 +648,28 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
       {icon}
       {label}
     </button>
+  );
+}
+
+function ModeTabs({ current, onChange }: { current: CapabilityKey; onChange: (m: CapabilityKey) => void }) {
+  return (
+    <div className="flex gap-1 flex-wrap">
+      {CAPABILITIES.map((c) => {
+        const active = current === c.key;
+        return (
+          <button
+            key={c.key}
+            onClick={() => onChange(c.key)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono text-[10.5px] uppercase tracking-[0.2em] transition-colors ${
+              active ? "bg-white text-black" : "text-white/60 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <c.Icon className="h-3.5 w-3.5" />
+            {c.title.replace(" Intelligence", "")}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

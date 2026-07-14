@@ -5,11 +5,11 @@ import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
 import { SystemPanel, KnowledgePanel, RepoPanel } from "@/components/jeradin/capability-panels";
@@ -56,6 +56,23 @@ function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
+
+  useEffect(() => {
+    const htmlOverflow = document.documentElement.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
+    const htmlHeight = document.documentElement.style.height;
+    const bodyHeight = document.body.style.height;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.height = "100dvh";
+    document.body.style.height = "100dvh";
+    return () => {
+      document.documentElement.style.overflow = htmlOverflow;
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.height = htmlHeight;
+      document.body.style.height = bodyHeight;
+    };
+  }, []);
 
   // Restore a saved chat when ?id=... is in the URL
   useEffect(() => {
@@ -256,21 +273,24 @@ function ChatPage() {
   }
 
   async function send() {
-    if ((activeCapability ?? "screen") !== "screen") {
-      const selected = CAPABILITIES.find((c) => c.key === activeCapability);
-      toast.message(`${selected?.title ?? "That capability"} is selected — use the action below to start.`);
+    const selectedCapability = activeCapability ?? "screen";
+    if (selectedCapability !== "screen") {
+      setAnalysisResult(null);
+      setAnalysisError(null);
+      setOpenedCapabilityPanel(selectedCapability);
       return;
     }
 
-    if (!prompt.trim() && attachments.length === 0) {
-      toast.error("Add a prompt or a screenshot / recording");
-      return;
-    }
     setAnalysisError(null);
 
     // Recording still in progress → grab a live frame
     if (streamRef.current) {
       await captureFrameAndAnalyze();
+      return;
+    }
+
+    if (!prompt.trim() && attachments.length === 0) {
+      toast.error("Add a prompt or start Screen recording, then Send.");
       return;
     }
 
@@ -347,6 +367,16 @@ function ChatPage() {
         analysisError={analysisError}
         analysisResult={analysisResult}
         onClearAnalysis={() => { setAnalysisResult(null); setAnalysisError(null); setCurrentEntryId(null); }}
+        openedCapabilityPanel={openedCapabilityPanel}
+        onOpenCapabilityPanel={(m: Exclude<CapabilityKey, "screen">) => {
+          setActiveCapability(m);
+          setAnalysisResult(null);
+          setAnalysisError(null);
+          setOpenedCapabilityPanel(m);
+        }}
+        onCloseCapabilityPanels={() => setOpenedCapabilityPanel(null)}
+        currentEntryId={currentEntryId}
+        setCurrentEntryId={setCurrentEntryId}
       />
 
 
@@ -442,7 +472,7 @@ function ChatPage() {
                     <DesktopPromptBlock
                       prompt={prompt}
                       setPrompt={setPrompt}
-                      current={activeCapability ?? "screen"}
+                      current={activeCapability}
                       attachments={attachments}
                       onRemoveAttachment={removeAttachment}
                       onAttach={() => fileInputRef.current?.click()}
@@ -473,12 +503,12 @@ function ChatPage() {
 
         {/* Bottom composer only stays after a result/panel is open */}
         {(analysisResult || openedCapabilityPanel) && (
-          <div className="border-t border-white/10 shrink-0">
+          <div className="shrink-0">
             <div className="mx-auto w-full max-w-[820px] px-5 py-4">
               <DesktopPromptBlock
                 prompt={prompt}
                 setPrompt={setPrompt}
-                current={activeCapability ?? "screen"}
+                current={activeCapability}
                 attachments={attachments}
                 onRemoveAttachment={removeAttachment}
                 onAttach={() => fileInputRef.current?.click()}
@@ -633,7 +663,7 @@ function DesktopPromptBlock({
 }: {
   prompt: string;
   setPrompt: (value: string) => void;
-  current: CapabilityKey;
+  current: CapabilityKey | null;
   attachments: Attachment[];
   onRemoveAttachment: (idx: number) => void;
   onAttach: () => void;
@@ -647,12 +677,13 @@ function DesktopPromptBlock({
   onSelectCapability: (m: CapabilityKey) => void;
   onOpenPanel: (m: Exclude<CapabilityKey, "screen">) => void;
 }) {
-  const placeholder = current === "screen"
+  const selected = current ?? "screen";
+  const placeholder = selected === "screen"
     ? "Paste an error, describe the bug, or start a screen recording…"
-    : `Describe what you need from ${CAPABILITIES.find((c) => c.key === current)?.title ?? "this capability"}…`;
+    : `Describe what you need from ${CAPABILITIES.find((c) => c.key === selected)?.title ?? "this capability"}…`;
 
   return (
-    <div className="mt-8 w-full">
+    <div className="mt-16 w-full">
       {attachments.length > 0 && (
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {attachments.map((a, i) => (
@@ -704,11 +735,6 @@ function DesktopPromptBlock({
               className="hidden"
               onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
             />
-            <ToolButton
-              onClick={onRecord}
-              icon={recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
-              label={recording ? "Stop recording" : "Record screen"}
-            />
           </div>
           <button
             onClick={onSend}
@@ -731,19 +757,20 @@ function DesktopPromptBlock({
       </div>
 
       <CapabilityPills current={current} onSelect={onSelectCapability} />
-      <CapabilityDetails
-        current={current}
-        recording={recording}
-        analyzing={analyzing}
-        onRecord={onRecord}
-        onAttach={onAttach}
-        onOpenPanel={onOpenPanel}
-      />
+      {current && (
+        <CapabilityDetails
+          current={current}
+          recording={recording}
+          analyzing={analyzing}
+          onRecord={onRecord}
+          onOpenPanel={onOpenPanel}
+        />
+      )}
     </div>
   );
 }
 
-function CapabilityPills({ current, onSelect }: { current: CapabilityKey; onSelect: (m: CapabilityKey) => void }) {
+function CapabilityPills({ current, onSelect }: { current: CapabilityKey | null; onSelect: (m: CapabilityKey) => void }) {
   return (
     <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
       {CAPABILITIES.map((c) => {
@@ -772,14 +799,12 @@ function CapabilityDetails({
   recording,
   analyzing,
   onRecord,
-  onAttach,
   onOpenPanel,
 }: {
   current: CapabilityKey;
   recording: boolean;
   analyzing: boolean;
   onRecord: () => void;
-  onAttach: () => void;
   onOpenPanel: (m: Exclude<CapabilityKey, "screen">) => void;
 }) {
   const capability = CAPABILITIES.find((c) => c.key === current) ?? CAPABILITIES[0];
@@ -795,23 +820,14 @@ function CapabilityDetails({
       </p>
       <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
         {current === "screen" ? (
-          <>
-            <button
-              onClick={onRecord}
-              disabled={analyzing}
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10 disabled:opacity-50"
-            >
-              {recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
-              {recording ? "Stop recording" : "Record screen"}
-            </button>
-            <button
-              onClick={onAttach}
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10"
-            >
-              <Paperclip className="h-3.5 w-3.5" />
-              Attach screenshot
-            </button>
-          </>
+          <button
+            onClick={onRecord}
+            disabled={analyzing}
+            className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10 disabled:opacity-50"
+          >
+            {recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
+            {recording ? "Stop recording" : "Record screen"}
+          </button>
         ) : (
           <button
             onClick={() => onOpenPanel(current)}
@@ -968,6 +984,7 @@ const CAPABILITIES: Array<{
   key: CapabilityKey;
   title: string;
   desc: string;
+  mobileDesc?: string;
   cta: string;
   Icon: React.ComponentType<{ className?: string }>;
 }> = [
@@ -975,6 +992,7 @@ const CAPABILITIES: Array<{
     key: "screen",
     title: "Screen Intelligence",
     desc: "Record your screen so Jeradin sees exactly what you see — clicks, errors, network traffic and console output are captured together so the agent can reproduce the bug instead of guessing.",
+    mobileDesc: "See your screen, diagnose bugs",
     cta: "Start recording",
     Icon: Monitor,
   },
@@ -982,6 +1000,7 @@ const CAPABILITIES: Array<{
     key: "system",
     title: "System Intelligence",
     desc: "Upload your codebase or connect GitHub and Jeradin will build a semantic map of your architecture — routes, modules, data flow and dependencies — so fixes account for the whole system, not one file.",
+    mobileDesc: "Map your whole codebase",
     cta: "Connect codebase",
     Icon: Network,
   },
@@ -989,6 +1008,7 @@ const CAPABILITIES: Array<{
     key: "knowledge",
     title: "Knowledge Intelligence",
     desc: "Pulls in docs, tickets, prior PR discussions and past decisions relevant to the current issue so you don't have to hunt for context across five tools.",
+    mobileDesc: "Find repos, APIs, models",
     cta: "Enable knowledge",
     Icon: BookOpen,
   },
@@ -996,6 +1016,7 @@ const CAPABILITIES: Array<{
     key: "repo",
     title: "Repo Intelligence",
     desc: "Connect your GitHub account and Jeradin reads commit history, branches, PRs and diffs to trace root causes — perfect for regressions and 'it worked last week' bugs.",
+    mobileDesc: "Analyze commits and PRs",
     cta: "Connect GitHub",
     Icon: Github,
   },
@@ -1019,6 +1040,11 @@ function MobileChat({
   analysisError,
   analysisResult,
   onClearAnalysis,
+  openedCapabilityPanel,
+  onOpenCapabilityPanel,
+  onCloseCapabilityPanels,
+  currentEntryId,
+  setCurrentEntryId,
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;
@@ -1036,12 +1062,27 @@ function MobileChat({
   analysisError: string | null;
   analysisResult: { analysis: ScreenAnalysis; fix: FixSuggestion } | null;
   onClearAnalysis: () => void;
+  openedCapabilityPanel: Exclude<CapabilityKey, "screen"> | null;
+  onOpenCapabilityPanel: (m: Exclude<CapabilityKey, "screen">) => void;
+  onCloseCapabilityPanels: () => void;
+  currentEntryId: string | null;
+  setCurrentEntryId: (id: string | null) => void;
 }) {
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [capabilitySheetOpen, setCapabilitySheetOpen] = useState(false);
   const selected = activeCapability ?? "screen";
   const firstName = (user?.email ?? "there").split("@")[0].split(/[._-]/)[0];
-  const greetName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  const cleanedName = firstName.replace(/\d+/g, "");
+  const greetName = (cleanedName.length > 14 ? cleanedName.slice(0, 14) : cleanedName) || "there";
+  const displayName = greetName.charAt(0).toUpperCase() + greetName.slice(1);
+  const handleMobileSend = () => {
+    if (selected === "screen" && !recording && attachments.length === 0 && !prompt.trim()) {
+      onToggleRecording();
+      return;
+    }
+    onSend();
+  };
 
   return (
     <div className="md:hidden flex flex-col h-full bg-black text-white">
@@ -1055,9 +1096,7 @@ function MobileChat({
           <Menu className="h-5 w-5" />
         </button>
         <Link to="/account" className="p-2 -mr-2 text-white/80 hover:text-white" aria-label="Account">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10">
-            <UserIcon className="h-4 w-4" />
-          </span>
+          <Ghost className="h-7 w-7" strokeWidth={1.7} />
         </Link>
       </div>
 
@@ -1069,8 +1108,20 @@ function MobileChat({
         </Link>
       </div>
 
-      {/* Content area: analysis result OR empty state */}
-      {analysisResult ? (
+      {/* Content area: panels, analysis result, or empty state */}
+      {openedCapabilityPanel === "system" ? (
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+        </div>
+      ) : openedCapabilityPanel === "knowledge" ? (
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <KnowledgePanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+        </div>
+      ) : openedCapabilityPanel === "repo" ? (
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <RepoPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+        </div>
+      ) : analysisResult ? (
         <div className="flex-1 overflow-y-auto px-3 pb-3">
           <AnalysisReport result={analysisResult} onClose={onClearAnalysis} />
         </div>
@@ -1088,10 +1139,10 @@ function MobileChat({
             )}
           </div>
           <h1
-            className="text-[36px] leading-tight tracking-[-0.02em] text-white"
+            className="max-w-full break-words text-[32px] leading-tight text-white"
             style={{ fontFamily: "'Instrument Serif', serif" }}
           >
-            {analyzing ? "Analyzing…" : `${greetName} returns!`}
+            {analyzing ? "Analyzing…" : `${displayName} returns!`}
           </h1>
           <p className="mt-2 text-[12px] text-white/40">
             {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
@@ -1129,7 +1180,7 @@ function MobileChat({
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="How can I help you today?"
+            placeholder="Chat with Jeradin…"
             rows={2}
             className="w-full bg-transparent px-2 py-1 text-[15px] resize-none focus:outline-none placeholder:text-white/40 text-white"
           />
@@ -1148,41 +1199,63 @@ function MobileChat({
             >
               <Plus className="h-4 w-4" />
             </button>
+            <button
+              onClick={() => setCapabilitySheetOpen(true)}
+              className="inline-flex h-9 items-center gap-2 rounded-full bg-black/55 px-4 text-[13px] font-semibold text-white shadow-sm"
+              aria-label="Select capability"
+            >
+              <CapabilityIcon capability={selected} className="h-4 w-4" />
+              {CAPABILITIES.find((c) => c.key === selected)?.title.replace(" Intelligence", "") ?? "Screen"}
+            </button>
             <div className="flex-1" />
             <button
-              onClick={onToggleRecording}
-              disabled={analyzing}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${recording ? "bg-red-500/20 text-red-300" : "bg-white/10 text-white/80"} disabled:opacity-60`}
-              aria-label={recording ? "Stop recording" : "Record screen"}
-            >
-              {recording ? <Square className="h-4 w-4 fill-current" /> : <Monitor className="h-4 w-4" />}
-            </button>
-            <button
-              onClick={onSend}
+              onClick={handleMobileSend}
               disabled={analyzing}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-black disabled:opacity-60"
-              aria-label="Send"
+              aria-label={recording ? "Capture screen" : "Send"}
             >
-              {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : recording ? <Square className="h-4 w-4 fill-current" /> : <Send className="h-4 w-4" />}
             </button>
           </div>
         </div>
-        <CapabilityPills
-          current={selected}
-          onSelect={(m: CapabilityKey) => setActiveCapability(m)}
-        />
-        <CapabilityDetails
-          current={selected}
-          recording={recording}
-          analyzing={analyzing}
-          onRecord={onToggleRecording}
-          onAttach={() => mobileFileInputRef.current?.click()}
-          onOpenPanel={(m: Exclude<CapabilityKey, "screen">) => {
-            setActiveCapability(m);
-            toast.message(`${CAPABILITIES.find((c) => c.key === m)?.title ?? "This capability"} opens in the desktop workspace.`);
-          }}
-        />
       </div>
+
+      <Sheet open={capabilitySheetOpen} onOpenChange={setCapabilitySheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-[28px] border-white/10 bg-[#1c1c1a] px-6 pb-8 pt-5 text-white">
+          <div className="mx-auto mb-5 h-1 w-14 rounded-full bg-white/15" />
+          <SheetTitle className="text-center text-[20px] font-semibold text-white">Select capability</SheetTitle>
+          <div className="mt-6 space-y-5">
+            {CAPABILITIES.map((capability) => {
+              const isActive = capability.key === selected;
+              return (
+                <button
+                  key={capability.key}
+                  onClick={() => {
+                    setActiveCapability(capability.key);
+                    setCapabilitySheetOpen(false);
+                    if (capability.key === "screen") {
+                      onCloseCapabilityPanels();
+                    } else {
+                      onOpenCapabilityPanel(capability.key);
+                    }
+                  }}
+                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 text-left"
+                >
+                  <span className="min-w-0">
+                    <span className={`block text-[20px] font-semibold ${isActive ? "text-sky-400" : "text-white"}`}>
+                      {capability.title}
+                    </span>
+                    <span className={`mt-1 block text-[14px] leading-snug ${isActive ? "text-sky-400" : "text-white/50"}`}>
+                      {capability.mobileDesc ?? capability.desc}
+                    </span>
+                  </span>
+                  {isActive && <Check className="h-5 w-5 shrink-0 text-sky-400" />}
+                </button>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Sidebar drawer */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -1192,6 +1265,11 @@ function MobileChat({
       </Sheet>
     </div>
   );
+}
+
+function CapabilityIcon({ capability, className }: { capability: CapabilityKey; className?: string }) {
+  const Icon = CAPABILITIES.find((c) => c.key === capability)?.Icon ?? Monitor;
+  return <Icon className={className} />;
 }
 
 

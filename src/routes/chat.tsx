@@ -58,11 +58,21 @@ function ChatPage() {
     if (!search.id) return;
     const entry = getHistoryEntry(search.id);
     if (entry?.payload) {
-      setAnalysisResult(entry.payload);
+      setAnalysisResult({ analysis: entry.payload.analysis, fix: entry.payload.fix });
+      setOverlayMessages(entry.payload.messages ?? []);
+      setOverlayOpen(true);
       setActiveCapability("screen");
       setCurrentEntryId(entry.id);
     }
   }, [search.id]);
+
+  // Persist overlay chat messages to the current history entry
+  useEffect(() => {
+    if (!currentEntryId || !analysisResult) return;
+    updateHistoryEntry(currentEntryId, {
+      payload: { analysis: analysisResult.analysis, fix: analysisResult.fix, messages: overlayMessages },
+    });
+  }, [overlayMessages, currentEntryId, analysisResult]);
 
   async function analyzeImageBase64(base64: string, note: string, title: string) {
     setAnalyzing(true);
@@ -70,6 +80,8 @@ function ChatPage() {
     try {
       const result = await runAnalyze({ data: { imageBase64: base64, note } });
       setAnalysisResult(result);
+      setOverlayMessages([]);
+      setOverlayOpen(true);
       setActiveCapability("screen");
       const entry = addHistoryEntry(title, result);
       setCurrentEntryId(entry.id);

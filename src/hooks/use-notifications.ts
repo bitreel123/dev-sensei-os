@@ -68,8 +68,8 @@ export function useNotifications(limit = 30) {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          const row = payload.new as unknown as NotificationRow;
+        (payload: { new: unknown }) => {
+          const row = payload.new as NotificationRow;
           setItems((prev) => [row, ...prev].slice(0, limit));
           // Native OS notification when running in Electron
           desktop()?.notify?.({ title: row.title, body: row.message, severity: row.severity });

@@ -12,7 +12,11 @@ import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, ty
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
-import { SystemPanel, KnowledgePanel, RepoPanel } from "@/components/jeradin/capability-panels";
+import { analyzeSystem, type FileInput, type SystemAnalysis } from "@/lib/system-intel.functions";
+import { runKnowledgeIntelligence, type KnowledgeReport } from "@/lib/knowledge-intel.functions";
+import { runGithubIntelligence, type GithubIntelReport } from "@/lib/github-intel.functions";
+import { SystemReportBody, KnowledgeReportBody, RepoReportBody } from "@/components/jeradin/intel-reports";
+import { NotificationsBell } from "@/components/jeradin/notifications-bell";
 
 
 
@@ -47,6 +51,9 @@ function ChatPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
+  const [systemResult, setSystemResult] = useState<{ analysis: SystemAnalysis; filesAnalyzed: number } | null>(null);
+  const [knowledgeResult, setKnowledgeResult] = useState<KnowledgeReport | null>(null);
+  const [repoResult, setRepoResult] = useState<GithubIntelReport | null>(null);
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const [overlayMessages, setOverlayMessages] = useState<OverlayChatMessage[]>([]);
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -56,6 +63,9 @@ function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
+  const runSystem = useServerFn(analyzeSystem);
+  const runKnowledge = useServerFn(runKnowledgeIntelligence);
+  const runRepo = useServerFn(runGithubIntelligence);
 
   useEffect(() => {
     const htmlOverflow = document.documentElement.style.overflow;
@@ -82,14 +92,21 @@ function ChatPage() {
     const p = entry.payload;
     if (p.analysis && p.fix) {
       setAnalysisResult({ analysis: p.analysis, fix: p.fix });
+      setSystemResult(null);
+      setKnowledgeResult(null);
+      setRepoResult(null);
       setOverlayMessages(p.messages ?? []);
       setOverlayOpen(true);
       setActiveCapability(p.mode ?? "screen");
       setCurrentEntryId(entry.id);
     } else if (p.system || p.knowledge || p.repo) {
-      // non-screen restore is handled inside the capability panel via entry id
+      setAnalysisResult(null);
+      setOverlayOpen(false);
+      setSystemResult(p.system ? { analysis: p.system.analysis, filesAnalyzed: p.system.filesAnalyzed } : null);
+      setKnowledgeResult(p.knowledge?.report ?? null);
+      setRepoResult(p.repo?.report ?? null);
       setActiveCapability(p.mode ?? "system");
-      setOpenedCapabilityPanel((p.mode === "system" || p.mode === "knowledge" || p.mode === "repo") ? p.mode : "system");
+      setOpenedCapabilityPanel(null);
       setCurrentEntryId(entry.id);
     }
   }, [search.id]);
@@ -275,9 +292,7 @@ function ChatPage() {
   async function send() {
     const selectedCapability = activeCapability ?? "screen";
     if (selectedCapability !== "screen") {
-      setAnalysisResult(null);
-      setAnalysisError(null);
-      setOpenedCapabilityPanel(selectedCapability);
+      await runPromptCapability(selectedCapability);
       return;
     }
 
@@ -337,6 +352,111 @@ function ChatPage() {
     toast.message("Attach a screenshot or start Screen recording, then Send.");
   }
 
+  async function runPromptCapability(capability: Exclude<CapabilityKey, "screen">) {
+    const text = prompt.trim();
+    setAnalysisResult(null);
+    setSystemResult(null);
+    setKnowledgeResult(null);
+    setRepoResult(null);
+    setOverlayOpen(false);
+    setOpenedCapabilityPanel(null);
+    setAnalysisError(null);
+
+    if (capability === "knowledge" && text.length < 5) {
+      toast.error("Type what you want Knowledge Intelligence to research, then Send.");
+      return;
+    }
+
+    const repo = extractRepoName(text);
+    if ((capability === "system" || capability === "repo") && !repo && attachments.length === 0) {
+      if (!github) {
+        toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
+        startGithubOAuth("connect", "/chat");
+        return;
+      }
+      toast.error("Type a repo like owner/name in the chat box, then Send.");
+      return;
+    }
+
+    setAnalyzing(true);
+    try {
+      if (capability === "knowledge") {
+        const res = await runKnowledge({ data: { question: text, projectContext: "" } });
+        setKnowledgeResult(res.report);
+        const entry = addHistoryEntry(`Knowledge · ${text.slice(0, 60)}`, {
+          mode: "knowledge",
+          knowledge: { report: res.report, input: { question: text, projectContext: "" } },
+        });
+        setCurrentEntryId(entry.id);
+        navigate({ to: "/chat", search: { id: entry.id } });
+        setPrompt("");
+        toast.success("Knowledge report ready");
+        return;
+      }
+
+      if (capability === "system") {
+        if (attachments.length > 0) {
+          const files = await attachmentsToFileInputs(attachments);
+          if (files.length === 0) {
+            toast.error("Attach readable code files, then Send.");
+            return;
+          }
+          const res = await runSystem({ data: { source: "upload", files, projectHint: text } });
+          setSystemResult(res);
+          const entry = addHistoryEntry(`System · ${files.length} files`, {
+            mode: "system",
+            system: { analysis: res.analysis, filesAnalyzed: res.filesAnalyzed, input: { source: "upload", projectHint: text } },
+          });
+          setCurrentEntryId(entry.id);
+          navigate({ to: "/chat", search: { id: entry.id } });
+          setPrompt("");
+          toast.success("System analysis complete");
+          return;
+        }
+        if (!github) {
+          toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
+          startGithubOAuth("connect", "/chat");
+          return;
+        }
+        const res = await runSystem({ data: { source: "github", repo: repo!, projectHint: text } });
+        setSystemResult(res);
+        const entry = addHistoryEntry(`System · ${repo}`, {
+          mode: "system",
+          system: { analysis: res.analysis, filesAnalyzed: res.filesAnalyzed, input: { source: "github", repo: repo!, projectHint: text } },
+        });
+        setCurrentEntryId(entry.id);
+        navigate({ to: "/chat", search: { id: entry.id } });
+        setPrompt("");
+        toast.success("System analysis complete");
+        return;
+      }
+
+      if (!github) {
+        toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
+        startGithubOAuth("connect", "/chat");
+        return;
+      }
+      const focus = text.replace(repo!, "").trim();
+      const res = await runRepo({ data: { repo: repo!, focus } });
+      setRepoResult(res.report);
+      const entry = addHistoryEntry(`Repo · ${repo}`, {
+        mode: "repo",
+        repo: { report: res.report, input: { repo: repo!, focus } },
+      });
+      setCurrentEntryId(entry.id);
+      navigate({ to: "/chat", search: { id: entry.id } });
+      setPrompt("");
+      toast.success("Repo audit complete");
+    } catch (e) {
+      console.error("[runPromptCapability] failed:", e);
+      const message = formatAnalysisError(e);
+      setAnalysisError(message);
+      toast.error(message);
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-black text-white flex">
@@ -366,11 +486,17 @@ function ChatPage() {
         analyzing={analyzing}
         analysisError={analysisError}
         analysisResult={analysisResult}
+        systemResult={systemResult}
+        knowledgeResult={knowledgeResult}
+        repoResult={repoResult}
         onClearAnalysis={() => { setAnalysisResult(null); setAnalysisError(null); setCurrentEntryId(null); }}
         openedCapabilityPanel={openedCapabilityPanel}
         onOpenCapabilityPanel={(m: Exclude<CapabilityKey, "screen">) => {
           setActiveCapability(m);
           setAnalysisResult(null);
+          setSystemResult(null);
+          setKnowledgeResult(null);
+          setRepoResult(null);
           setAnalysisError(null);
           setOpenedCapabilityPanel(m);
         }}
@@ -385,37 +511,45 @@ function ChatPage() {
       <ChatSidebar />
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center justify-center gap-3 py-3 text-[12px] text-white/70 border-b border-white/5 shrink-0">
-          <span className="capitalize">{credits?.plan ?? "free"} plan</span>
-          <span className="text-white/25">·</span>
-          <Link to="/pricing" className="underline underline-offset-2 hover:text-white">
-            Upgrade
-          </Link>
-          {analysisResult && (
-            <>
-              <span className="text-white/25">·</span>
-              <button
-                onClick={() => { setAnalysisResult(null); setAnalysisError(null); setCurrentEntryId(null); setPrompt(""); }}
-                className="underline underline-offset-2 hover:text-white"
-              >
-                New chat
-              </button>
-            </>
-          )}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-3 px-5 text-[12px] text-white/70 shrink-0">
+          <div />
+          <div className="flex items-center justify-center gap-3">
+            <span className="capitalize">{credits?.plan ?? "free"} plan</span>
+            <span className="text-white/25">·</span>
+            <Link to="/pricing" className="underline underline-offset-2 hover:text-white">
+              Upgrade
+            </Link>
+            {(analysisResult || systemResult || knowledgeResult || repoResult) && (
+              <>
+                <span className="text-white/25">·</span>
+                <button
+                  onClick={() => {
+                    setAnalysisResult(null);
+                    setSystemResult(null);
+                    setKnowledgeResult(null);
+                    setRepoResult(null);
+                    setAnalysisError(null);
+                    setCurrentEntryId(null);
+                    setPrompt("");
+                  }}
+                  className="underline underline-offset-2 hover:text-white"
+                >
+                  New chat
+                </button>
+              </>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <NotificationsBell tone="dark" />
+          </div>
         </div>
 
         {/* Top: analysis / greeting area */}
-        <div className={`flex-1 ${analysisResult || openedCapabilityPanel ? "overflow-y-auto" : "overflow-hidden"}`}>
-          <div className={`mx-auto w-full max-w-[820px] px-5 py-8 space-y-6 ${!analysisResult && !openedCapabilityPanel ? "h-full flex flex-col justify-center" : ""}`}>
+        <div className={`flex-1 ${(analysisResult || systemResult || knowledgeResult || repoResult) ? "overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : "overflow-hidden"}`}>
+          <div className={`mx-auto w-full max-w-[820px] px-5 py-8 space-y-6 ${!(analysisResult || systemResult || knowledgeResult || repoResult) ? "h-full flex flex-col justify-center" : ""}`}>
 
 
-            {openedCapabilityPanel === "system" ? (
-              <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
-            ) : openedCapabilityPanel === "knowledge" ? (
-              <KnowledgePanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
-            ) : openedCapabilityPanel === "repo" ? (
-              <RepoPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
-            ) : (
+            {(
               <>
                 {analyzing && !analysisResult && (
                   <div className="flex items-center justify-center gap-3 py-10 text-white/70">
@@ -458,6 +592,21 @@ function ChatPage() {
                       onMessagesChange={setOverlayMessages}
                     />
                   </div>
+                ) : systemResult ? (
+                  <IntelResultFrame title="System Intelligence" icon={<Network className="h-4 w-4 text-orange-400" />}>
+                    <div className="mb-4 font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/50">
+                      {systemResult.filesAnalyzed} files analyzed
+                    </div>
+                    <SystemReportBody analysis={systemResult.analysis} />
+                  </IntelResultFrame>
+                ) : knowledgeResult ? (
+                  <IntelResultFrame title="Knowledge Intelligence" icon={<BookOpen className="h-4 w-4 text-orange-400" />}>
+                    <KnowledgeReportBody report={knowledgeResult} />
+                  </IntelResultFrame>
+                ) : repoResult ? (
+                  <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
+                    <RepoReportBody report={repoResult} />
+                  </IntelResultFrame>
                 ) : !analyzing ? (
                   <div className="flex flex-col items-center justify-center">
                     <h1
@@ -484,15 +633,15 @@ function ChatPage() {
                       analyzing={analyzing}
                       onSend={send}
                       onSelectCapability={(m) => {
-                        setActiveCapability(m);
+                        setActiveCapability((currentMode) => currentMode === m ? null : m);
                         setOpenedCapabilityPanel(null);
-                        if (m !== "screen") {
-                          setAnalysisResult(null);
-                          setAnalysisError(null);
-                        }
+                        setAnalysisResult(null);
+                        setSystemResult(null);
+                        setKnowledgeResult(null);
+                        setRepoResult(null);
+                        setAnalysisError(null);
                         navigate({ to: "/chat" });
                       }}
-                      onOpenPanel={(m) => setOpenedCapabilityPanel(m)}
                     />
                   </div>
                 ) : null}
@@ -502,7 +651,7 @@ function ChatPage() {
         </div>
 
         {/* Bottom composer only stays after a result/panel is open */}
-        {(analysisResult || openedCapabilityPanel) && (
+        {(analysisResult || systemResult || knowledgeResult || repoResult) && (
           <div className="shrink-0">
             <div className="mx-auto w-full max-w-[820px] px-5 py-4">
               <DesktopPromptBlock
@@ -520,15 +669,15 @@ function ChatPage() {
                 analyzing={analyzing}
                 onSend={send}
                 onSelectCapability={(m) => {
-                  setActiveCapability(m);
+                  setActiveCapability((currentMode) => currentMode === m ? null : m);
                   setOpenedCapabilityPanel(null);
-                  if (m !== "screen") {
-                    setAnalysisResult(null);
-                    setAnalysisError(null);
-                  }
+                  setAnalysisResult(null);
+                  setSystemResult(null);
+                  setKnowledgeResult(null);
+                  setRepoResult(null);
+                  setAnalysisError(null);
                   navigate({ to: "/chat" });
                 }}
-                onOpenPanel={(m) => setOpenedCapabilityPanel(m)}
               />
               <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
                 {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
@@ -632,6 +781,42 @@ function formatAnalysisError(error: unknown): string {
   return raw;
 }
 
+function extractRepoName(text: string): string | null {
+  const match = text.match(/(?:https?:\/\/github\.com\/)?([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)/);
+  return match?.[1]?.replace(/\.git$/, "") ?? null;
+}
+
+async function attachmentsToFileInputs(attachments: Attachment[]): Promise<FileInput[]> {
+  const files: FileInput[] = [];
+  for (const attachment of attachments) {
+    if (attachment.kind !== "file") continue;
+    try {
+      const content = await attachment.file.text();
+      if (content.trim()) {
+        files.push({ path: attachment.file.name, content: content.slice(0, 40_000) });
+      }
+    } catch {
+      // Ignore unreadable/binary files.
+    }
+    if (files.length >= 60) break;
+  }
+  return files;
+}
+
+function IntelResultFrame({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-white/90">
+        {icon}
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">{title}</span>
+      </div>
+      <div className="border border-white/10 rounded-lg p-5 bg-white/[0.02]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
     <button
@@ -659,7 +844,6 @@ function DesktopPromptBlock({
   analyzing,
   onSend,
   onSelectCapability,
-  onOpenPanel,
 }: {
   prompt: string;
   setPrompt: (value: string) => void;
@@ -675,7 +859,6 @@ function DesktopPromptBlock({
   analyzing: boolean;
   onSend: () => void;
   onSelectCapability: (m: CapabilityKey) => void;
-  onOpenPanel: (m: Exclude<CapabilityKey, "screen">) => void;
 }) {
   const selected = current ?? "screen";
   const placeholder = selected === "screen"
@@ -720,6 +903,7 @@ function DesktopPromptBlock({
         <div className="flex items-center justify-between px-3 py-2 border-t border-white/10 flex-wrap gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             <ToolButton onClick={onAttach} icon={<Paperclip className="h-3.5 w-3.5" />} label="Attach" />
+            <ToolButton onClick={onRecord} icon={recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />} label={recording ? "Stop" : "Screen"} />
             <input
               ref={fileInputRef}
               type="file"
@@ -760,10 +944,6 @@ function DesktopPromptBlock({
       {current && (
         <CapabilityDetails
           current={current}
-          recording={recording}
-          analyzing={analyzing}
-          onRecord={onRecord}
-          onOpenPanel={onOpenPanel}
         />
       )}
     </div>
@@ -796,16 +976,8 @@ function CapabilityPills({ current, onSelect }: { current: CapabilityKey | null;
 
 function CapabilityDetails({
   current,
-  recording,
-  analyzing,
-  onRecord,
-  onOpenPanel,
 }: {
   current: CapabilityKey;
-  recording: boolean;
-  analyzing: boolean;
-  onRecord: () => void;
-  onOpenPanel: (m: Exclude<CapabilityKey, "screen">) => void;
 }) {
   const capability = CAPABILITIES.find((c) => c.key === current) ?? CAPABILITIES[0];
 
@@ -818,26 +990,6 @@ function CapabilityDetails({
       <p className="mx-auto mt-2 max-w-[560px] text-[12.5px] leading-relaxed text-white/55">
         {capability.desc}
       </p>
-      <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-        {current === "screen" ? (
-          <button
-            onClick={onRecord}
-            disabled={analyzing}
-            className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/80 hover:bg-white/10 disabled:opacity-50"
-          >
-            {recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
-            {recording ? "Stop recording" : "Record screen"}
-          </button>
-        ) : (
-          <button
-            onClick={() => onOpenPanel(current)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.2em] text-black hover:bg-white/90"
-          >
-            {capability.cta}
-            <Send className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
     </div>
   );
 }
@@ -1039,6 +1191,9 @@ function MobileChat({
   analyzing,
   analysisError,
   analysisResult,
+  systemResult,
+  knowledgeResult,
+  repoResult,
   onClearAnalysis,
   openedCapabilityPanel,
   onOpenCapabilityPanel,
@@ -1061,6 +1216,9 @@ function MobileChat({
   analyzing: boolean;
   analysisError: string | null;
   analysisResult: { analysis: ScreenAnalysis; fix: FixSuggestion } | null;
+  systemResult: { analysis: SystemAnalysis; filesAnalyzed: number } | null;
+  knowledgeResult: KnowledgeReport | null;
+  repoResult: GithubIntelReport | null;
   onClearAnalysis: () => void;
   openedCapabilityPanel: Exclude<CapabilityKey, "screen"> | null;
   onOpenCapabilityPanel: (m: Exclude<CapabilityKey, "screen">) => void;
@@ -1108,25 +1266,34 @@ function MobileChat({
         </Link>
       </div>
 
-      {/* Content area: panels, analysis result, or empty state */}
-      {openedCapabilityPanel === "system" ? (
-        <div className="flex-1 overflow-y-auto px-3 pb-3">
-          <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
-        </div>
-      ) : openedCapabilityPanel === "knowledge" ? (
-        <div className="flex-1 overflow-y-auto px-3 pb-3">
-          <KnowledgePanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
-        </div>
-      ) : openedCapabilityPanel === "repo" ? (
-        <div className="flex-1 overflow-y-auto px-3 pb-3">
-          <RepoPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
-        </div>
-      ) : analysisResult ? (
-        <div className="flex-1 overflow-y-auto px-3 pb-3">
+      {/* Content area: result or empty state */}
+      {analysisResult ? (
+        <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
           <AnalysisReport result={analysisResult} onClose={onClearAnalysis} />
         </div>
+      ) : systemResult ? (
+        <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
+          <IntelResultFrame title="System Intelligence" icon={<Network className="h-4 w-4 text-orange-400" />}>
+            <div className="mb-4 font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/50">
+              {systemResult.filesAnalyzed} files analyzed
+            </div>
+            <SystemReportBody analysis={systemResult.analysis} />
+          </IntelResultFrame>
+        </div>
+      ) : knowledgeResult ? (
+        <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
+          <IntelResultFrame title="Knowledge Intelligence" icon={<BookOpen className="h-4 w-4 text-orange-400" />}>
+            <KnowledgeReportBody report={knowledgeResult} />
+          </IntelResultFrame>
+        </div>
+      ) : repoResult ? (
+        <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
+          <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
+            <RepoReportBody report={repoResult} />
+          </IntelResultFrame>
+        </div>
       ) : analysisError ? (
-        <div className="flex-1 overflow-y-auto px-3 pb-3">
+        <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
           <AnalysisError message={analysisError} />
         </div>
       ) : (
@@ -1231,13 +1398,9 @@ function MobileChat({
                 <button
                   key={capability.key}
                   onClick={() => {
-                    setActiveCapability(capability.key);
+                    setActiveCapability(isActive ? null : capability.key);
                     setCapabilitySheetOpen(false);
-                    if (capability.key === "screen") {
-                      onCloseCapabilityPanels();
-                    } else {
-                      onOpenCapabilityPanel(capability.key);
-                    }
+                    onCloseCapabilityPanels();
                   }}
                   className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 text-left"
                 >

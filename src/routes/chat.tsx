@@ -374,10 +374,27 @@ function ChatPage() {
             )}
 
             {analysisResult ? (
-              <AnalysisReport
-                result={analysisResult}
-                onClose={() => { setAnalysisResult(null); setAnalysisError(null); setCurrentEntryId(null); }}
-              />
+              <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-center">
+                <Sparkles className="h-10 w-10 text-orange-400" strokeWidth={1.2} />
+                <h1
+                  className="text-[36px] leading-[1.05] tracking-[-0.02em]"
+                  style={{ fontFamily: "'Instrument Serif', serif" }}
+                >
+                  Analysis ready
+                </h1>
+                <p className="text-[13px] text-white/60 max-w-md">
+                  Your floating assistant has the full diagnosis and fix plan.
+                  Drag it anywhere, chat with it, or pin it above your work.
+                </p>
+                {!overlayOpen && (
+                  <button
+                    onClick={() => setOverlayOpen(true)}
+                    className="inline-flex items-center gap-2 bg-white text-black px-4 py-2 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" /> Reopen assistant
+                  </button>
+                )}
+              </div>
             ) : !analyzing ? (
               <div className="flex flex-col items-center justify-center min-h-[40vh]">
                 <h1

@@ -366,28 +366,10 @@ function ChatPage() {
           )}
         </div>
 
-        {/* Mode tabs */}
-        <div className="border-b border-white/5 shrink-0">
-          <div className="mx-auto w-full max-w-[820px] px-5 py-3">
-            <ModeTabs
-              current={activeCapability ?? "screen"}
-              onChange={(m) => {
-                if (m === (activeCapability ?? "screen")) return;
-                setActiveCapability(m);
-                setAnalysisResult(null);
-                setAnalysisError(null);
-                setCurrentEntryId(null);
-                setPrompt("");
-                navigate({ to: "/chat" });
-              }}
-            />
-          </div>
-        </div>
-
         {/* Top: scrollable analysis / greeting area */}
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[820px] px-5 py-8 space-y-6">
-            <MonitorPanel />
+
 
             {(activeCapability ?? "screen") === "screen" ? (
               <>

@@ -375,26 +375,32 @@ function ChatPage() {
             )}
 
             {analysisResult ? (
-              <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-center">
-                <Sparkles className="h-10 w-10 text-orange-400" strokeWidth={1.2} />
-                <h1
-                  className="text-[36px] leading-[1.05] tracking-[-0.02em]"
-                  style={{ fontFamily: "'Instrument Serif', serif" }}
-                >
-                  Analysis ready
-                </h1>
-                <p className="text-[13px] text-white/60 max-w-md">
-                  Your floating assistant has the full diagnosis and fix plan.
-                  Drag it anywhere, chat with it, or pin it above your work.
-                </p>
-                {!overlayOpen && (
-                  <button
-                    onClick={() => setOverlayOpen(true)}
-                    className="inline-flex items-center gap-2 bg-white text-black px-4 py-2 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" /> Reopen assistant
-                  </button>
-                )}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-white/90">
+                    <Sparkles className="h-4 w-4 text-orange-400" />
+                    <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">
+                      Screen Intelligence
+                    </span>
+                  </div>
+                  {!overlayOpen && (
+                    <button
+                      onClick={() => setOverlayOpen(true)}
+                      className="inline-flex items-center gap-1.5 border border-white/20 px-2.5 py-1 rounded font-mono text-[10px] uppercase tracking-[0.22em] hover:bg-white/10"
+                    >
+                      Open floating assistant
+                    </button>
+                  )}
+                </div>
+                <div className="border border-white/10 rounded-lg p-5 bg-white/[0.02]">
+                  <AnalysisBody analysis={analysisResult.analysis} fix={analysisResult.fix} />
+                </div>
+                <InlineAnalysisChat
+                  analysis={analysisResult.analysis}
+                  fix={analysisResult.fix}
+                  messages={overlayMessages}
+                  onMessagesChange={setOverlayMessages}
+                />
               </div>
             ) : !analyzing ? (
               <div className="flex flex-col items-center justify-center min-h-[40vh]">

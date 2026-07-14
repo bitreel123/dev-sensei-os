@@ -1039,6 +1039,11 @@ function MobileChat({
   analysisError,
   analysisResult,
   onClearAnalysis,
+  openedCapabilityPanel,
+  onOpenCapabilityPanel,
+  onCloseCapabilityPanels,
+  currentEntryId,
+  setCurrentEntryId,
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;
@@ -1056,9 +1061,15 @@ function MobileChat({
   analysisError: string | null;
   analysisResult: { analysis: ScreenAnalysis; fix: FixSuggestion } | null;
   onClearAnalysis: () => void;
+  openedCapabilityPanel: Exclude<CapabilityKey, "screen"> | null;
+  onOpenCapabilityPanel: (m: Exclude<CapabilityKey, "screen">) => void;
+  onCloseCapabilityPanels: () => void;
+  currentEntryId: string | null;
+  setCurrentEntryId: (id: string | null) => void;
 }) {
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [capabilitySheetOpen, setCapabilitySheetOpen] = useState(false);
   const selected = activeCapability ?? "screen";
   const firstName = (user?.email ?? "there").split("@")[0].split(/[._-]/)[0];
   const greetName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
@@ -1089,8 +1100,20 @@ function MobileChat({
         </Link>
       </div>
 
-      {/* Content area: analysis result OR empty state */}
-      {analysisResult ? (
+      {/* Content area: panels, analysis result, or empty state */}
+      {openedCapabilityPanel === "system" ? (
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+        </div>
+      ) : openedCapabilityPanel === "knowledge" ? (
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <KnowledgePanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+        </div>
+      ) : openedCapabilityPanel === "repo" ? (
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <RepoPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+        </div>
+      ) : analysisResult ? (
         <div className="flex-1 overflow-y-auto px-3 pb-3">
           <AnalysisReport result={analysisResult} onClose={onClearAnalysis} />
         </div>
@@ -1168,6 +1191,14 @@ function MobileChat({
             >
               <Plus className="h-4 w-4" />
             </button>
+            <button
+              onClick={() => setCapabilitySheetOpen(true)}
+              className="inline-flex h-9 items-center gap-2 rounded-full bg-black/55 px-4 text-[13px] font-semibold text-white shadow-sm"
+              aria-label="Select capability"
+            >
+              <CapabilityIcon capability={selected} className="h-4 w-4" />
+              {CAPABILITIES.find((c) => c.key === selected)?.title.replace(" Intelligence", "") ?? "Screen"}
+            </button>
             <div className="flex-1" />
             <button
               onClick={onToggleRecording}
@@ -1187,22 +1218,44 @@ function MobileChat({
             </button>
           </div>
         </div>
-        <CapabilityPills
-          current={selected}
-          onSelect={(m: CapabilityKey) => setActiveCapability(m)}
-        />
-        <CapabilityDetails
-          current={selected}
-          recording={recording}
-          analyzing={analyzing}
-          onRecord={onToggleRecording}
-          onAttach={() => mobileFileInputRef.current?.click()}
-          onOpenPanel={(m: Exclude<CapabilityKey, "screen">) => {
-            setActiveCapability(m);
-            toast.message(`${CAPABILITIES.find((c) => c.key === m)?.title ?? "This capability"} opens in the desktop workspace.`);
-          }}
-        />
       </div>
+
+      <Sheet open={capabilitySheetOpen} onOpenChange={setCapabilitySheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-[28px] border-white/10 bg-[#1c1c1a] px-6 pb-8 pt-5 text-white">
+          <div className="mx-auto mb-5 h-1 w-14 rounded-full bg-white/15" />
+          <SheetTitle className="text-center text-[20px] font-semibold text-white">Select capability</SheetTitle>
+          <div className="mt-6 space-y-5">
+            {CAPABILITIES.map((capability) => {
+              const isActive = capability.key === selected;
+              return (
+                <button
+                  key={capability.key}
+                  onClick={() => {
+                    setActiveCapability(capability.key);
+                    setCapabilitySheetOpen(false);
+                    if (capability.key === "screen") {
+                      onCloseCapabilityPanels();
+                    } else {
+                      onOpenCapabilityPanel(capability.key);
+                    }
+                  }}
+                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 text-left"
+                >
+                  <span className="min-w-0">
+                    <span className={`block text-[20px] font-semibold ${isActive ? "text-sky-400" : "text-white"}`}>
+                      {capability.title}
+                    </span>
+                    <span className={`mt-1 block text-[14px] leading-snug ${isActive ? "text-sky-400" : "text-white/50"}`}>
+                      {capability.mobileDesc ?? capability.desc}
+                    </span>
+                  </span>
+                  {isActive && <Check className="h-5 w-5 shrink-0 text-sky-400" />}
+                </button>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Sidebar drawer */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -1212,6 +1265,11 @@ function MobileChat({
       </Sheet>
     </div>
   );
+}
+
+function CapabilityIcon({ capability, className }: { capability: CapabilityKey; className?: string }) {
+  const Icon = CAPABILITIES.find((c) => c.key === capability)?.Icon ?? Monitor;
+  return <Icon className={className} />;
 }
 
 

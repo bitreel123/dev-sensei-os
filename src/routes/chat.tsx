@@ -374,9 +374,9 @@ function ChatPage() {
           )}
         </div>
 
-        {/* Top: scrollable analysis / greeting area */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[820px] px-5 py-8 space-y-6">
+        {/* Top: analysis / greeting area */}
+        <div className={`flex-1 ${analysisResult || openedCapabilityPanel ? "overflow-y-auto" : "overflow-hidden"}`}>
+          <div className={`mx-auto w-full max-w-[820px] px-5 py-8 space-y-6 ${!analysisResult && !openedCapabilityPanel ? "h-full flex flex-col justify-center" : ""}`}>
 
 
             {openedCapabilityPanel === "system" ? (
@@ -429,7 +429,7 @@ function ChatPage() {
                     />
                   </div>
                 ) : !analyzing ? (
-                  <div className="flex flex-col items-center justify-center min-h-[40vh]">
+                  <div className="flex flex-col items-center justify-center">
                     <h1
                       className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
                       style={{ fontFamily: "'Instrument Serif', serif" }}
@@ -439,6 +439,31 @@ function ChatPage() {
                     <p className="mt-2 text-center text-[13px] text-white/55">
                       Describe the issue, let Jeradin solve it for you.
                     </p>
+                    <DesktopPromptBlock
+                      prompt={prompt}
+                      setPrompt={setPrompt}
+                      current={activeCapability ?? "screen"}
+                      attachments={attachments}
+                      onRemoveAttachment={removeAttachment}
+                      onAttach={() => fileInputRef.current?.click()}
+                      fileInputRef={fileInputRef}
+                      imageInputRef={imageInputRef}
+                      addFiles={addFiles}
+                      recording={recording}
+                      onRecord={recording ? stopRecording : startRecording}
+                      analyzing={analyzing}
+                      onSend={send}
+                      onSelectCapability={(m) => {
+                        setActiveCapability(m);
+                        setOpenedCapabilityPanel(null);
+                        if (m !== "screen") {
+                          setAnalysisResult(null);
+                          setAnalysisError(null);
+                        }
+                        navigate({ to: "/chat" });
+                      }}
+                      onOpenPanel={(m) => setOpenedCapabilityPanel(m)}
+                    />
                   </div>
                 ) : null}
               </>
@@ -446,113 +471,41 @@ function ChatPage() {
           </div>
         </div>
 
-        {/* Bottom: sticky composer + capability buttons */}
-        <div className="border-t border-white/10 shrink-0">
-          <div className="mx-auto w-full max-w-[820px] px-5 py-4">
-            {attachments.length > 0 && (
-              <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-                {attachments.map((a, i) => (
-                  <div key={i} className="relative shrink-0 border border-white/15 bg-white/[0.02] p-1.5 rounded">
-                    <button
-                      onClick={() => removeAttachment(i)}
-                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-black border border-white/20 text-white/80 flex items-center justify-center"
-                      aria-label="Remove"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                    {a.kind === "recording" ? (
-                      <video src={a.url} className="h-16 w-24 rounded object-cover" />
-                    ) : a.file.type.startsWith("image/") ? (
-                      <img src={a.url} alt={a.file.name} className="h-16 w-24 rounded object-cover" />
-                    ) : (
-                      <div className="h-16 w-24 rounded flex items-center justify-center p-1 text-[10px] text-white/70 text-center">
-                        <span className="truncate">{a.file.name}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="border border-white/20 bg-white/[0.03] focus-within:border-white/40 transition-colors rounded-lg">
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder={(activeCapability ?? "screen") === "screen" ? "Paste an error, describe the bug, or start a screen recording…" : `Describe what you need from ${CAPABILITIES.find((c) => c.key === activeCapability)?.title ?? "this capability"}…`}
-                rows={2}
-                className="w-full bg-transparent p-4 text-[14px] resize-none focus:outline-none placeholder:text-white/35"
+        {/* Bottom composer only stays after a result/panel is open */}
+        {(analysisResult || openedCapabilityPanel) && (
+          <div className="border-t border-white/10 shrink-0">
+            <div className="mx-auto w-full max-w-[820px] px-5 py-4">
+              <DesktopPromptBlock
+                prompt={prompt}
+                setPrompt={setPrompt}
+                current={activeCapability ?? "screen"}
+                attachments={attachments}
+                onRemoveAttachment={removeAttachment}
+                onAttach={() => fileInputRef.current?.click()}
+                fileInputRef={fileInputRef}
+                imageInputRef={imageInputRef}
+                addFiles={addFiles}
+                recording={recording}
+                onRecord={recording ? stopRecording : startRecording}
+                analyzing={analyzing}
+                onSend={send}
+                onSelectCapability={(m) => {
+                  setActiveCapability(m);
+                  setOpenedCapabilityPanel(null);
+                  if (m !== "screen") {
+                    setAnalysisResult(null);
+                    setAnalysisError(null);
+                  }
+                  navigate({ to: "/chat" });
+                }}
+                onOpenPanel={(m) => setOpenedCapabilityPanel(m)}
               />
-              <div className="flex items-center justify-between px-3 py-2 border-t border-white/10 flex-wrap gap-2">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <ToolButton onClick={() => fileInputRef.current?.click()} icon={<Paperclip className="h-3.5 w-3.5" />} label="Attach" />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
-                  />
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
-                  />
-                  <ToolButton
-                    onClick={recording ? stopRecording : startRecording}
-                    icon={recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
-                    label={recording ? "Stop recording" : "Record screen"}
-                  />
-                </div>
-                <button
-                  onClick={send}
-                  disabled={analyzing}
-                  className="inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors disabled:opacity-60"
-                >
-                  {analyzing ? (
-                    <>
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Analyzing
-                    </>
-                  ) : (
-                    <>
-                      Send
-                      <Send className="h-3 w-3" />
-                    </>
-                  )}
-                </button>
+              <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
+                {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
               </div>
-            </div>
-
-            <CapabilityPills
-              current={activeCapability ?? "screen"}
-              onSelect={(m) => {
-                setActiveCapability(m);
-                setOpenedCapabilityPanel(null);
-                if (m !== "screen") {
-                  setAnalysisResult(null);
-                  setAnalysisError(null);
-                }
-                navigate({ to: "/chat" });
-              }}
-            />
-
-            <CapabilityDetails
-              current={activeCapability ?? "screen"}
-              recording={recording}
-              analyzing={analyzing}
-              onRecord={recording ? stopRecording : startRecording}
-              onAttach={() => fileInputRef.current?.click()}
-              onOpenPanel={(m) => setOpenedCapabilityPanel(m)}
-            />
-
-            <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
-              {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
             </div>
           </div>
-        </div>
+        )}
       </main>
       </div>
 

@@ -71,6 +71,25 @@ function SignupPage() {
           5 free credits · No card required
         </p>
 
+        {checkEmail ? (
+          <div className="mt-8 border border-white/25 p-5 text-center space-y-3">
+            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-white">
+              Confirm your email
+            </div>
+            <p className="text-[13px] text-white/70">
+              We sent a confirmation link to <span className="text-white">{checkEmail}</span>. Click it to activate your account, then sign in.
+            </p>
+            <Link
+              to="/login"
+              className="inline-block mt-2 border border-white/25 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors"
+            >
+              Go to sign in
+            </Link>
+          </div>
+        ) : (
+        <>
+
+
         <button
           onClick={signInGoogle}
           className="mt-8 w-full border border-white/25 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors"

@@ -21,16 +21,27 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkEmail, setCheckEmail] = useState<string | null>(null);
 
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/chat` },
+    });
     setLoading(false);
     if (error) return toast.error(error.message);
+    if (!data.session) {
+      setCheckEmail(email);
+      toast.success("Check your email to confirm your account");
+      return;
+    }
     toast.success("Account created");
     navigate({ to: "/chat" });
   }
+
 
   async function signInGoogle() {
     const result = await lovable.auth.signInWithOAuth("google", {
@@ -59,6 +70,25 @@ function SignupPage() {
         <p className="mt-2 text-center text-[12px] text-white/55">
           5 free credits · No card required
         </p>
+
+        {checkEmail ? (
+          <div className="mt-8 border border-white/25 p-5 text-center space-y-3">
+            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-white">
+              Confirm your email
+            </div>
+            <p className="text-[13px] text-white/70">
+              We sent a confirmation link to <span className="text-white">{checkEmail}</span>. Click it to activate your account, then sign in.
+            </p>
+            <Link
+              to="/login"
+              className="inline-block mt-2 border border-white/25 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors"
+            >
+              Go to sign in
+            </Link>
+          </div>
+        ) : (
+        <>
+
 
         <button
           onClick={signInGoogle}
@@ -117,7 +147,10 @@ function SignupPage() {
             ← Back home
           </Link>
         </div>
+        </>
+        )}
       </motion.div>
+
     </div>
   );
 }

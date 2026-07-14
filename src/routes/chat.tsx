@@ -422,7 +422,7 @@ function ChatPage() {
         setSystemResult(res);
         const entry = addHistoryEntry(`System · ${repo}`, {
           mode: "system",
-          system: { analysis: res.analysis, filesAnalyzed: res.filesAnalyzed, input: { source: "github", repo, projectHint: text } },
+          system: { analysis: res.analysis, filesAnalyzed: res.filesAnalyzed, input: { source: "github", repo: repo!, projectHint: text } },
         });
         setCurrentEntryId(entry.id);
         navigate({ to: "/chat", search: { id: entry.id } });
@@ -1398,7 +1398,7 @@ function MobileChat({
                 <button
                   key={capability.key}
                   onClick={() => {
-                    setActiveCapability((currentMode) => currentMode === capability.key ? null : capability.key);
+                    setActiveCapability(isActive ? null : capability.key);
                     setCapabilitySheetOpen(false);
                     onCloseCapabilityPanels();
                   }}

@@ -648,27 +648,35 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
   );
 }
 
-function ModeTabs({ current, onChange }: { current: CapabilityKey; onChange: (m: CapabilityKey) => void }) {
+function CapabilityCards({ current, onSelect }: { current: CapabilityKey; onSelect: (m: CapabilityKey) => void }) {
   return (
-    <div className="flex gap-1 flex-wrap">
+    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
       {CAPABILITIES.map((c) => {
         const active = current === c.key;
         return (
           <button
             key={c.key}
-            onClick={() => onChange(c.key)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono text-[10.5px] uppercase tracking-[0.2em] transition-colors ${
-              active ? "bg-white text-black" : "text-white/60 hover:text-white hover:bg-white/5"
+            onClick={() => onSelect(c.key)}
+            className={`text-left border rounded-lg p-4 transition-colors ${
+              active
+                ? "border-white/40 bg-white/[0.04]"
+                : "border-white/10 bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.04]"
             }`}
           >
-            <c.Icon className="h-3.5 w-3.5" />
-            {c.title.replace(" Intelligence", "")}
+            <div className="flex items-center gap-2 mb-1.5">
+              <c.Icon className="h-3.5 w-3.5 text-white/80" />
+              <span className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/90">
+                {c.title.replace(" Intelligence", "")}
+              </span>
+            </div>
+            <p className="text-[12.5px] text-white/60 leading-relaxed">{c.desc}</p>
           </button>
         );
       })}
     </div>
   );
 }
+
 
 function AnalysisReport({
   result,

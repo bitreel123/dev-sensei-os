@@ -453,7 +453,8 @@ function ChatPage() {
           </div>
         </div>
 
-        {/* Bottom: sticky composer */}
+        {/* Bottom: sticky composer — only for Screen mode */}
+        {(activeCapability ?? "screen") === "screen" && (
         <div className="border-t border-white/10 shrink-0">
           <div className="mx-auto w-full max-w-[820px] px-5 py-4">
             {attachments.length > 0 && (
@@ -538,6 +539,7 @@ function ChatPage() {
             </div>
           </div>
         </div>
+        )}
       </main>
       </div>
 

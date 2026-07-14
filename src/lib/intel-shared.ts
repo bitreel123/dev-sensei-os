@@ -125,39 +125,75 @@ export function buildGithubTools(ghToken?: string) {
   };
 }
 
-// ---------- Gemini analyst caller (raw fetch to Lovable AI Gateway) ----------
-export async function callGeminiAnalyst(
-  lovableKey: string,
-  systemPrompt: string,
+// ---------- Gemini caller (raw fetch to Google's native Generative Language API) ----------
+// Uses GEMINI_API_KEY from Google AI Studio directly — no Lovable gateway.
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+const GEMINI_ANALYST_MODEL = "gemini-2.5-pro";
+const GEMINI_TEXT_MODEL = "gemini-2.5-flash";
+
+type GeminiPart =
+  | { text: string }
+  | { inline_data: { mime_type: string; data: string } };
+
+function toGeminiParts(
   userContent: Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }>,
-): Promise<Diagnosis> {
+): GeminiPart[] {
+  return userContent.map((c) => {
+    if (c.type === "text") return { text: c.text };
+    const url = c.image_url.url;
+    const m = url.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!m) throw new Error("Only base64 data URLs are supported for images");
+    return { inline_data: { mime_type: m[1], data: m[2] } };
+  });
+}
+
+async function callGemini(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  parts: GeminiPart[],
+  opts: { json?: boolean; maxOutputTokens?: number; temperature?: number } = {},
+): Promise<string> {
   const body = {
-    model: "google/gemini-3.1-pro-preview",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userContent },
-    ],
-    max_tokens: 8192,
-    temperature: 0.2,
-    response_format: { type: "json_object" },
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: "user", parts }],
+    generationConfig: {
+      temperature: opts.temperature ?? 0.2,
+      maxOutputTokens: opts.maxOutputTokens ?? 8192,
+      ...(opts.json ? { responseMimeType: "application/json" } : {}),
+    },
   };
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const res = await fetch(`${GEMINI_API_BASE}/${model}:generateContent?key=${apiKey}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Lovable-API-Key": lovableKey },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    throw new Error(`Gemini analyst failed [${res.status}]: ${(await res.text()).slice(0, 400)}`);
+    throw new Error(`Gemini ${model} failed [${res.status}]: ${(await res.text()).slice(0, 400)}`);
   }
   const json = await res.json();
-  const text = json.choices?.[0]?.message?.content ?? "";
-  const finishReason = json.choices?.[0]?.finish_reason;
-  if (!text && finishReason) {
-    throw new Error(`Gemini analyst returned no content (finish reason: ${finishReason})`);
+  const candidate = json.candidates?.[0];
+  const finishReason = candidate?.finishReason;
+  const text = (candidate?.content?.parts ?? [])
+    .map((p: { text?: string }) => p.text ?? "")
+    .join("");
+  if (!text) {
+    throw new Error(`Gemini ${model} returned no content (finish reason: ${finishReason ?? "unknown"})`);
   }
-  if (finishReason === "length" || finishReason === "MAX_TOKENS") {
-    throw new Error("Gemini analyst response was cut off. Try a shorter recording or attach a screenshot of the error area.");
+  if (finishReason === "MAX_TOKENS") {
+    throw new Error(`Gemini ${model} response was cut off. Try a shorter input.`);
   }
+  return text;
+}
+
+export async function callGeminiAnalyst(
+  apiKey: string,
+  systemPrompt: string,
+  userContent: Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }>,
+): Promise<Diagnosis> {
+  const text = await callGemini(apiKey, GEMINI_ANALYST_MODEL, systemPrompt, toGeminiParts(userContent), {
+    json: true,
+  });
   try {
     return JSON.parse(text) as Diagnosis;
   } catch {
@@ -165,6 +201,17 @@ export async function callGeminiAnalyst(
     if (m) return JSON.parse(m[0]) as Diagnosis;
     throw new Error("Gemini analyst returned unparseable output");
   }
+}
+
+export async function callGeminiText(
+  apiKey: string,
+  systemPrompt: string,
+  userText: string,
+): Promise<string> {
+  return callGemini(apiKey, GEMINI_TEXT_MODEL, systemPrompt, [{ text: userText }], {
+    maxOutputTokens: 2048,
+    temperature: 0.4,
+  });
 }
 
 export const ANALYST_INSTRUCTIONS = `Return STRICT JSON only (no markdown fences) matching:

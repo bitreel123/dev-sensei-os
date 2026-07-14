@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
+import { callGeminiText } from "./intel-shared";
 
 // ---------------- Types ----------------
 export type RepoRisk = {

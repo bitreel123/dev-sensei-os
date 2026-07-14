@@ -1,8 +1,9 @@
-import type { ScreenAnalysis, FixSuggestion } from "@/lib/screen-intel.functions";
+import type { ScreenAnalysis, FixSuggestion, OverlayChatMessage } from "@/lib/screen-intel.functions";
 
 export type ChatHistoryPayload = {
   analysis: ScreenAnalysis;
   fix: FixSuggestion;
+  messages?: OverlayChatMessage[];
 };
 
 export type ChatHistoryEntry = {

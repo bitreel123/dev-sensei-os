@@ -328,7 +328,7 @@ function ChatPage() {
   }
 
   return (
-    <div className="h-screen bg-black text-white overflow-hidden">
+    <div className="fixed inset-0 bg-black text-white overflow-hidden">
       {/* ============= MOBILE LAYOUT ============= */}
       <MobileChat
         user={user}
@@ -611,6 +611,135 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
       {icon}
       {label}
     </button>
+  );
+}
+
+function DesktopPromptBlock({
+  prompt,
+  setPrompt,
+  current,
+  attachments,
+  onRemoveAttachment,
+  onAttach,
+  fileInputRef,
+  imageInputRef,
+  addFiles,
+  recording,
+  onRecord,
+  analyzing,
+  onSend,
+  onSelectCapability,
+  onOpenPanel,
+}: {
+  prompt: string;
+  setPrompt: (value: string) => void;
+  current: CapabilityKey;
+  attachments: Attachment[];
+  onRemoveAttachment: (idx: number) => void;
+  onAttach: () => void;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  imageInputRef: React.RefObject<HTMLInputElement | null>;
+  addFiles: (files: FileList | null) => void;
+  recording: boolean;
+  onRecord: () => void;
+  analyzing: boolean;
+  onSend: () => void;
+  onSelectCapability: (m: CapabilityKey) => void;
+  onOpenPanel: (m: Exclude<CapabilityKey, "screen">) => void;
+}) {
+  const placeholder = current === "screen"
+    ? "Paste an error, describe the bug, or start a screen recording…"
+    : `Describe what you need from ${CAPABILITIES.find((c) => c.key === current)?.title ?? "this capability"}…`;
+
+  return (
+    <div className="mt-8 w-full">
+      {attachments.length > 0 && (
+        <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+          {attachments.map((a, i) => (
+            <div key={i} className="relative shrink-0 border border-white/15 bg-white/[0.02] p-1.5 rounded">
+              <button
+                onClick={() => onRemoveAttachment(i)}
+                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-black border border-white/20 text-white/80 flex items-center justify-center"
+                aria-label="Remove"
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+              {a.kind === "recording" ? (
+                <video src={a.url} className="h-16 w-24 rounded object-cover" />
+              ) : a.file.type.startsWith("image/") ? (
+                <img src={a.url} alt={a.file.name} className="h-16 w-24 rounded object-cover" />
+              ) : (
+                <div className="h-16 w-24 rounded flex items-center justify-center p-1 text-[10px] text-white/70 text-center">
+                  <span className="truncate">{a.file.name}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="border border-white/20 bg-white/[0.03] focus-within:border-white/40 transition-colors rounded-lg text-left">
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder={placeholder}
+          rows={2}
+          className="w-full bg-transparent p-4 text-[14px] resize-none focus:outline-none placeholder:text-white/35"
+        />
+        <div className="flex items-center justify-between px-3 py-2 border-t border-white/10 flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <ToolButton onClick={onAttach} icon={<Paperclip className="h-3.5 w-3.5" />} label="Attach" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
+            />
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
+            />
+            <ToolButton
+              onClick={onRecord}
+              icon={recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />}
+              label={recording ? "Stop recording" : "Record screen"}
+            />
+          </div>
+          <button
+            onClick={onSend}
+            disabled={analyzing}
+            className="inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors disabled:opacity-60"
+          >
+            {analyzing ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Analyzing
+              </>
+            ) : (
+              <>
+                Send
+                <Send className="h-3 w-3" />
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <CapabilityPills current={current} onSelect={onSelectCapability} />
+      <CapabilityDetails
+        current={current}
+        recording={recording}
+        analyzing={analyzing}
+        onRecord={onRecord}
+        onAttach={onAttach}
+        onOpenPanel={onOpenPanel}
+      />
+    </div>
   );
 }
 

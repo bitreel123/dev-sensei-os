@@ -648,6 +648,28 @@ function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React
   );
 }
 
+function ModeTabs({ current, onChange }: { current: CapabilityKey; onChange: (m: CapabilityKey) => void }) {
+  return (
+    <div className="flex gap-1 flex-wrap">
+      {CAPABILITIES.map((c) => {
+        const active = current === c.key;
+        return (
+          <button
+            key={c.key}
+            onClick={() => onChange(c.key)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono text-[10.5px] uppercase tracking-[0.2em] transition-colors ${
+              active ? "bg-white text-black" : "text-white/60 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <c.Icon className="h-3.5 w-3.5" />
+            {c.title.replace(" Intelligence", "")}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function AnalysisReport({
   result,
   onClose,

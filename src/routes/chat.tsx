@@ -5,7 +5,7 @@ import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Check, Plus, Mic } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Check, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
@@ -43,6 +43,7 @@ function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [activeCapability, setActiveCapability] = useState<CapabilityKey | null>(null);
+  const [openedCapabilityPanel, setOpenedCapabilityPanel] = useState<Exclude<CapabilityKey, "screen"> | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
@@ -71,6 +72,7 @@ function ChatPage() {
     } else if (p.system || p.knowledge || p.repo) {
       // non-screen restore is handled inside the capability panel via entry id
       setActiveCapability(p.mode ?? "system");
+      setOpenedCapabilityPanel((p.mode === "system" || p.mode === "knowledge" || p.mode === "repo") ? p.mode : "system");
       setCurrentEntryId(entry.id);
     }
   }, [search.id]);
@@ -254,6 +256,12 @@ function ChatPage() {
   }
 
   async function send() {
+    if ((activeCapability ?? "screen") !== "screen") {
+      const selected = CAPABILITIES.find((c) => c.key === activeCapability);
+      toast.message(`${selected?.title ?? "That capability"} is selected — use the action below to start.`);
+      return;
+    }
+
     if (!prompt.trim() && attachments.length === 0) {
       toast.error("Add a prompt or a screenshot / recording");
       return;
@@ -371,7 +379,13 @@ function ChatPage() {
           <div className="mx-auto w-full max-w-[820px] px-5 py-8 space-y-6">
 
 
-            {(activeCapability ?? "screen") === "screen" ? (
+            {openedCapabilityPanel === "system" ? (
+              <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            ) : openedCapabilityPanel === "knowledge" ? (
+              <KnowledgePanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            ) : openedCapabilityPanel === "repo" ? (
+              <RepoPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            ) : (
               <>
                 {analyzing && !analysisResult && (
                   <div className="flex items-center justify-center gap-3 py-10 text-white/70">
@@ -427,34 +441,12 @@ function ChatPage() {
                     </p>
                   </div>
                 ) : null}
-                {!analysisResult && !analyzing && (
-                  <CapabilityCards
-                    current={activeCapability ?? "screen"}
-                    onSelect={(m) => {
-                      if (m === (activeCapability ?? "screen")) return;
-                      setActiveCapability(m);
-                      setAnalysisResult(null);
-                      setAnalysisError(null);
-                      setCurrentEntryId(null);
-                      setPrompt("");
-                      navigate({ to: "/chat" });
-                    }}
-                  />
-                )}
-
               </>
-            ) : activeCapability === "system" ? (
-              <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
-            ) : activeCapability === "knowledge" ? (
-              <KnowledgePanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
-            ) : (
-              <RepoPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
             )}
           </div>
         </div>
 
-        {/* Bottom: sticky composer — only for Screen mode */}
-        {(activeCapability ?? "screen") === "screen" && (
+        {/* Bottom: sticky composer + capability buttons */}
         <div className="border-t border-white/10 shrink-0">
           <div className="mx-auto w-full max-w-[820px] px-5 py-4">
             {attachments.length > 0 && (
@@ -486,7 +478,7 @@ function ChatPage() {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Paste an error, describe the bug, or start a screen recording…"
+                placeholder={(activeCapability ?? "screen") === "screen" ? "Paste an error, describe the bug, or start a screen recording…" : `Describe what you need from ${CAPABILITIES.find((c) => c.key === activeCapability)?.title ?? "this capability"}…`}
                 rows={2}
                 className="w-full bg-transparent p-4 text-[14px] resize-none focus:outline-none placeholder:text-white/35"
               />
@@ -534,12 +526,33 @@ function ChatPage() {
               </div>
             </div>
 
+            <CapabilityPills
+              current={activeCapability ?? "screen"}
+              onSelect={(m) => {
+                setActiveCapability(m);
+                setOpenedCapabilityPanel(null);
+                if (m !== "screen") {
+                  setAnalysisResult(null);
+                  setAnalysisError(null);
+                }
+                navigate({ to: "/chat" });
+              }}
+            />
+
+            <CapabilityDetails
+              current={activeCapability ?? "screen"}
+              recording={recording}
+              analyzing={analyzing}
+              onRecord={recording ? stopRecording : startRecording}
+              onAttach={() => fileInputRef.current?.click()}
+              onOpenPanel={(m) => setOpenedCapabilityPanel(m)}
+            />
+
             <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
               {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
             </div>
           </div>
         </div>
-        )}
       </main>
       </div>
 

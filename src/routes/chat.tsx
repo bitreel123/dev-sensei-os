@@ -58,11 +58,17 @@ function ChatPage() {
   useEffect(() => {
     if (!search.id) return;
     const entry = getHistoryEntry(search.id);
-    if (entry?.payload) {
-      setAnalysisResult({ analysis: entry.payload.analysis, fix: entry.payload.fix });
-      setOverlayMessages(entry.payload.messages ?? []);
+    if (!entry?.payload) return;
+    const p = entry.payload;
+    if (p.analysis && p.fix) {
+      setAnalysisResult({ analysis: p.analysis, fix: p.fix });
+      setOverlayMessages(p.messages ?? []);
       setOverlayOpen(true);
-      setActiveCapability("screen");
+      setActiveCapability(p.mode ?? "screen");
+      setCurrentEntryId(entry.id);
+    } else if (p.system || p.knowledge || p.repo) {
+      // non-screen restore is handled inside the capability panel via entry id
+      setActiveCapability(p.mode ?? "system");
       setCurrentEntryId(entry.id);
     }
   }, [search.id]);

@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Activity, AlertTriangle, FileText, Loader2, Play, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { analyzeMonitorBatch, type MonitorEvent, type MonitorFinding } from "@/lib/monitor.functions";
+import { createNotification } from "@/hooks/use-notifications";
 
 // Narrow typing for the preload-bridged API. Present only in the Electron shell.
 type JeradinDesktop = {

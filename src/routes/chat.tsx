@@ -8,8 +8,9 @@ import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connec
 import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Check, Plus, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
-import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion } from "@/lib/screen-intel.functions";
+import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ScreenIntelOverlay } from "@/components/jeradin/screen-intel-overlay";
 
 
 export const Route = createFileRoute("/chat")({
@@ -43,6 +44,8 @@ function ChatPage() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
+  const [overlayMessages, setOverlayMessages] = useState<OverlayChatMessage[]>([]);
+  const [overlayOpen, setOverlayOpen] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -55,11 +58,21 @@ function ChatPage() {
     if (!search.id) return;
     const entry = getHistoryEntry(search.id);
     if (entry?.payload) {
-      setAnalysisResult(entry.payload);
+      setAnalysisResult({ analysis: entry.payload.analysis, fix: entry.payload.fix });
+      setOverlayMessages(entry.payload.messages ?? []);
+      setOverlayOpen(true);
       setActiveCapability("screen");
       setCurrentEntryId(entry.id);
     }
   }, [search.id]);
+
+  // Persist overlay chat messages to the current history entry
+  useEffect(() => {
+    if (!currentEntryId || !analysisResult) return;
+    updateHistoryEntry(currentEntryId, {
+      payload: { analysis: analysisResult.analysis, fix: analysisResult.fix, messages: overlayMessages },
+    });
+  }, [overlayMessages, currentEntryId, analysisResult]);
 
   async function analyzeImageBase64(base64: string, note: string, title: string) {
     setAnalyzing(true);
@@ -67,6 +80,8 @@ function ChatPage() {
     try {
       const result = await runAnalyze({ data: { imageBase64: base64, note } });
       setAnalysisResult(result);
+      setOverlayMessages([]);
+      setOverlayOpen(true);
       setActiveCapability("screen");
       const entry = addHistoryEntry(title, result);
       setCurrentEntryId(entry.id);
@@ -359,10 +374,27 @@ function ChatPage() {
             )}
 
             {analysisResult ? (
-              <AnalysisReport
-                result={analysisResult}
-                onClose={() => { setAnalysisResult(null); setAnalysisError(null); setCurrentEntryId(null); }}
-              />
+              <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-center">
+                <Sparkles className="h-10 w-10 text-orange-400" strokeWidth={1.2} />
+                <h1
+                  className="text-[36px] leading-[1.05] tracking-[-0.02em]"
+                  style={{ fontFamily: "'Instrument Serif', serif" }}
+                >
+                  Analysis ready
+                </h1>
+                <p className="text-[13px] text-white/60 max-w-md">
+                  Your floating assistant has the full diagnosis and fix plan.
+                  Drag it anywhere, chat with it, or pin it above your work.
+                </p>
+                {!overlayOpen && (
+                  <button
+                    onClick={() => setOverlayOpen(true)}
+                    className="inline-flex items-center gap-2 bg-white text-black px-4 py-2 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" /> Reopen assistant
+                  </button>
+                )}
+              </div>
             ) : !analyzing ? (
               <div className="flex flex-col items-center justify-center min-h-[40vh]">
                 <h1
@@ -466,6 +498,19 @@ function ChatPage() {
         </div>
       </main>
       </div>
+
+      {/* Floating desktop overlay */}
+      {analysisResult && overlayOpen && (
+        <div className="hidden md:block">
+          <ScreenIntelOverlay
+            analysis={analysisResult.analysis}
+            fix={analysisResult.fix}
+            initialMessages={overlayMessages}
+            onMessagesChange={setOverlayMessages}
+            onClose={() => setOverlayOpen(false)}
+          />
+        </div>
+      )}
     </div>
 
   );

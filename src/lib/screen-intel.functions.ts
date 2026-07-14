@@ -134,3 +134,61 @@ Additional fields for this specific analyst:
 
     return { analysis, fix };
   });
+
+// ---------- Follow-up chat about a completed analysis ----------
+export type OverlayChatMessage = { role: "user" | "assistant"; content: string };
+
+export const chatAboutAnalysis = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: {
+      analysis: Diagnosis & Record<string, unknown>;
+      fix: FixPlan;
+      messages: OverlayChatMessage[];
+    }) => {
+      if (!input?.analysis || !input?.fix) throw new Error("analysis and fix are required");
+      if (!Array.isArray(input.messages) || input.messages.length === 0) {
+        throw new Error("messages must be a non-empty array");
+      }
+      return {
+        analysis: input.analysis,
+        fix: input.fix,
+        messages: input.messages
+          .slice(-20)
+          .map((m) => ({
+            role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
+            content: String(m.content ?? "").slice(0, 4000),
+          })),
+      };
+    },
+  )
+  .handler(async ({ data, context }) => {
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: conn } = await supabaseAdmin
+      .from("github_connections")
+      .select("access_token")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    const ghToken = (conn as { access_token?: string } | null)?.access_token;
+
+    const anthropic = createAnthropic({ apiKey: anthropicKey });
+    const system = `You are Jeradin — a friendly senior engineer helping a developer through a floating overlay while they work.
+
+You are already looking at an analysis of their screen. Answer their follow-up questions about the bug, the suggested fix, and adjacent concerns. Be concise (2-6 sentences unless they ask for more), plain English, no unnecessary code dumps. Use the GitHub search tools 0-3 times only when it materially helps.
+
+Full context you already have:
+DIAGNOSIS: ${JSON.stringify(data.analysis).slice(0, 6000)}
+FIX PLAN: ${JSON.stringify(data.fix).slice(0, 6000)}`;
+
+    const { text } = await generateText({
+      model: anthropic("claude-sonnet-4-5"),
+      system,
+      messages: data.messages,
+      tools: buildGithubTools(ghToken),
+      stopWhen: stepCountIs(6),
+    });
+    return { reply: text };
+  });

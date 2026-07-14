@@ -8,8 +8,9 @@ import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connec
 import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, ArrowRight, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Check, Plus, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
-import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion } from "@/lib/screen-intel.functions";
+import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ScreenIntelOverlay } from "@/components/jeradin/screen-intel-overlay";
 
 
 export const Route = createFileRoute("/chat")({

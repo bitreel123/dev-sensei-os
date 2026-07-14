@@ -5,11 +5,11 @@ import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Check, Plus } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
 import { SystemPanel, KnowledgePanel, RepoPanel } from "@/components/jeradin/capability-panels";
@@ -918,13 +918,6 @@ const CAPABILITIES: Array<{
     Icon: Github,
   },
 ];
-
-const CAPABILITY_SHORT: Record<CapabilityKey, string> = {
-  screen: "See your screen, diagnose bugs",
-  system: "Map your whole codebase",
-  knowledge: "Find repos, APIs, models",
-  repo: "Analyze commits & PRs",
-};
 
 // ============= MOBILE LAYOUT =============
 function MobileChat({

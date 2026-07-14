@@ -44,6 +44,8 @@ function ChatPage() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
+  const [overlayMessages, setOverlayMessages] = useState<OverlayChatMessage[]>([]);
+  const [overlayOpen, setOverlayOpen] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);

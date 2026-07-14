@@ -71,12 +71,16 @@ function TermsPage() {
         <Section id="s1" n="1" title="Agreement to these terms">
           <p>
             These Terms of Service ("<b>Terms</b>") are a binding legal agreement between you
-            ("<b>you</b>", "<b>customer</b>") and Jeradin ("<b>Jeradin</b>", "<b>we</b>", "<b>us</b>",
-            "<b>our</b>"), the operator of the website at jeradin.com and the associated software
-            products, applications, browser extensions, desktop apps, APIs, and connectors we
-            provide (collectively, the "<b>Service</b>"). By creating an account, clicking to
-            accept, downloading, installing, or otherwise using the Service you agree to be bound
-            by these Terms and by any additional policies referenced here, including our{" "}
+            ("<b>you</b>", "<b>customer</b>") and <b>Jeradin</b>, the seller and legal entity
+            operating under the business name "Jeradin" ("<b>Jeradin</b>", "<b>we</b>",
+            "<b>us</b>", "<b>our</b>"), the operator of the website at jeradin.com and the
+            associated software products, applications, browser extensions, desktop apps, APIs,
+            and connectors we provide (collectively, the "<b>Service</b>"). Jeradin can be
+            contacted for legal matters at{" "}
+            <a className="underline" href="mailto:legal@jeradin.com">legal@jeradin.com</a>. By
+            creating an account, clicking to accept, downloading, installing, or otherwise
+            using the Service you agree to be bound by these Terms and by any additional
+            policies referenced here, including our{" "}
             <a className="underline" href="/privacy">Privacy Policy</a> and{" "}
             <a className="underline" href="/refunds">Refund Policy</a>. If you do not agree, you
             must not use the Service.
@@ -87,6 +91,7 @@ function TermsPage() {
             "you" include that organisation.
           </p>
         </Section>
+
 
         <Section id="s2" n="2" title="The Service">
           <p>

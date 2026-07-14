@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRouteImport } from './routes/workflow'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SystemIntelligenceRouteImport } from './routes/system-intelligence'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RefundsRouteImport } from './routes/refunds'
@@ -19,8 +18,6 @@ import { Route as ProductRouteImport } from './routes/product'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as KnowledgeIntelligenceRouteImport } from './routes/knowledge-intelligence'
-import { Route as GithubIntelligenceRouteImport } from './routes/github-intelligence'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as DocsRouteImport } from './routes/docs'
@@ -41,11 +38,6 @@ const WorkflowRoute = WorkflowRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SystemIntelligenceRoute = SystemIntelligenceRouteImport.update({
-  id: '/system-intelligence',
-  path: '/system-intelligence',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -81,16 +73,6 @@ const PricingRoute = PricingRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KnowledgeIntelligenceRoute = KnowledgeIntelligenceRouteImport.update({
-  id: '/knowledge-intelligence',
-  path: '/knowledge-intelligence',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GithubIntelligenceRoute = GithubIntelligenceRouteImport.update({
-  id: '/github-intelligence',
-  path: '/github-intelligence',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -160,8 +142,6 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/github-intelligence': typeof GithubIntelligenceRoute
-  '/knowledge-intelligence': typeof KnowledgeIntelligenceRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -169,7 +149,6 @@ export interface FileRoutesByFullPath {
   '/refunds': typeof RefundsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/system-intelligence': typeof SystemIntelligenceRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
@@ -185,8 +164,6 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/github-intelligence': typeof GithubIntelligenceRoute
-  '/knowledge-intelligence': typeof KnowledgeIntelligenceRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -194,7 +171,6 @@ export interface FileRoutesByTo {
   '/refunds': typeof RefundsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/system-intelligence': typeof SystemIntelligenceRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
@@ -211,8 +187,6 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/github-intelligence': typeof GithubIntelligenceRoute
-  '/knowledge-intelligence': typeof KnowledgeIntelligenceRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -220,7 +194,6 @@ export interface FileRoutesById {
   '/refunds': typeof RefundsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/system-intelligence': typeof SystemIntelligenceRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
@@ -238,8 +211,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/download'
     | '/forgot-password'
-    | '/github-intelligence'
-    | '/knowledge-intelligence'
     | '/login'
     | '/pricing'
     | '/privacy'
@@ -247,7 +218,6 @@ export interface FileRouteTypes {
     | '/refunds'
     | '/reset-password'
     | '/signup'
-    | '/system-intelligence'
     | '/terms'
     | '/workflow'
     | '/api/public/github/authorize'
@@ -263,8 +233,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/download'
     | '/forgot-password'
-    | '/github-intelligence'
-    | '/knowledge-intelligence'
     | '/login'
     | '/pricing'
     | '/privacy'
@@ -272,7 +240,6 @@ export interface FileRouteTypes {
     | '/refunds'
     | '/reset-password'
     | '/signup'
-    | '/system-intelligence'
     | '/terms'
     | '/workflow'
     | '/api/public/github/authorize'
@@ -288,8 +255,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/download'
     | '/forgot-password'
-    | '/github-intelligence'
-    | '/knowledge-intelligence'
     | '/login'
     | '/pricing'
     | '/privacy'
@@ -297,7 +262,6 @@ export interface FileRouteTypes {
     | '/refunds'
     | '/reset-password'
     | '/signup'
-    | '/system-intelligence'
     | '/terms'
     | '/workflow'
     | '/api/public/github/authorize'
@@ -314,8 +278,6 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   DownloadRoute: typeof DownloadRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
-  GithubIntelligenceRoute: typeof GithubIntelligenceRoute
-  KnowledgeIntelligenceRoute: typeof KnowledgeIntelligenceRoute
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -323,7 +285,6 @@ export interface RootRouteChildren {
   RefundsRoute: typeof RefundsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
-  SystemIntelligenceRoute: typeof SystemIntelligenceRoute
   TermsRoute: typeof TermsRoute
   WorkflowRoute: typeof WorkflowRoute
   ApiPublicGithubAuthorizeRoute: typeof ApiPublicGithubAuthorizeRoute
@@ -346,13 +307,6 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/system-intelligence': {
-      id: '/system-intelligence'
-      path: '/system-intelligence'
-      fullPath: '/system-intelligence'
-      preLoaderRoute: typeof SystemIntelligenceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -402,20 +356,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/knowledge-intelligence': {
-      id: '/knowledge-intelligence'
-      path: '/knowledge-intelligence'
-      fullPath: '/knowledge-intelligence'
-      preLoaderRoute: typeof KnowledgeIntelligenceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/github-intelligence': {
-      id: '/github-intelligence'
-      path: '/github-intelligence'
-      fullPath: '/github-intelligence'
-      preLoaderRoute: typeof GithubIntelligenceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -506,8 +446,6 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   DownloadRoute: DownloadRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
-  GithubIntelligenceRoute: GithubIntelligenceRoute,
-  KnowledgeIntelligenceRoute: KnowledgeIntelligenceRoute,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
@@ -515,7 +453,6 @@ const rootRouteChildren: RootRouteChildren = {
   RefundsRoute: RefundsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
-  SystemIntelligenceRoute: SystemIntelligenceRoute,
   TermsRoute: TermsRoute,
   WorkflowRoute: WorkflowRoute,
   ApiPublicGithubAuthorizeRoute: ApiPublicGithubAuthorizeRoute,

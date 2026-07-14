@@ -5,7 +5,7 @@ import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
@@ -1096,9 +1096,7 @@ function MobileChat({
           <Menu className="h-5 w-5" />
         </button>
         <Link to="/account" className="p-2 -mr-2 text-white/80 hover:text-white" aria-label="Account">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10">
-            <UserIcon className="h-4 w-4" />
-          </span>
+          <Ghost className="h-7 w-7" strokeWidth={1.7} />
         </Link>
       </div>
 
@@ -1182,7 +1180,7 @@ function MobileChat({
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="How can I help you today?"
+            placeholder="Chat with Jeradin…"
             rows={2}
             className="w-full bg-transparent px-2 py-1 text-[15px] resize-none focus:outline-none placeholder:text-white/40 text-white"
           />

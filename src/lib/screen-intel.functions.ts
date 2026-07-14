@@ -89,7 +89,7 @@ Additional fields for this specific analyst:
     });
 
     // Step 1 — Gemini 3 Pro visual analyst
-    const analysis = normalizeScreenAnalysis((await callGeminiAnalyst(lovableKey, screenAnalystSystem, [
+    const analysis = normalizeScreenAnalysis((await callGeminiAnalyst(geminiKey, screenAnalystSystem, [
       {
         type: "text",
         text: data.note

@@ -1020,4 +1020,106 @@ function MobileChat({
 }
 
 
+function InlineAnalysisChat({
+  analysis,
+  fix,
+  messages,
+  onMessagesChange,
+}: {
+  analysis: ScreenAnalysis;
+  fix: FixSuggestion;
+  messages: OverlayChatMessage[];
+  onMessagesChange: (m: OverlayChatMessage[]) => void;
+}) {
+  const askFollowUp = useServerFn(chatAboutAnalysis);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length, sending]);
+
+  async function send() {
+    const text = input.trim();
+    if (!text || sending) return;
+    const next: OverlayChatMessage[] = [...messages, { role: "user", content: text }];
+    onMessagesChange(next);
+    setInput("");
+    setSending(true);
+    try {
+      const { reply } = await askFollowUp({
+        data: {
+          analysis: analysis as ScreenAnalysis & Record<string, unknown>,
+          fix,
+          messages: next,
+        },
+      });
+      onMessagesChange([...next, { role: "assistant", content: reply }]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to reply");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="border border-white/10 rounded-lg bg-white/[0.02] flex flex-col">
+      <div className="px-4 py-2.5 border-b border-white/10 font-mono text-[10px] uppercase tracking-[0.22em] text-white/50">
+        Chat with Jeradin about this analysis
+      </div>
+      <div className="p-4 space-y-4 max-h-[420px] overflow-y-auto min-h-[120px]">
+        {messages.length === 0 && !sending && (
+          <p className="text-[13px] text-white/45">
+            Ask a follow-up about the diagnosis, the fix, or anything adjacent.
+          </p>
+        )}
+        {messages.map((m, i) => (
+          <div key={i} className="text-[13px] leading-relaxed">
+            <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1">
+              {m.role === "user" ? "You" : "Jeradin"}
+            </div>
+            <div className={`whitespace-pre-wrap ${m.role === "user" ? "text-white" : "text-white/85"}`}>
+              {m.content}
+            </div>
+          </div>
+        ))}
+        {sending && (
+          <div className="text-[12.5px] text-white/50 inline-flex items-center gap-2">
+            <Loader2 className="h-3 w-3 animate-spin" /> Thinking…
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+      <div className="border-t border-white/10 p-2">
+        <div className="flex items-end gap-2 rounded-lg border border-white/15 bg-black/40 focus-within:border-white/30 px-3 py-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send();
+              }
+            }}
+            placeholder="Ask a follow-up…"
+            rows={1}
+            className="flex-1 bg-transparent text-[13.5px] resize-none focus:outline-none placeholder:text-white/35 max-h-32 py-1"
+          />
+          <button
+            onClick={send}
+            disabled={sending || !input.trim()}
+            className="inline-flex h-8 w-8 items-center justify-center rounded bg-white text-black disabled:opacity-40 shrink-0"
+            aria-label="Send"
+          >
+            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
 

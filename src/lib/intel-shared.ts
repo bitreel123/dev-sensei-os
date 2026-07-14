@@ -159,7 +159,9 @@ async function callGemini(
     contents: [{ role: "user", parts }],
     generationConfig: {
       temperature: opts.temperature ?? 0.2,
-      maxOutputTokens: opts.maxOutputTokens ?? 8192,
+      // Gemini 3.x Pro consumes many "thoughts" tokens before visible output;
+      // keep a generous ceiling so a big analyst JSON isn't cut off.
+      maxOutputTokens: opts.maxOutputTokens ?? 16384,
       ...(opts.json ? { responseMimeType: "application/json" } : {}),
     },
   };

@@ -617,7 +617,7 @@ function AnalysisReport({
         <div className="flex items-center gap-2 text-white/90">
           <Sparkles className="h-4 w-4" />
           <span className="font-mono text-[10.5px] uppercase tracking-[0.2em]">
-            Gemini 3 · Claude analysis
+            Screen Intelligence
           </span>
         </div>
         <button

@@ -90,7 +90,7 @@ function ChatPage() {
       setOverlayMessages([]);
       setOverlayOpen(true);
       setActiveCapability("screen");
-      const entry = addHistoryEntry(title, result);
+      const entry = addHistoryEntry(title, { mode: "screen", analysis: result.analysis, fix: result.fix, messages: [] });
       setCurrentEntryId(entry.id);
       navigate({ to: "/chat", search: { id: entry.id } });
       toast.success("Analysis complete");

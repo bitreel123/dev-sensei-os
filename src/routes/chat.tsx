@@ -365,63 +365,91 @@ function ChatPage() {
           )}
         </div>
 
+        {/* Mode tabs */}
+        <div className="border-b border-white/5 shrink-0">
+          <div className="mx-auto w-full max-w-[820px] px-5 py-3">
+            <ModeTabs
+              current={activeCapability ?? "screen"}
+              onChange={(m) => {
+                if (m === (activeCapability ?? "screen")) return;
+                setActiveCapability(m);
+                setAnalysisResult(null);
+                setAnalysisError(null);
+                setCurrentEntryId(null);
+                setPrompt("");
+                navigate({ to: "/chat" });
+              }}
+            />
+          </div>
+        </div>
+
         {/* Top: scrollable analysis / greeting area */}
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[820px] px-5 py-8">
-            {analyzing && !analysisResult && (
-              <div className="flex items-center justify-center gap-3 py-10 text-white/70">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
-                  Analyzing…
-                </span>
-              </div>
-            )}
-
-            {analysisError && !analysisResult && (
-              <AnalysisError message={analysisError} />
-            )}
-
-            {analysisResult ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-white/90">
-                    <Sparkles className="h-4 w-4 text-orange-400" />
-                    <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">
-                      Screen Intelligence
+            {(activeCapability ?? "screen") === "screen" ? (
+              <>
+                {analyzing && !analysisResult && (
+                  <div className="flex items-center justify-center gap-3 py-10 text-white/70">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
+                      Analyzing…
                     </span>
                   </div>
-                  {!overlayOpen && (
-                    <button
-                      onClick={() => setOverlayOpen(true)}
-                      className="inline-flex items-center gap-1.5 border border-white/20 px-2.5 py-1 rounded font-mono text-[10px] uppercase tracking-[0.22em] hover:bg-white/10"
+                )}
+
+                {analysisError && !analysisResult && (
+                  <AnalysisError message={analysisError} />
+                )}
+
+                {analysisResult ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-white/90">
+                        <Sparkles className="h-4 w-4 text-orange-400" />
+                        <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">
+                          Screen Intelligence
+                        </span>
+                      </div>
+                      {!overlayOpen && (
+                        <button
+                          onClick={() => setOverlayOpen(true)}
+                          className="inline-flex items-center gap-1.5 border border-white/20 px-2.5 py-1 rounded font-mono text-[10px] uppercase tracking-[0.22em] hover:bg-white/10"
+                        >
+                          Open floating assistant
+                        </button>
+                      )}
+                    </div>
+                    <div className="border border-white/10 rounded-lg p-5 bg-white/[0.02]">
+                      <AnalysisBody analysis={analysisResult.analysis} fix={analysisResult.fix} />
+                    </div>
+                    <InlineAnalysisChat
+                      analysis={analysisResult.analysis}
+                      fix={analysisResult.fix}
+                      messages={overlayMessages}
+                      onMessagesChange={setOverlayMessages}
+                    />
+                  </div>
+                ) : !analyzing ? (
+                  <div className="flex flex-col items-center justify-center min-h-[40vh]">
+                    <h1
+                      className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
+                      style={{ fontFamily: "'Instrument Serif', serif" }}
                     >
-                      Open floating assistant
-                    </button>
-                  )}
-                </div>
-                <div className="border border-white/10 rounded-lg p-5 bg-white/[0.02]">
-                  <AnalysisBody analysis={analysisResult.analysis} fix={analysisResult.fix} />
-                </div>
-                <InlineAnalysisChat
-                  analysis={analysisResult.analysis}
-                  fix={analysisResult.fix}
-                  messages={overlayMessages}
-                  onMessagesChange={setOverlayMessages}
-                />
-              </div>
-            ) : !analyzing ? (
-              <div className="flex flex-col items-center justify-center min-h-[40vh]">
-                <h1
-                  className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
-                  style={{ fontFamily: "'Instrument Serif', serif" }}
-                >
-                  What are we doing today?
-                </h1>
-                <p className="mt-2 text-center text-[13px] text-white/55">
-                  Describe the issue, let Jeradin solve it for you.
-                </p>
-              </div>
-            ) : null}
+                      What are we doing today?
+                    </h1>
+                    <p className="mt-2 text-center text-[13px] text-white/55">
+                      Describe the issue, let Jeradin solve it for you.
+                    </p>
+                  </div>
+                ) : null}
+              </>
+            ) : activeCapability === "system" ? (
+              <SystemPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            ) : activeCapability === "knowledge" ? (
+              <KnowledgePanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            ) : (
+              <RepoPanel entryId={currentEntryId} setEntryId={setCurrentEntryId} />
+            )}
           </div>
         </div>
 

@@ -153,7 +153,7 @@ export function ScreenIntelOverlay({
         <GripHorizontal className="h-3.5 w-3.5 text-white/40" />
         <Sparkles className="h-3.5 w-3.5 text-orange-400" />
         <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/70 flex-1 truncate">
-          Screen Intelligence · Gemini 3 + Claude
+          Screen Intelligence
         </span>
         <button
           onClick={() => setPinned((p) => !p)}
@@ -256,7 +256,7 @@ function TabBtn({
   );
 }
 
-function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix: FixSuggestion }) {
+export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix: FixSuggestion }) {
   return (
     <div className="space-y-4">
       <div>
@@ -375,7 +375,7 @@ function ChatBody({
           Ask a follow-up about the analysis, the fix, or anything adjacent.
         </p>
         <p className="mt-1 text-[10.5px] font-mono uppercase tracking-[0.2em] text-white/35">
-          Claude Sonnet · with full analysis context
+          with full analysis context
         </p>
       </div>
     );

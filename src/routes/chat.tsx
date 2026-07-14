@@ -281,15 +281,16 @@ function ChatPage() {
       return;
     }
 
-    if (!prompt.trim() && attachments.length === 0) {
-      toast.error("Add a prompt or a screenshot / recording");
-      return;
-    }
     setAnalysisError(null);
 
     // Recording still in progress → grab a live frame
     if (streamRef.current) {
       await captureFrameAndAnalyze();
+      return;
+    }
+
+    if (!prompt.trim() && attachments.length === 0) {
+      toast.error("Add a prompt or start Screen recording, then Send.");
       return;
     }
 
@@ -1072,7 +1073,16 @@ function MobileChat({
   const [capabilitySheetOpen, setCapabilitySheetOpen] = useState(false);
   const selected = activeCapability ?? "screen";
   const firstName = (user?.email ?? "there").split("@")[0].split(/[._-]/)[0];
-  const greetName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  const cleanedName = firstName.replace(/\d+/g, "");
+  const greetName = (cleanedName.length > 14 ? cleanedName.slice(0, 14) : cleanedName) || "there";
+  const displayName = greetName.charAt(0).toUpperCase() + greetName.slice(1);
+  const handleMobileSend = () => {
+    if (selected === "screen" && !recording && attachments.length === 0 && !prompt.trim()) {
+      onToggleRecording();
+      return;
+    }
+    onSend();
+  };
 
   return (
     <div className="md:hidden flex flex-col h-full bg-black text-white">
@@ -1131,10 +1141,10 @@ function MobileChat({
             )}
           </div>
           <h1
-            className="text-[36px] leading-tight tracking-[-0.02em] text-white"
+            className="max-w-full break-words text-[32px] leading-tight text-white"
             style={{ fontFamily: "'Instrument Serif', serif" }}
           >
-            {analyzing ? "Analyzing…" : `${greetName} returns!`}
+            {analyzing ? "Analyzing…" : `${displayName} returns!`}
           </h1>
           <p className="mt-2 text-[12px] text-white/40">
             {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
@@ -1201,20 +1211,12 @@ function MobileChat({
             </button>
             <div className="flex-1" />
             <button
-              onClick={onToggleRecording}
-              disabled={analyzing}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${recording ? "bg-red-500/20 text-red-300" : "bg-white/10 text-white/80"} disabled:opacity-60`}
-              aria-label={recording ? "Stop recording" : "Record screen"}
-            >
-              {recording ? <Square className="h-4 w-4 fill-current" /> : <Monitor className="h-4 w-4" />}
-            </button>
-            <button
-              onClick={onSend}
+              onClick={handleMobileSend}
               disabled={analyzing}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-black disabled:opacity-60"
-              aria-label="Send"
+              aria-label={recording ? "Capture screen" : "Send"}
             >
-              {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : recording ? <Square className="h-4 w-4 fill-current" /> : <Send className="h-4 w-4" />}
             </button>
           </div>
         </div>

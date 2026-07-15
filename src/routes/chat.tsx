@@ -545,8 +545,11 @@ function ChatPage() {
         </div>
 
         {/* Top: analysis / greeting area */}
-        <div className={`flex-1 ${(analysisResult || systemResult || knowledgeResult || repoResult) ? "overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : "overflow-hidden"}`}>
-          <div className={`mx-auto w-full max-w-[820px] px-5 py-8 space-y-6 ${!(analysisResult || systemResult || knowledgeResult || repoResult) ? "h-full flex flex-col justify-center" : ""}`}>
+        <div className={`flex-1 min-h-0 ${(analysisResult || systemResult || knowledgeResult || repoResult) ? "overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : "overflow-hidden"}`}>
+          <div className={`mx-auto w-full max-w-[780px] px-5 ${(analysisResult || systemResult || knowledgeResult || repoResult) ? "py-6 pb-10 space-y-6" : "h-full flex flex-col justify-center py-8 space-y-6"}`}>
+
+
+
 
 
             {(

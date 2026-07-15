@@ -258,57 +258,6 @@ export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix:
   );
 }
 
-function ChatBody({
-  messages,
-  sending,
-}: {
-  messages: OverlayChatMessage[];
-  sending: boolean;
-}) {
-  const bottomRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length, sending]);
-
-  if (messages.length === 0 && !sending) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center text-center px-4 text-white/50">
-        <MessageSquare className="h-6 w-6 mb-2 text-white/30" />
-        <p className="text-[12.5px]">
-          Ask a follow-up about the analysis, the fix, or anything adjacent.
-        </p>
-        <p className="mt-1 text-[10.5px] font-mono uppercase tracking-[0.2em] text-white/35">
-          with full analysis context
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {messages.map((m, i) => (
-        <div
-          key={i}
-          className={`text-[12.5px] leading-relaxed ${
-            m.role === "user" ? "text-white" : "text-white/85"
-          }`}
-        >
-          <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1">
-            {m.role === "user" ? "You" : "Jeradin"}
-          </div>
-          <div className="whitespace-pre-wrap">{m.content}</div>
-        </div>
-      ))}
-      {sending && (
-        <div className="text-[12px] text-white/50 inline-flex items-center gap-2">
-          <Loader2 className="h-3 w-3 animate-spin" /> Thinking…
-        </div>
-      )}
-      <div ref={bottomRef} />
-    </div>
-  );
-}
-
 function detectLang(file?: string | null): string {
   if (!file) return "typescript";
   const ext = file.split(".").pop()?.toLowerCase() ?? "";

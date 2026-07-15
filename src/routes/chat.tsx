@@ -867,6 +867,146 @@ function IntelResultFrame({ title, icon, children }: { title: string; icon: Reac
   );
 }
 
+function ScreenAnalysisConversation({
+  result,
+  messages,
+  sending,
+}: {
+  result: { analysis: ScreenAnalysis; fix: FixSuggestion };
+  messages: OverlayChatMessage[];
+  sending: boolean;
+}) {
+  const { analysis, fix } = result;
+  return (
+    <div className="mx-auto max-w-[760px] space-y-8 text-[16px] leading-7 text-white/90">
+      <article className="space-y-6">
+        <p className="text-[14px] leading-6 text-white/50">{analysis.summary}</p>
+
+        <section className="space-y-2">
+          <h2 className="text-[19px] font-semibold text-white">What I found</h2>
+          <p>{fix.plainExplanation}</p>
+          <p className="text-white/78">{fix.whyItHappened}</p>
+        </section>
+
+        {analysis.errors.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-[19px] font-semibold text-white">Errors detected</h2>
+            <ul className="list-disc space-y-2 pl-6">
+              {analysis.errors.map((err, i) => (
+                <li key={i} className="pl-1">
+                  <span>{err.message}</span>
+                  {(err.file || err.source) && (
+                    <span className="block font-mono text-[12px] text-white/45">
+                      {err.source}
+                      {err.file ? ` · ${err.file}${err.line ? `:${err.line}` : ""}` : ""}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {analysis.suspectFiles.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-[19px] font-semibold text-white">Likely files involved</h2>
+            <ul className="list-disc space-y-1 pl-6">
+              {analysis.suspectFiles.map((file, i) => (
+                <li key={i} className="font-mono text-[13px] text-white/80">{file}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {fix.steps.length > 0 && (
+          <section className="space-y-5">
+            <h2 className="text-[19px] font-semibold text-white">Step-by-step fix</h2>
+            {fix.steps.map((step, i) => (
+              <div key={i} className="space-y-2">
+                <h3 className="text-[16px] font-semibold text-white">
+                  Step {i + 1}{step.file ? ` — ${step.file}` : ""}
+                </h3>
+                <p className="text-white/84">{step.change}</p>
+                {step.codeAfter && (
+                  <div className="overflow-visible rounded-md border border-white/10">
+                    <CodeBlock code={step.codeAfter} language={detectFileLanguage(step.file)} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </section>
+        )}
+
+        {fix.additionalNotes && (
+          <p className="border-t border-white/10 pt-5 text-[14px] leading-6 text-white/58">{fix.additionalNotes}</p>
+        )}
+      </article>
+
+      {messages.length > 0 && (
+        <div className="space-y-6">
+          {messages.map((message, i) => (
+            <div key={i} className={message.role === "user" ? "flex justify-end" : "block"}>
+              {message.role === "user" ? (
+                <div className="max-w-[72%] rounded-2xl bg-white/[0.09] px-4 py-2.5 text-[15px] leading-6 text-white">
+                  {message.content}
+                </div>
+              ) : (
+                <div className="max-w-[760px] whitespace-pre-wrap text-[16px] leading-7 text-white/90">
+                  {message.content}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {sending && (
+        <div className="inline-flex items-center gap-2 text-[14px] text-white/55">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…
+        </div>
+      )}
+    </div>
+  );
+}
+
+function detectFileLanguage(file?: string | null): string {
+  if (!file) return "typescript";
+  const ext = file.split(".").pop()?.toLowerCase() ?? "";
+  const map: Record<string, string> = {
+    ts: "typescript",
+    tsx: "tsx",
+    js: "javascript",
+    jsx: "jsx",
+    cjs: "javascript",
+    mjs: "javascript",
+    py: "python",
+    rb: "ruby",
+    go: "go",
+    rs: "rust",
+    java: "java",
+    kt: "kotlin",
+    swift: "swift",
+    php: "php",
+    cs: "csharp",
+    c: "c",
+    h: "c",
+    cpp: "cpp",
+    hpp: "cpp",
+    json: "json",
+    yml: "yaml",
+    yaml: "yaml",
+    toml: "toml",
+    md: "markdown",
+    css: "css",
+    scss: "scss",
+    html: "html",
+    sh: "bash",
+    bash: "bash",
+    sql: "sql",
+  };
+  return map[ext] ?? "typescript";
+}
+
 function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
     <button

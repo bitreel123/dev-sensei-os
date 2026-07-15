@@ -521,6 +521,7 @@ function ChatPage() {
         analyzing={analyzing}
         analysisError={analysisError}
         analysisResult={analysisResult}
+        overlayMessages={overlayMessages}
         systemResult={systemResult}
         knowledgeResult={knowledgeResult}
         repoResult={repoResult}
@@ -1418,6 +1419,7 @@ function MobileChat({
   analyzing,
   analysisError,
   analysisResult,
+  overlayMessages,
   systemResult,
   knowledgeResult,
   repoResult,
@@ -1443,6 +1445,7 @@ function MobileChat({
   analyzing: boolean;
   analysisError: string | null;
   analysisResult: { analysis: ScreenAnalysis; fix: FixSuggestion } | null;
+  overlayMessages: OverlayChatMessage[];
   systemResult: { analysis: SystemAnalysis; filesAnalyzed: number } | null;
   knowledgeResult: KnowledgeReport | null;
   repoResult: GithubIntelReport | null;
@@ -1496,7 +1499,13 @@ function MobileChat({
       {/* Content area: result or empty state */}
       {analysisResult ? (
         <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
-          <AnalysisReport result={analysisResult} onClose={onClearAnalysis} />
+          <div className="pt-4">
+            <ScreenAnalysisConversation
+              result={analysisResult}
+              messages={overlayMessages}
+              sending={analyzing && overlayMessages.length > 0}
+            />
+          </div>
         </div>
       ) : systemResult ? (
         <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">

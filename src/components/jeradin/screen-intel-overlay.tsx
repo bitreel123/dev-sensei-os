@@ -197,7 +197,7 @@ export function ScreenIntelOverlay({
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-3">
         {tab === "analysis" ? (
           <AnalysisBody analysis={analysis} fix={fix} />
         ) : (
@@ -205,32 +205,6 @@ export function ScreenIntelOverlay({
         )}
       </div>
 
-      {/* Composer */}
-      <div className="border-t border-white/10 p-2 shrink-0">
-        <div className="flex items-end gap-2 rounded-lg border border-white/15 bg-white/[0.03] focus-within:border-white/30 px-2 py-1.5">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            placeholder="Ask a follow-up about this analysis…"
-            rows={1}
-            className="flex-1 bg-transparent text-[13px] resize-none focus:outline-none placeholder:text-white/35 max-h-32 py-1"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={sending || !input.trim()}
-            className="inline-flex h-7 w-7 items-center justify-center rounded bg-white text-black disabled:opacity-40 shrink-0"
-            aria-label="Send"
-          >
-            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3 w-3" />}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -435,6 +409,8 @@ export function CodeBlock({ code, language = "typescript" }: { code: string; lan
         fontSize: "11.5px",
         lineHeight: "1.55",
         borderRadius: 0,
+        overflowX: "visible",
+        whiteSpace: "pre-wrap",
       }}
       codeTagProps={{ style: { whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" } }}
     >

@@ -667,6 +667,7 @@ function ChatPage() {
                       analyzing={analyzing}
                       onSend={send}
                         knowledgeEnabled={knowledgeEnabled}
+                compact
                       onSelectCapability={(m) => {
                         setActiveCapability((currentMode) => currentMode === m ? null : m);
                         setOpenedCapabilityPanel(null);
@@ -1034,6 +1035,7 @@ function DesktopPromptBlock({
   analyzing,
   onSend,
   knowledgeEnabled,
+  compact = false,
   onSelectCapability,
 }: {
   prompt: string;
@@ -1050,6 +1052,7 @@ function DesktopPromptBlock({
   analyzing: boolean;
   onSend: () => void;
   knowledgeEnabled: boolean;
+  compact?: boolean;
   onSelectCapability: (m: CapabilityKey) => void;
 }) {
   const selected = current ?? "screen";
@@ -1058,7 +1061,7 @@ function DesktopPromptBlock({
     : `Describe what you need from ${CAPABILITIES.find((c) => c.key === selected)?.title ?? "this capability"}…`;
 
   return (
-    <div className="mt-16 w-full">
+    <div className={`${compact ? "mt-0" : "mt-16"} w-full`}>
       {attachments.length > 0 && (
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {attachments.map((a, i) => (

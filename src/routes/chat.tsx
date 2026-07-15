@@ -944,6 +944,9 @@ function DesktopPromptBlock({
       {current && (
         <CapabilityDetails
           current={current}
+          recording={recording}
+          onRecord={onRecord}
+          onSend={onSend}
         />
       )}
     </div>
@@ -976,10 +979,28 @@ function CapabilityPills({ current, onSelect }: { current: CapabilityKey | null;
 
 function CapabilityDetails({
   current,
+  recording,
+  onRecord,
+  onSend,
 }: {
   current: CapabilityKey;
+  recording: boolean;
+  onRecord: () => void;
+  onSend: () => void;
 }) {
   const capability = CAPABILITIES.find((c) => c.key === current) ?? CAPABILITIES[0];
+  const ctaLabel =
+    current === "screen"
+      ? (recording ? "Stop recording" : capability.cta)
+      : capability.cta;
+  const onCta =
+    current === "screen"
+      ? onRecord
+      : onSend;
+  const CtaIcon =
+    current === "screen"
+      ? (recording ? Square : Monitor)
+      : capability.Icon;
 
   return (
     <div className="mx-auto mt-3 max-w-[640px] rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-center">
@@ -990,6 +1011,13 @@ function CapabilityDetails({
       <p className="mx-auto mt-2 max-w-[560px] text-[12.5px] leading-relaxed text-white/55">
         {capability.desc}
       </p>
+      <button
+        onClick={onCta}
+        className="mt-3 inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
+      >
+        <CtaIcon className="h-3.5 w-3.5" />
+        {ctaLabel}
+      </button>
     </div>
   );
 }

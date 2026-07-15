@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import {
   Sparkles,
   X,
@@ -7,17 +6,14 @@ import {
   Pin,
   PinOff,
   GripHorizontal,
-  Send,
   Loader2,
   AlertTriangle,
   MessageSquare,
   FileText,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
-  chatAboutAnalysis,
   type ScreenAnalysis,
   type FixSuggestion,
   type OverlayChatMessage,
@@ -41,13 +37,10 @@ export function ScreenIntelOverlay({
   onClose,
   onMessagesChange,
 }: Props) {
-  const askFollowUp = useServerFn(chatAboutAnalysis);
   const [tab, setTab] = useState<Tab>("analysis");
   const [minimized, setMinimized] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [messages, setMessages] = useState<OverlayChatMessage[]>(initialMessages);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
 
   // ---- Draggable positioning ----
   const [pos, setPos] = useState({ x: 24, y: 96 });
@@ -87,34 +80,6 @@ export function ScreenIntelOverlay({
   }
   function onDragEnd() {
     dragRef.current = null;
-  }
-
-  async function sendMessage() {
-    const text = input.trim();
-    if (!text || sending) return;
-    const next: OverlayChatMessage[] = [...messages, { role: "user", content: text }];
-    setMessages(next);
-    setInput("");
-    setSending(true);
-    setTab("chat");
-    try {
-      const { reply } = await askFollowUp({
-        data: {
-          analysis: analysis as ScreenAnalysis & Record<string, unknown>,
-          fix,
-          messages: next,
-        },
-      });
-      const updated: OverlayChatMessage[] = [...next, { role: "assistant", content: reply }];
-      setMessages(updated);
-      onMessagesChange?.(updated);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to reply";
-      toast.error(msg);
-      setMessages(next); // keep user message
-    } finally {
-      setSending(false);
-    }
   }
 
   // ---- Minimized pill ----
@@ -201,7 +166,7 @@ export function ScreenIntelOverlay({
         {tab === "analysis" ? (
           <AnalysisBody analysis={analysis} fix={fix} />
         ) : (
-          <ChatBody messages={messages} sending={sending} />
+          <ChatBody messages={messages} sending={false} />
         )}
       </div>
 

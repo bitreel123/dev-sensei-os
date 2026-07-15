@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { ScreenIntelOverlay, AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
+import { ScreenIntelOverlay, CodeBlock } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
 import { analyzeSystem, type FileInput, type SystemAnalysis } from "@/lib/system-intel.functions";
 import { runKnowledgeIntelligence, type KnowledgeReport } from "@/lib/knowledge-intel.functions";
@@ -57,6 +57,7 @@ function ChatPage() {
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const [overlayMessages, setOverlayMessages] = useState<OverlayChatMessage[]>([]);
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [knowledgeEnabled, setKnowledgeEnabled] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -66,6 +67,7 @@ function ChatPage() {
   const runSystem = useServerFn(analyzeSystem);
   const runKnowledge = useServerFn(runKnowledgeIntelligence);
   const runRepo = useServerFn(runGithubIntelligence);
+  const askScreenFollowUp = useServerFn(chatAboutAnalysis);
 
   useEffect(() => {
     const htmlOverflow = document.documentElement.style.overflow;
@@ -291,6 +293,37 @@ function ChatPage() {
 
   async function send() {
     const selectedCapability = activeCapability ?? "screen";
+
+    if (
+      analysisResult &&
+      selectedCapability === "screen" &&
+      prompt.trim() &&
+      attachments.length === 0 &&
+      !streamRef.current
+    ) {
+      const text = prompt.trim();
+      const next: OverlayChatMessage[] = [...overlayMessages, { role: "user", content: text }];
+      setOverlayMessages(next);
+      setPrompt("");
+      setAnalyzing(true);
+      setAnalysisError(null);
+      try {
+        const { reply } = await askScreenFollowUp({
+          data: {
+            analysis: analysisResult.analysis as ScreenAnalysis & Record<string, unknown>,
+            fix: analysisResult.fix,
+            messages: next,
+          },
+        });
+        setOverlayMessages([...next, { role: "assistant", content: reply }]);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to reply");
+      } finally {
+        setAnalyzing(false);
+      }
+      return;
+    }
+
     if (selectedCapability !== "screen") {
       await runPromptCapability(selectedCapability);
       return;
@@ -363,7 +396,8 @@ function ChatPage() {
     setAnalysisError(null);
 
     if (capability === "knowledge" && text.length < 5) {
-      toast.error("Type what you want Knowledge Intelligence to research, then Send.");
+      setKnowledgeEnabled(true);
+      toast.success("Knowledge Intelligence enabled");
       return;
     }
 
@@ -383,6 +417,7 @@ function ChatPage() {
       if (capability === "knowledge") {
         const res = await runKnowledge({ data: { question: text, projectContext: "" } });
         setKnowledgeResult(res.report);
+        setKnowledgeEnabled(true);
         const entry = addHistoryEntry(`Knowledge · ${text.slice(0, 60)}`, {
           mode: "knowledge",
           knowledge: { report: res.report, input: { question: text, projectContext: "" } },

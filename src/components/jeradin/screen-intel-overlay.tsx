@@ -14,12 +14,15 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
   chatAboutAnalysis,
   type ScreenAnalysis,
   type FixSuggestion,
   type OverlayChatMessage,
 } from "@/lib/screen-intel.functions";
+
 
 type Props = {
   analysis: ScreenAnalysis;

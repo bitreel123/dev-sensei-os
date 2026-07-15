@@ -408,3 +408,38 @@ function ChatBody({
     </div>
   );
 }
+
+function detectLang(file?: string | null): string {
+  if (!file) return "typescript";
+  const ext = file.split(".").pop()?.toLowerCase() ?? "";
+  const map: Record<string, string> = {
+    ts: "typescript", tsx: "tsx", js: "javascript", jsx: "jsx", cjs: "javascript", mjs: "javascript",
+    py: "python", rb: "ruby", go: "go", rs: "rust", java: "java", kt: "kotlin", swift: "swift",
+    php: "php", cs: "csharp", c: "c", h: "c", cpp: "cpp", hpp: "cpp",
+    json: "json", yml: "yaml", yaml: "yaml", toml: "toml", md: "markdown",
+    css: "css", scss: "scss", html: "html", sh: "bash", bash: "bash", sql: "sql",
+  };
+  return map[ext] ?? "typescript";
+}
+
+export function CodeBlock({ code, language = "typescript" }: { code: string; language?: string }) {
+  return (
+    <SyntaxHighlighter
+      language={language}
+      style={oneDark}
+      wrapLongLines
+      customStyle={{
+        margin: 0,
+        padding: "12px 14px",
+        background: "#0b0f17",
+        fontSize: "11.5px",
+        lineHeight: "1.55",
+        borderRadius: 0,
+      }}
+      codeTagProps={{ style: { whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" } }}
+    >
+      {code}
+    </SyntaxHighlighter>
+  );
+}
+

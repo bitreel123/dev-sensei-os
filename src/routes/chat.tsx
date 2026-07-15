@@ -625,12 +625,6 @@ function ChatPage() {
                       messages={overlayMessages}
                       sending={analyzing && overlayMessages.length > 0}
                     />
-                    {false && <InlineAnalysisChat
-                      analysis={analysisResult.analysis}
-                      fix={analysisResult.fix}
-                      messages={overlayMessages}
-                      onMessagesChange={setOverlayMessages}
-                    />}
                   </div>
                 ) : systemResult ? (
                   <IntelResultFrame title="System Intelligence" icon={<Network className="h-4 w-4 text-orange-400" />}>
@@ -899,6 +893,7 @@ function DesktopPromptBlock({
   onRecord,
   analyzing,
   onSend,
+  knowledgeEnabled,
   onSelectCapability,
 }: {
   prompt: string;
@@ -914,6 +909,7 @@ function DesktopPromptBlock({
   onRecord: () => void;
   analyzing: boolean;
   onSend: () => void;
+  knowledgeEnabled: boolean;
   onSelectCapability: (m: CapabilityKey) => void;
 }) {
   const selected = current ?? "screen";
@@ -959,7 +955,6 @@ function DesktopPromptBlock({
         <div className="flex items-center justify-between px-3 py-2 border-t border-white/10 flex-wrap gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             <ToolButton onClick={onAttach} icon={<Paperclip className="h-3.5 w-3.5" />} label="Attach" />
-            <ToolButton onClick={onRecord} icon={recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />} label={recording ? "Stop" : "Screen"} />
             <input
               ref={fileInputRef}
               type="file"
@@ -1003,6 +998,7 @@ function DesktopPromptBlock({
           recording={recording}
           onRecord={onRecord}
           onSend={onSend}
+          knowledgeEnabled={knowledgeEnabled}
         />
       )}
     </div>
@@ -1038,16 +1034,20 @@ function CapabilityDetails({
   recording,
   onRecord,
   onSend,
+  knowledgeEnabled,
 }: {
   current: CapabilityKey;
   recording: boolean;
   onRecord: () => void;
   onSend: () => void;
+  knowledgeEnabled: boolean;
 }) {
   const capability = CAPABILITIES.find((c) => c.key === current) ?? CAPABILITIES[0];
   const ctaLabel =
     current === "screen"
       ? (recording ? "Stop recording" : capability.cta)
+      : current === "knowledge" && knowledgeEnabled
+        ? "Knowledge enabled"
       : capability.cta;
   const onCta =
     current === "screen"
@@ -1071,7 +1071,7 @@ function CapabilityDetails({
         onClick={onCta}
         className="mt-3 inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
       >
-        <CtaIcon className="h-3.5 w-3.5" />
+        {current === "knowledge" && knowledgeEnabled ? <Check className="h-3.5 w-3.5" /> : <CtaIcon className="h-3.5 w-3.5" />}
         {ctaLabel}
       </button>
     </div>

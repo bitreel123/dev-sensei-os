@@ -620,15 +620,17 @@ function ChatPage() {
                         </button>
                       )}
                     </div>
-                    <div className="border border-white/10 rounded-lg p-5 bg-white/[0.02]">
-                      <AnalysisBody analysis={analysisResult.analysis} fix={analysisResult.fix} />
-                    </div>
-                    <InlineAnalysisChat
+                    <ScreenAnalysisConversation
+                      result={analysisResult}
+                      messages={overlayMessages}
+                      sending={analyzing && overlayMessages.length > 0}
+                    />
+                    {false && <InlineAnalysisChat
                       analysis={analysisResult.analysis}
                       fix={analysisResult.fix}
                       messages={overlayMessages}
                       onMessagesChange={setOverlayMessages}
-                    />
+                    />}
                   </div>
                 ) : systemResult ? (
                   <IntelResultFrame title="System Intelligence" icon={<Network className="h-4 w-4 text-orange-400" />}>
@@ -670,6 +672,7 @@ function ChatPage() {
                       onRecord={recording ? stopRecording : startRecording}
                       analyzing={analyzing}
                       onSend={send}
+                        knowledgeEnabled={knowledgeEnabled}
                       onSelectCapability={(m) => {
                         setActiveCapability((currentMode) => currentMode === m ? null : m);
                         setOpenedCapabilityPanel(null);
@@ -706,6 +709,7 @@ function ChatPage() {
                 onRecord={recording ? stopRecording : startRecording}
                 analyzing={analyzing}
                 onSend={send}
+                  knowledgeEnabled={knowledgeEnabled}
                 onSelectCapability={(m) => {
                   setActiveCapability((currentMode) => currentMode === m ? null : m);
                   setOpenedCapabilityPanel(null);

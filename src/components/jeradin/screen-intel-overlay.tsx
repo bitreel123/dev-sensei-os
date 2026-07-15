@@ -339,9 +339,9 @@ export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix:
                 </div>
                 <p className="text-[12px] text-white/80 leading-relaxed">{s.change}</p>
                 {s.codeAfter && (
-                  <pre className="mt-1.5 text-[10.5px] font-mono bg-black/60 border border-white/10 p-1.5 rounded overflow-x-auto text-white/85 whitespace-pre">
-                    {s.codeAfter}
-                  </pre>
+                  <div className="mt-2 rounded-md overflow-hidden border border-white/10">
+                    <CodeBlock code={s.codeAfter} language={detectLang(s.file)} />
+                  </div>
                 )}
               </li>
             ))}

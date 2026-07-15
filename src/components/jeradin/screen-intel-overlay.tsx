@@ -8,7 +8,6 @@ import {
   GripHorizontal,
   Loader2,
   AlertTriangle,
-  MessageSquare,
   FileText,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -28,8 +27,6 @@ type Props = {
   onMessagesChange?: (messages: OverlayChatMessage[]) => void;
 };
 
-type Tab = "analysis" | "chat";
-
 export function ScreenIntelOverlay({
   analysis,
   fix,
@@ -37,7 +34,6 @@ export function ScreenIntelOverlay({
   onClose,
   onMessagesChange,
 }: Props) {
-  const [tab, setTab] = useState<Tab>("analysis");
   const [minimized, setMinimized] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [messages, setMessages] = useState<OverlayChatMessage[]>(initialMessages);
@@ -147,54 +143,19 @@ export function ScreenIntelOverlay({
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex px-2 pt-2 gap-1 shrink-0">
-        <TabBtn active={tab === "analysis"} onClick={() => setTab("analysis")} icon={<FileText className="h-3 w-3" />}>
+      <div className="flex px-3 pt-2 shrink-0">
+        <div className="inline-flex items-center gap-1.5 rounded bg-white/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white">
+          <FileText className="h-3 w-3" />
           Analysis
-        </TabBtn>
-        <TabBtn
-          active={tab === "chat"}
-          onClick={() => setTab("chat")}
-          icon={<MessageSquare className="h-3 w-3" />}
-        >
-          Chat {messages.length > 0 && `· ${messages.length}`}
-        </TabBtn>
+        </div>
       </div>
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-3">
-        {tab === "analysis" ? (
-          <AnalysisBody analysis={analysis} fix={fix} />
-        ) : (
-          <ChatBody messages={messages} sending={false} />
-        )}
+        <AnalysisBody analysis={analysis} fix={fix} />
       </div>
 
     </div>
-  );
-}
-
-function TabBtn({
-  active,
-  onClick,
-  icon,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-mono text-[10px] uppercase tracking-[0.2em] ${
-        active ? "bg-white/10 text-white" : "text-white/45 hover:text-white/80"
-      }`}
-    >
-      {icon}
-      {children}
-    </button>
   );
 }
 

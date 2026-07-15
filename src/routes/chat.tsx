@@ -545,8 +545,11 @@ function ChatPage() {
         </div>
 
         {/* Top: analysis / greeting area */}
-        <div className={`flex-1 ${(analysisResult || systemResult || knowledgeResult || repoResult) ? "overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : "overflow-hidden"}`}>
-          <div className={`mx-auto w-full max-w-[820px] px-5 py-8 space-y-6 ${!(analysisResult || systemResult || knowledgeResult || repoResult) ? "h-full flex flex-col justify-center" : ""}`}>
+        <div className={`flex-1 min-h-0 ${(analysisResult || systemResult || knowledgeResult || repoResult) ? "overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : "overflow-hidden"}`}>
+          <div className={`mx-auto w-full max-w-[780px] px-5 ${(analysisResult || systemResult || knowledgeResult || repoResult) ? "py-6 pb-10 space-y-6" : "h-full flex flex-col justify-center py-8 space-y-6"}`}>
+
+
+
 
 
             {(
@@ -701,10 +704,24 @@ function ChatPage() {
           />
         </div>
       )}
+
+      {/* Floating "Analysis" button while screen recording — stops sharing and opens the overlay */}
+      {recording && (
+        <button
+          onClick={stopRecording}
+          className="fixed right-4 top-1/2 -translate-y-1/2 z-[9998] inline-flex items-center gap-2 rounded-full bg-red-500 hover:bg-red-500/90 text-white px-4 py-2 shadow-2xl border border-white/20"
+          aria-label="Stop screen sharing and analyze"
+          title="Stop sharing & analyze"
+        >
+          <Square className="h-3.5 w-3.5 fill-current" />
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">Analysis</span>
+        </button>
+      )}
     </div>
 
   );
 }
+
 
 
 function fileToBase64(file: File): Promise<string> {

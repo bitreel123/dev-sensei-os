@@ -14,12 +14,15 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
   chatAboutAnalysis,
   type ScreenAnalysis,
   type FixSuggestion,
   type OverlayChatMessage,
 } from "@/lib/screen-intel.functions";
+
 
 type Props = {
   analysis: ScreenAnalysis;
@@ -336,9 +339,9 @@ export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix:
                 </div>
                 <p className="text-[12px] text-white/80 leading-relaxed">{s.change}</p>
                 {s.codeAfter && (
-                  <pre className="mt-1.5 text-[10.5px] font-mono bg-black/60 border border-white/10 p-1.5 rounded overflow-x-auto text-white/85 whitespace-pre">
-                    {s.codeAfter}
-                  </pre>
+                  <div className="mt-2 rounded-md overflow-hidden border border-white/10">
+                    <CodeBlock code={s.codeAfter} language={detectLang(s.file)} />
+                  </div>
                 )}
               </li>
             ))}
@@ -405,3 +408,38 @@ function ChatBody({
     </div>
   );
 }
+
+function detectLang(file?: string | null): string {
+  if (!file) return "typescript";
+  const ext = file.split(".").pop()?.toLowerCase() ?? "";
+  const map: Record<string, string> = {
+    ts: "typescript", tsx: "tsx", js: "javascript", jsx: "jsx", cjs: "javascript", mjs: "javascript",
+    py: "python", rb: "ruby", go: "go", rs: "rust", java: "java", kt: "kotlin", swift: "swift",
+    php: "php", cs: "csharp", c: "c", h: "c", cpp: "cpp", hpp: "cpp",
+    json: "json", yml: "yaml", yaml: "yaml", toml: "toml", md: "markdown",
+    css: "css", scss: "scss", html: "html", sh: "bash", bash: "bash", sql: "sql",
+  };
+  return map[ext] ?? "typescript";
+}
+
+export function CodeBlock({ code, language = "typescript" }: { code: string; language?: string }) {
+  return (
+    <SyntaxHighlighter
+      language={language}
+      style={oneDark}
+      wrapLongLines
+      customStyle={{
+        margin: 0,
+        padding: "12px 14px",
+        background: "#0b0f17",
+        fontSize: "11.5px",
+        lineHeight: "1.55",
+        borderRadius: 0,
+      }}
+      codeTagProps={{ style: { whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" } }}
+    >
+      {code}
+    </SyntaxHighlighter>
+  );
+}
+

@@ -6,7 +6,6 @@ import {
   Pin,
   PinOff,
   GripHorizontal,
-  Loader2,
   AlertTriangle,
   FileText,
 } from "lucide-react";
@@ -30,13 +29,10 @@ type Props = {
 export function ScreenIntelOverlay({
   analysis,
   fix,
-  initialMessages = [],
   onClose,
-  onMessagesChange,
 }: Props) {
   const [minimized, setMinimized] = useState(false);
   const [pinned, setPinned] = useState(false);
-  const [messages, setMessages] = useState<OverlayChatMessage[]>(initialMessages);
 
   // ---- Draggable positioning ----
   const [pos, setPos] = useState({ x: 24, y: 96 });

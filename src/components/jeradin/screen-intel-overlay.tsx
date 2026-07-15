@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import {
   Sparkles,
   X,
@@ -7,17 +6,12 @@ import {
   Pin,
   PinOff,
   GripHorizontal,
-  Send,
-  Loader2,
   AlertTriangle,
-  MessageSquare,
   FileText,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
-  chatAboutAnalysis,
   type ScreenAnalysis,
   type FixSuggestion,
   type OverlayChatMessage,
@@ -32,22 +26,13 @@ type Props = {
   onMessagesChange?: (messages: OverlayChatMessage[]) => void;
 };
 
-type Tab = "analysis" | "chat";
-
 export function ScreenIntelOverlay({
   analysis,
   fix,
-  initialMessages = [],
   onClose,
-  onMessagesChange,
 }: Props) {
-  const askFollowUp = useServerFn(chatAboutAnalysis);
-  const [tab, setTab] = useState<Tab>("analysis");
   const [minimized, setMinimized] = useState(false);
   const [pinned, setPinned] = useState(false);
-  const [messages, setMessages] = useState<OverlayChatMessage[]>(initialMessages);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
 
   // ---- Draggable positioning ----
   const [pos, setPos] = useState({ x: 24, y: 96 });
@@ -87,34 +72,6 @@ export function ScreenIntelOverlay({
   }
   function onDragEnd() {
     dragRef.current = null;
-  }
-
-  async function sendMessage() {
-    const text = input.trim();
-    if (!text || sending) return;
-    const next: OverlayChatMessage[] = [...messages, { role: "user", content: text }];
-    setMessages(next);
-    setInput("");
-    setSending(true);
-    setTab("chat");
-    try {
-      const { reply } = await askFollowUp({
-        data: {
-          analysis: analysis as ScreenAnalysis & Record<string, unknown>,
-          fix,
-          messages: next,
-        },
-      });
-      const updated: OverlayChatMessage[] = [...next, { role: "assistant", content: reply }];
-      setMessages(updated);
-      onMessagesChange?.(updated);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to reply";
-      toast.error(msg);
-      setMessages(next); // keep user message
-    } finally {
-      setSending(false);
-    }
   }
 
   // ---- Minimized pill ----
@@ -182,80 +139,19 @@ export function ScreenIntelOverlay({
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex px-2 pt-2 gap-1 shrink-0">
-        <TabBtn active={tab === "analysis"} onClick={() => setTab("analysis")} icon={<FileText className="h-3 w-3" />}>
+      <div className="flex px-3 pt-2 shrink-0">
+        <div className="inline-flex items-center gap-1.5 rounded bg-white/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white">
+          <FileText className="h-3 w-3" />
           Analysis
-        </TabBtn>
-        <TabBtn
-          active={tab === "chat"}
-          onClick={() => setTab("chat")}
-          icon={<MessageSquare className="h-3 w-3" />}
-        >
-          Chat {messages.length > 0 && `· ${messages.length}`}
-        </TabBtn>
+        </div>
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto px-4 py-3">
-        {tab === "analysis" ? (
-          <AnalysisBody analysis={analysis} fix={fix} />
-        ) : (
-          <ChatBody messages={messages} sending={sending} />
-        )}
+      <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-3">
+        <AnalysisBody analysis={analysis} fix={fix} />
       </div>
 
-      {/* Composer */}
-      <div className="border-t border-white/10 p-2 shrink-0">
-        <div className="flex items-end gap-2 rounded-lg border border-white/15 bg-white/[0.03] focus-within:border-white/30 px-2 py-1.5">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            placeholder="Ask a follow-up about this analysis…"
-            rows={1}
-            className="flex-1 bg-transparent text-[13px] resize-none focus:outline-none placeholder:text-white/35 max-h-32 py-1"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={sending || !input.trim()}
-            className="inline-flex h-7 w-7 items-center justify-center rounded bg-white text-black disabled:opacity-40 shrink-0"
-            aria-label="Send"
-          >
-            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3 w-3" />}
-          </button>
-        </div>
-      </div>
     </div>
-  );
-}
-
-function TabBtn({
-  active,
-  onClick,
-  icon,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-mono text-[10px] uppercase tracking-[0.2em] ${
-        active ? "bg-white/10 text-white" : "text-white/45 hover:text-white/80"
-      }`}
-    >
-      {icon}
-      {children}
-    </button>
   );
 }
 
@@ -358,57 +254,6 @@ export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix:
   );
 }
 
-function ChatBody({
-  messages,
-  sending,
-}: {
-  messages: OverlayChatMessage[];
-  sending: boolean;
-}) {
-  const bottomRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length, sending]);
-
-  if (messages.length === 0 && !sending) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center text-center px-4 text-white/50">
-        <MessageSquare className="h-6 w-6 mb-2 text-white/30" />
-        <p className="text-[12.5px]">
-          Ask a follow-up about the analysis, the fix, or anything adjacent.
-        </p>
-        <p className="mt-1 text-[10.5px] font-mono uppercase tracking-[0.2em] text-white/35">
-          with full analysis context
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {messages.map((m, i) => (
-        <div
-          key={i}
-          className={`text-[12.5px] leading-relaxed ${
-            m.role === "user" ? "text-white" : "text-white/85"
-          }`}
-        >
-          <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1">
-            {m.role === "user" ? "You" : "Jeradin"}
-          </div>
-          <div className="whitespace-pre-wrap">{m.content}</div>
-        </div>
-      ))}
-      {sending && (
-        <div className="text-[12px] text-white/50 inline-flex items-center gap-2">
-          <Loader2 className="h-3 w-3 animate-spin" /> Thinking…
-        </div>
-      )}
-      <div ref={bottomRef} />
-    </div>
-  );
-}
-
 function detectLang(file?: string | null): string {
   if (!file) return "typescript";
   const ext = file.split(".").pop()?.toLowerCase() ?? "";
@@ -435,6 +280,8 @@ export function CodeBlock({ code, language = "typescript" }: { code: string; lan
         fontSize: "11.5px",
         lineHeight: "1.55",
         borderRadius: 0,
+        overflowX: "visible",
+        whiteSpace: "pre-wrap",
       }}
       codeTagProps={{ style: { whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" } }}
     >

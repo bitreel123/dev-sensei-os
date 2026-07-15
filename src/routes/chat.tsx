@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { ScreenIntelOverlay, AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
+import { ScreenIntelOverlay, CodeBlock } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
 import { analyzeSystem, type FileInput, type SystemAnalysis } from "@/lib/system-intel.functions";
 import { runKnowledgeIntelligence, type KnowledgeReport } from "@/lib/knowledge-intel.functions";
@@ -57,6 +57,7 @@ function ChatPage() {
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const [overlayMessages, setOverlayMessages] = useState<OverlayChatMessage[]>([]);
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [knowledgeEnabled, setKnowledgeEnabled] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -66,6 +67,7 @@ function ChatPage() {
   const runSystem = useServerFn(analyzeSystem);
   const runKnowledge = useServerFn(runKnowledgeIntelligence);
   const runRepo = useServerFn(runGithubIntelligence);
+  const askScreenFollowUp = useServerFn(chatAboutAnalysis);
 
   useEffect(() => {
     const htmlOverflow = document.documentElement.style.overflow;
@@ -291,6 +293,37 @@ function ChatPage() {
 
   async function send() {
     const selectedCapability = activeCapability ?? "screen";
+
+    if (
+      analysisResult &&
+      selectedCapability === "screen" &&
+      prompt.trim() &&
+      attachments.length === 0 &&
+      !streamRef.current
+    ) {
+      const text = prompt.trim();
+      const next: OverlayChatMessage[] = [...overlayMessages, { role: "user", content: text }];
+      setOverlayMessages(next);
+      setPrompt("");
+      setAnalyzing(true);
+      setAnalysisError(null);
+      try {
+        const { reply } = await askScreenFollowUp({
+          data: {
+            analysis: analysisResult.analysis as ScreenAnalysis & Record<string, unknown>,
+            fix: analysisResult.fix,
+            messages: next,
+          },
+        });
+        setOverlayMessages([...next, { role: "assistant", content: reply }]);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to reply");
+      } finally {
+        setAnalyzing(false);
+      }
+      return;
+    }
+
     if (selectedCapability !== "screen") {
       await runPromptCapability(selectedCapability);
       return;
@@ -363,7 +396,8 @@ function ChatPage() {
     setAnalysisError(null);
 
     if (capability === "knowledge" && text.length < 5) {
-      toast.error("Type what you want Knowledge Intelligence to research, then Send.");
+      setKnowledgeEnabled(true);
+      toast.success("Knowledge Intelligence enabled");
       return;
     }
 
@@ -383,6 +417,7 @@ function ChatPage() {
       if (capability === "knowledge") {
         const res = await runKnowledge({ data: { question: text, projectContext: "" } });
         setKnowledgeResult(res.report);
+        setKnowledgeEnabled(true);
         const entry = addHistoryEntry(`Knowledge · ${text.slice(0, 60)}`, {
           mode: "knowledge",
           knowledge: { report: res.report, input: { question: text, projectContext: "" } },
@@ -486,6 +521,7 @@ function ChatPage() {
         analyzing={analyzing}
         analysisError={analysisError}
         analysisResult={analysisResult}
+        overlayMessages={overlayMessages}
         systemResult={systemResult}
         knowledgeResult={knowledgeResult}
         repoResult={repoResult}
@@ -585,14 +621,10 @@ function ChatPage() {
                         </button>
                       )}
                     </div>
-                    <div className="border border-white/10 rounded-lg p-5 bg-white/[0.02]">
-                      <AnalysisBody analysis={analysisResult.analysis} fix={analysisResult.fix} />
-                    </div>
-                    <InlineAnalysisChat
-                      analysis={analysisResult.analysis}
-                      fix={analysisResult.fix}
+                    <ScreenAnalysisConversation
+                      result={analysisResult}
                       messages={overlayMessages}
-                      onMessagesChange={setOverlayMessages}
+                      sending={analyzing && overlayMessages.length > 0}
                     />
                   </div>
                 ) : systemResult ? (
@@ -635,6 +667,7 @@ function ChatPage() {
                       onRecord={recording ? stopRecording : startRecording}
                       analyzing={analyzing}
                       onSend={send}
+                      knowledgeEnabled={knowledgeEnabled}
                       onSelectCapability={(m) => {
                         setActiveCapability((currentMode) => currentMode === m ? null : m);
                         setOpenedCapabilityPanel(null);
@@ -671,6 +704,8 @@ function ChatPage() {
                 onRecord={recording ? stopRecording : startRecording}
                 analyzing={analyzing}
                 onSend={send}
+                knowledgeEnabled={knowledgeEnabled}
+                compact
                 onSelectCapability={(m) => {
                   setActiveCapability((currentMode) => currentMode === m ? null : m);
                   setOpenedCapabilityPanel(null);
@@ -834,6 +869,146 @@ function IntelResultFrame({ title, icon, children }: { title: string; icon: Reac
   );
 }
 
+function ScreenAnalysisConversation({
+  result,
+  messages,
+  sending,
+}: {
+  result: { analysis: ScreenAnalysis; fix: FixSuggestion };
+  messages: OverlayChatMessage[];
+  sending: boolean;
+}) {
+  const { analysis, fix } = result;
+  return (
+    <div className="mx-auto max-w-[760px] space-y-8 text-[16px] leading-7 text-white/90">
+      <article className="space-y-6">
+        <p className="text-[14px] leading-6 text-white/50">{analysis.summary}</p>
+
+        <section className="space-y-2">
+          <h2 className="text-[19px] font-semibold text-white">What I found</h2>
+          <p>{fix.plainExplanation}</p>
+          <p className="text-white/78">{fix.whyItHappened}</p>
+        </section>
+
+        {analysis.errors.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-[19px] font-semibold text-white">Errors detected</h2>
+            <ul className="list-disc space-y-2 pl-6">
+              {analysis.errors.map((err, i) => (
+                <li key={i} className="pl-1">
+                  <span>{err.message}</span>
+                  {(err.file || err.source) && (
+                    <span className="block font-mono text-[12px] text-white/45">
+                      {err.source}
+                      {err.file ? ` · ${err.file}${err.line ? `:${err.line}` : ""}` : ""}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {analysis.suspectFiles.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-[19px] font-semibold text-white">Likely files involved</h2>
+            <ul className="list-disc space-y-1 pl-6">
+              {analysis.suspectFiles.map((file, i) => (
+                <li key={i} className="font-mono text-[13px] text-white/80">{file}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {fix.steps.length > 0 && (
+          <section className="space-y-5">
+            <h2 className="text-[19px] font-semibold text-white">Step-by-step fix</h2>
+            {fix.steps.map((step, i) => (
+              <div key={i} className="space-y-2">
+                <h3 className="text-[16px] font-semibold text-white">
+                  Step {i + 1}{step.file ? ` — ${step.file}` : ""}
+                </h3>
+                <p className="text-white/84">{step.change}</p>
+                {step.codeAfter && (
+                  <div className="overflow-visible rounded-md border border-white/10">
+                    <CodeBlock code={step.codeAfter} language={detectFileLanguage(step.file)} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </section>
+        )}
+
+        {fix.additionalNotes && (
+          <p className="border-t border-white/10 pt-5 text-[14px] leading-6 text-white/58">{fix.additionalNotes}</p>
+        )}
+      </article>
+
+      {messages.length > 0 && (
+        <div className="space-y-6">
+          {messages.map((message, i) => (
+            <div key={i} className={message.role === "user" ? "flex justify-end" : "block"}>
+              {message.role === "user" ? (
+                <div className="max-w-[72%] rounded-2xl bg-white/[0.09] px-4 py-2.5 text-[15px] leading-6 text-white">
+                  {message.content}
+                </div>
+              ) : (
+                <div className="max-w-[760px] whitespace-pre-wrap text-[16px] leading-7 text-white/90">
+                  {message.content}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {sending && (
+        <div className="inline-flex items-center gap-2 text-[14px] text-white/55">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…
+        </div>
+      )}
+    </div>
+  );
+}
+
+function detectFileLanguage(file?: string | null): string {
+  if (!file) return "typescript";
+  const ext = file.split(".").pop()?.toLowerCase() ?? "";
+  const map: Record<string, string> = {
+    ts: "typescript",
+    tsx: "tsx",
+    js: "javascript",
+    jsx: "jsx",
+    cjs: "javascript",
+    mjs: "javascript",
+    py: "python",
+    rb: "ruby",
+    go: "go",
+    rs: "rust",
+    java: "java",
+    kt: "kotlin",
+    swift: "swift",
+    php: "php",
+    cs: "csharp",
+    c: "c",
+    h: "c",
+    cpp: "cpp",
+    hpp: "cpp",
+    json: "json",
+    yml: "yaml",
+    yaml: "yaml",
+    toml: "toml",
+    md: "markdown",
+    css: "css",
+    scss: "scss",
+    html: "html",
+    sh: "bash",
+    bash: "bash",
+    sql: "sql",
+  };
+  return map[ext] ?? "typescript";
+}
+
 function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
     <button
@@ -860,6 +1035,8 @@ function DesktopPromptBlock({
   onRecord,
   analyzing,
   onSend,
+  knowledgeEnabled,
+  compact = false,
   onSelectCapability,
 }: {
   prompt: string;
@@ -875,6 +1052,8 @@ function DesktopPromptBlock({
   onRecord: () => void;
   analyzing: boolean;
   onSend: () => void;
+  knowledgeEnabled: boolean;
+  compact?: boolean;
   onSelectCapability: (m: CapabilityKey) => void;
 }) {
   const selected = current ?? "screen";
@@ -883,7 +1062,7 @@ function DesktopPromptBlock({
     : `Describe what you need from ${CAPABILITIES.find((c) => c.key === selected)?.title ?? "this capability"}…`;
 
   return (
-    <div className="mt-16 w-full">
+    <div className={`${compact ? "mt-0" : "mt-16"} w-full`}>
       {attachments.length > 0 && (
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {attachments.map((a, i) => (
@@ -920,7 +1099,6 @@ function DesktopPromptBlock({
         <div className="flex items-center justify-between px-3 py-2 border-t border-white/10 flex-wrap gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             <ToolButton onClick={onAttach} icon={<Paperclip className="h-3.5 w-3.5" />} label="Attach" />
-            <ToolButton onClick={onRecord} icon={recording ? <Square className="h-3.5 w-3.5 fill-current text-red-400" /> : <Monitor className="h-3.5 w-3.5" />} label={recording ? "Stop" : "Screen"} />
             <input
               ref={fileInputRef}
               type="file"
@@ -964,6 +1142,7 @@ function DesktopPromptBlock({
           recording={recording}
           onRecord={onRecord}
           onSend={onSend}
+          knowledgeEnabled={knowledgeEnabled}
         />
       )}
     </div>
@@ -999,16 +1178,20 @@ function CapabilityDetails({
   recording,
   onRecord,
   onSend,
+  knowledgeEnabled,
 }: {
   current: CapabilityKey;
   recording: boolean;
   onRecord: () => void;
   onSend: () => void;
+  knowledgeEnabled: boolean;
 }) {
   const capability = CAPABILITIES.find((c) => c.key === current) ?? CAPABILITIES[0];
   const ctaLabel =
     current === "screen"
       ? (recording ? "Stop recording" : capability.cta)
+      : current === "knowledge" && knowledgeEnabled
+        ? "Knowledge enabled"
       : capability.cta;
   const onCta =
     current === "screen"
@@ -1032,133 +1215,13 @@ function CapabilityDetails({
         onClick={onCta}
         className="mt-3 inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
       >
-        <CtaIcon className="h-3.5 w-3.5" />
+        {current === "knowledge" && knowledgeEnabled ? <Check className="h-3.5 w-3.5" /> : <CtaIcon className="h-3.5 w-3.5" />}
         {ctaLabel}
       </button>
     </div>
   );
 }
 
-
-function AnalysisReport({
-  result,
-  onClose,
-}: {
-  result: { analysis: ScreenAnalysis; fix: FixSuggestion };
-  onClose: () => void;
-}) {
-  const { analysis, fix } = result;
-  return (
-    <div className="mt-4 border border-white/20 bg-black/60 rounded-lg p-4 space-y-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 text-white/90">
-          <Sparkles className="h-4 w-4" />
-          <span className="font-mono text-[10.5px] uppercase tracking-[0.2em]">
-            Screen Intelligence
-          </span>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
-          aria-label="Dismiss"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      <div>
-        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-1">
-          What's on screen
-        </div>
-        <p className="text-[13px] text-white/80 leading-relaxed">{analysis.summary}</p>
-        {(analysis.editor || analysis.language) && (
-          <p className="mt-1 text-[11px] font-mono text-white/50">
-            {analysis.editor ?? "editor"} · {analysis.language ?? "unknown lang"}
-          </p>
-        )}
-      </div>
-
-      {analysis.errors.length > 0 && (
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-2">
-            Errors detected
-          </div>
-          <ul className="space-y-1.5">
-            {analysis.errors.map((err, i) => (
-              <li
-                key={i}
-                className="flex gap-2 text-[12.5px] text-white/80 border border-white/10 bg-white/[0.02] p-2 rounded"
-              >
-                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-red-400" />
-                <div className="min-w-0">
-                  <div className="break-words">{err.message}</div>
-                  <div className="mt-0.5 text-[10.5px] font-mono text-white/45">
-                    [{err.source}]
-                    {err.file ? ` ${err.file}${err.line ? `:${err.line}` : ""}` : ""}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {analysis.suspectFiles.length > 0 && (
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-1">
-            Suspect files
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {analysis.suspectFiles.map((f, i) => (
-              <span
-                key={i}
-                className="font-mono text-[11px] text-white/80 border border-white/15 px-2 py-0.5 rounded"
-              >
-                {f}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="border-t border-white/10 pt-3">
-        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-1">
-          Plain-English explanation
-        </div>
-        <p className="text-[13px] text-white/85 leading-relaxed">{fix.plainExplanation}</p>
-        <p className="mt-2 text-[13px] text-white/70 leading-relaxed">{fix.whyItHappened}</p>
-      </div>
-
-      <div>
-        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 mb-2">
-          Step-by-step fix
-        </div>
-        <ol className="space-y-2">
-          {fix.steps.map((s, i) => (
-            <li key={i} className="border border-white/10 bg-white/[0.02] p-2.5 rounded">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-[10px] text-white/50">STEP {i + 1}</span>
-                <span className="font-mono text-[11px] text-white/85 truncate">{s.file}</span>
-              </div>
-              <p className="text-[12.5px] text-white/80 leading-relaxed">{s.change}</p>
-              {s.codeAfter && (
-                <pre className="mt-2 text-[11px] font-mono bg-black/60 border border-white/10 p-2 rounded overflow-x-auto text-white/85 whitespace-pre">
-                  {s.codeAfter}
-                </pre>
-              )}
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      {fix.additionalNotes && (
-        <p className="text-[12px] text-white/60 italic border-t border-white/10 pt-3">
-          {fix.additionalNotes}
-        </p>
-      )}
-    </div>
-  );
-}
 
 function AnalysisError({ message }: { message: string }) {
   return (
@@ -1236,6 +1299,7 @@ function MobileChat({
   analyzing,
   analysisError,
   analysisResult,
+  overlayMessages,
   systemResult,
   knowledgeResult,
   repoResult,
@@ -1261,6 +1325,7 @@ function MobileChat({
   analyzing: boolean;
   analysisError: string | null;
   analysisResult: { analysis: ScreenAnalysis; fix: FixSuggestion } | null;
+  overlayMessages: OverlayChatMessage[];
   systemResult: { analysis: SystemAnalysis; filesAnalyzed: number } | null;
   knowledgeResult: KnowledgeReport | null;
   repoResult: GithubIntelReport | null;
@@ -1314,7 +1379,13 @@ function MobileChat({
       {/* Content area: result or empty state */}
       {analysisResult ? (
         <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
-          <AnalysisReport result={analysisResult} onClose={onClearAnalysis} />
+          <div className="pt-4">
+            <ScreenAnalysisConversation
+              result={analysisResult}
+              messages={overlayMessages}
+              sending={analyzing && overlayMessages.length > 0}
+            />
+          </div>
         </div>
       ) : systemResult ? (
         <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
@@ -1479,108 +1550,6 @@ function CapabilityIcon({ capability, className }: { capability: CapabilityKey; 
   const Icon = CAPABILITIES.find((c) => c.key === capability)?.Icon ?? Monitor;
   return <Icon className={className} />;
 }
-
-
-function InlineAnalysisChat({
-  analysis,
-  fix,
-  messages,
-  onMessagesChange,
-}: {
-  analysis: ScreenAnalysis;
-  fix: FixSuggestion;
-  messages: OverlayChatMessage[];
-  onMessagesChange: (m: OverlayChatMessage[]) => void;
-}) {
-  const askFollowUp = useServerFn(chatAboutAnalysis);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length, sending]);
-
-  async function send() {
-    const text = input.trim();
-    if (!text || sending) return;
-    const next: OverlayChatMessage[] = [...messages, { role: "user", content: text }];
-    onMessagesChange(next);
-    setInput("");
-    setSending(true);
-    try {
-      const { reply } = await askFollowUp({
-        data: {
-          analysis: analysis as ScreenAnalysis & Record<string, unknown>,
-          fix,
-          messages: next,
-        },
-      });
-      onMessagesChange([...next, { role: "assistant", content: reply }]);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to reply");
-    } finally {
-      setSending(false);
-    }
-  }
-
-  return (
-    <div className="border border-white/10 rounded-lg bg-white/[0.02] flex flex-col">
-      <div className="px-4 py-2.5 border-b border-white/10 font-mono text-[10px] uppercase tracking-[0.22em] text-white/50">
-        Chat with Jeradin about this analysis
-      </div>
-      <div className="p-4 space-y-4 max-h-[420px] overflow-y-auto min-h-[120px]">
-        {messages.length === 0 && !sending && (
-          <p className="text-[13px] text-white/45">
-            Ask a follow-up about the diagnosis, the fix, or anything adjacent.
-          </p>
-        )}
-        {messages.map((m, i) => (
-          <div key={i} className="text-[13px] leading-relaxed">
-            <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1">
-              {m.role === "user" ? "You" : "Jeradin"}
-            </div>
-            <div className={`whitespace-pre-wrap ${m.role === "user" ? "text-white" : "text-white/85"}`}>
-              {m.content}
-            </div>
-          </div>
-        ))}
-        {sending && (
-          <div className="text-[12.5px] text-white/50 inline-flex items-center gap-2">
-            <Loader2 className="h-3 w-3 animate-spin" /> Thinking…
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
-      <div className="border-t border-white/10 p-2">
-        <div className="flex items-end gap-2 rounded-lg border border-white/15 bg-black/40 focus-within:border-white/30 px-3 py-2">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            placeholder="Ask a follow-up…"
-            rows={1}
-            className="flex-1 bg-transparent text-[13.5px] resize-none focus:outline-none placeholder:text-white/35 max-h-32 py-1"
-          />
-          <button
-            onClick={send}
-            disabled={sending || !input.trim()}
-            className="inline-flex h-8 w-8 items-center justify-center rounded bg-white text-black disabled:opacity-40 shrink-0"
-            aria-label="Send"
-          >
-            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 
 

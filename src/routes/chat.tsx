@@ -666,8 +666,7 @@ function ChatPage() {
                       onRecord={recording ? stopRecording : startRecording}
                       analyzing={analyzing}
                       onSend={send}
-                        knowledgeEnabled={knowledgeEnabled}
-                compact
+                      knowledgeEnabled={knowledgeEnabled}
                       onSelectCapability={(m) => {
                         setActiveCapability((currentMode) => currentMode === m ? null : m);
                         setOpenedCapabilityPanel(null);
@@ -704,7 +703,8 @@ function ChatPage() {
                 onRecord={recording ? stopRecording : startRecording}
                 analyzing={analyzing}
                 onSend={send}
-                  knowledgeEnabled={knowledgeEnabled}
+                knowledgeEnabled={knowledgeEnabled}
+                compact
                 onSelectCapability={(m) => {
                   setActiveCapability((currentMode) => currentMode === m ? null : m);
                   setOpenedCapabilityPanel(null);

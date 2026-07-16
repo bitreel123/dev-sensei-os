@@ -7,6 +7,7 @@ import {
   FIXER_SYSTEM_PROMPT,
   TAXONOMY_PROMPT,
   buildGithubTools,
+  buildRepoTools,
   callGeminiAnalyst,
   type Diagnosis,
   type FixPlan,

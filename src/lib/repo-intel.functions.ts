@@ -79,8 +79,7 @@ export const setActiveRepo = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("github_connections")
-      // active_repo was just added; types may not include it yet
-      .update({ active_repo: data.repo } as unknown as Record<string, unknown>)
+      .update({ active_repo: data.repo })
       .eq("user_id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true, activeRepo: data.repo };

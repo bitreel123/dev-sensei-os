@@ -37,8 +37,8 @@ function ProductPage() {
         </h1>
         <p className="mt-6 max-w-2xl text-[15px] text-black/55 leading-relaxed">
           Jeradin uses on-device screen understanding and semantic code analysis to
-          detect bugs in any vibecoding environment — Lovable, Cursor, Replit,
-          Gemini and beyond. It points to the exact line. It explains the cause.
+          detect bugs in any vibecoding environment — Lovable, Cursor, Replit
+          and beyond. It points to the exact line. It explains the cause.
           It shows the correction. You stay in control.
         </p>
       </section>

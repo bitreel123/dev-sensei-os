@@ -107,7 +107,8 @@ Rules:
 - \`confidence\` is your honest 0-100 estimate that this diagnosis + fix is correct.
 - \`impact\` lists user-visible areas that break if this stays unfixed (e.g. "Authentication", "Dashboard", "API"), each with a one-sentence consequence.
 - \`learnMode\` is a short teaching paragraph (2-4 sentences) — teach the underlying concept, not just the fix.
-- Use the GitHub search tools (search_github_repos, search_github_code) 1-4 times when it helps confirm the fix pattern; cite them in \`references\`.
+- If repo-scoped tools are available (repo_get_meta, repo_list_tree, repo_search_code, repo_read_file), USE THEM FIRST — 2 to 6 calls — to locate the exact file in the developer's own repo where the bug lives. Prefer repo_search_code for symbols/errors, then repo_read_file to confirm. Every \`steps[].file\` MUST be a real path from the connected repo when repo tools are available, and every \`references\` entry from the repo MUST link to a github.com URL returned by those tools.
+- Use the public GitHub search tools (search_github_repos, search_github_code) 0-2 times only when the repo tools are unavailable or when confirming an external pattern.
 - Return STRICT JSON only, matching:
 {
   "plainExplanation": string,

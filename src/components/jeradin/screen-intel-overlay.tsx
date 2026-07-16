@@ -8,10 +8,14 @@ import {
   GripHorizontal,
   AlertTriangle,
   FileText,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useServerFn } from "@tanstack/react-start";
 import {
+  chatAboutAnalysis,
   type ScreenAnalysis,
   type FixSuggestion,
   type OverlayChatMessage,
@@ -29,13 +33,47 @@ type Props = {
 export function ScreenIntelOverlay({
   analysis,
   fix,
+  initialMessages,
   onClose,
+  onMessagesChange,
 }: Props) {
+
   const [minimized, setMinimized] = useState(false);
   const [pinned, setPinned] = useState(false);
+  const [messages, setMessages] = useState<OverlayChatMessage[]>(initialMessages ?? []);
+  const [chatInput, setChatInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const askFollowUp = useServerFn(chatAboutAnalysis);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onMessagesChange?.(messages);
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, onMessagesChange]);
+
+  async function sendFollowUp() {
+    const text = chatInput.trim();
+    if (!text || sending) return;
+    const next = [...messages, { role: "user" as const, content: text }];
+    setMessages(next);
+    setChatInput("");
+    setSending(true);
+    try {
+      const res = await askFollowUp({ data: { analysis, fix, messages: next } });
+      setMessages([...next, { role: "assistant", content: res.reply }]);
+    } catch (e) {
+      setMessages([
+        ...next,
+        { role: "assistant", content: `Sorry, I couldn't reply: ${(e as Error).message}` },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  }
 
   // ---- Draggable positioning ----
   const [pos, setPos] = useState({ x: 24, y: 96 });
+
   const dragRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -147,13 +185,67 @@ export function ScreenIntelOverlay({
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-3">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-3"
+      >
         <AnalysisBody analysis={analysis} fix={fix} />
+
+        {messages.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
+            {messages.map((m, i) => (
+              <div key={i} className={m.role === "user" ? "flex justify-end" : ""}>
+                {m.role === "user" ? (
+                  <div className="max-w-[85%] rounded-2xl bg-orange-500/90 text-white px-3 py-2 text-[12.5px] leading-relaxed whitespace-pre-wrap">
+                    {m.content}
+                  </div>
+                ) : (
+                  <div className="text-[12.5px] text-white/90 leading-relaxed whitespace-pre-wrap">
+                    {m.content}
+                  </div>
+                )}
+              </div>
+            ))}
+            {sending && (
+              <div className="flex items-center gap-2 text-[11px] text-white/50">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Thinking…
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
+      {/* Follow-up composer */}
+      <div className="shrink-0 border-t border-white/10 p-2">
+        <div className="flex items-end gap-1.5 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5 focus-within:border-white/25">
+          <textarea
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendFollowUp();
+              }
+            }}
+            rows={1}
+            placeholder="Ask a follow-up…"
+            className="flex-1 resize-none bg-transparent text-[12.5px] text-white placeholder:text-white/35 outline-none max-h-24 py-1"
+          />
+          <button
+            onClick={sendFollowUp}
+            disabled={!chatInput.trim() || sending}
+            className="p-1.5 rounded-lg bg-orange-500 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-orange-600"
+            aria-label="Send"
+          >
+            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
+
 
 export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix: FixSuggestion }) {
   return (

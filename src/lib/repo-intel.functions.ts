@@ -38,15 +38,17 @@ export const listMyGithubRepos = createServerFn({ method: "GET" })
     );
     if (!res.ok) throw new Error(`GitHub ${res.status}: ${(await res.text()).slice(0, 200)}`);
     const raw = (await res.json()) as GithubRepo[];
-    const repos = raw.map((r) => ({
-      full_name: r.full_name,
-      private: r.private,
-      default_branch: r.default_branch,
-      pushed_at: r.pushed_at,
-      language: r.language,
-      description: r.description,
-    }));
-    return { repos, connected: true };
+    return {
+      connected: true,
+      repos: raw.map((r) => ({
+        full_name: r.full_name,
+        private: r.private,
+        default_branch: r.default_branch,
+        pushed_at: r.pushed_at,
+        language: r.language,
+        description: r.description,
+      })),
+    };
   });
 
 export const getActiveRepo = createServerFn({ method: "GET" })
@@ -55,11 +57,12 @@ export const getActiveRepo = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
       .from("github_connections")
-      .select("active_repo, login")
+      .select("active_repo")
       .eq("user_id", context.userId)
       .maybeSingle();
     return {
-      activeRepo: (data as { active_repo?: string | null } | null)?.active_repo ?? null,
+      activeRepo:
+        (data as { active_repo?: string | null } | null)?.active_repo ?? null,
       connected: !!data,
     };
   });
@@ -67,7 +70,7 @@ export const getActiveRepo = createServerFn({ method: "GET" })
 export const setActiveRepo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { repo: string | null }) => {
-    if (input.repo !== null && !/^[^/\s]+\/[^/\s]+$/.test(input.repo)) {
+    if (input.repo !== null && !/^[^/\s]+\/[^/\s]+$/.test(input.repo ?? "")) {
       throw new Error("repo must be 'owner/name' or null");
     }
     return { repo: input.repo };
@@ -76,8 +79,8 @@ export const setActiveRepo = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("github_connections")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ active_repo: data.repo } as any)
+      // active_repo was just added; types may not include it yet
+      .update({ active_repo: data.repo } as unknown as Record<string, unknown>)
       .eq("user_id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true, activeRepo: data.repo };

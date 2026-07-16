@@ -20,7 +20,7 @@ const sections = [
     h: "Quickstart",
     items: [
       ["Install Jeradin", "Download for Windows, macOS or Linux. Sign in. Approve screen reading. You're done."],
-      ["Connect a vibecoding tool", "Open the Connectors panel, pick Lovable, Cursor, Replit or Gemini, and click Bridge."],
+      ["Connect a vibecoding tool", "Open the Connectors panel, pick Lovable, Cursor or Replit, and click Bridge."],
       ["First detection", "Break something on purpose — Jeradin will flag it within a second."],
     ],
   },

@@ -266,5 +266,9 @@ export const ANALYST_INSTRUCTIONS = `Return STRICT JSON only (no markdown fences
   "summary": string,
   "evidence": [{ "source": string, "snippet": string }],
   "suspectFiles": string[],
-  "hypothesis": string
+  "hypothesis": string,
+  "stack": { "framework": string|null, "language": string|null, "database": string|null, "runtime": string|null, "buildTool": string|null },
+  "context": { "currentFile": string|null, "cursorLine": number|null, "workflow": string|null, "ide": string|null, "browser": string|null },
+  "affectedFunction": string|null,
+  "affectedDependency": string|null
 }`;

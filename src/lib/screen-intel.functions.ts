@@ -86,6 +86,11 @@ Additional fields for this specific analyst:
       steps: Array.isArray(value.steps) ? value.steps : [],
       references: Array.isArray(value.references) ? value.references : [],
       additionalNotes: value.additionalNotes ?? null,
+      technicalExplanation: value.technicalExplanation ?? null,
+      recommendedActions: Array.isArray(value.recommendedActions) ? value.recommendedActions : [],
+      confidence: typeof value.confidence === "number" ? Math.max(0, Math.min(100, Math.round(value.confidence))) : null,
+      impact: Array.isArray(value.impact) ? value.impact : [],
+      learnMode: value.learnMode ?? null,
     });
 
     // Step 1 — Gemini 3 Pro visual analyst

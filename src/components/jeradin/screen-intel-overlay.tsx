@@ -8,10 +8,14 @@ import {
   GripHorizontal,
   AlertTriangle,
   FileText,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useServerFn } from "@tanstack/react-start";
 import {
+  chatAboutAnalysis,
   type ScreenAnalysis,
   type FixSuggestion,
   type OverlayChatMessage,
@@ -29,8 +33,11 @@ type Props = {
 export function ScreenIntelOverlay({
   analysis,
   fix,
+  initialMessages,
   onClose,
+  onMessagesChange,
 }: Props) {
+
   const [minimized, setMinimized] = useState(false);
   const [pinned, setPinned] = useState(false);
 

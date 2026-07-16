@@ -40,9 +40,40 @@ export function ScreenIntelOverlay({
 
   const [minimized, setMinimized] = useState(false);
   const [pinned, setPinned] = useState(false);
+  const [messages, setMessages] = useState<OverlayChatMessage[]>(initialMessages ?? []);
+  const [chatInput, setChatInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const askFollowUp = useServerFn(chatAboutAnalysis);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onMessagesChange?.(messages);
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, onMessagesChange]);
+
+  async function sendFollowUp() {
+    const text = chatInput.trim();
+    if (!text || sending) return;
+    const next = [...messages, { role: "user" as const, content: text }];
+    setMessages(next);
+    setChatInput("");
+    setSending(true);
+    try {
+      const res = await askFollowUp({ data: { analysis, fix, messages: next } });
+      setMessages([...next, { role: "assistant", content: res.reply }]);
+    } catch (e) {
+      setMessages([
+        ...next,
+        { role: "assistant", content: `Sorry, I couldn't reply: ${(e as Error).message}` },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  }
 
   // ---- Draggable positioning ----
   const [pos, setPos] = useState({ x: 24, y: 96 });
+
   const dragRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 

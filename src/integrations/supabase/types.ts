@@ -104,6 +104,7 @@ export type Database = {
       github_connections: {
         Row: {
           access_token: string
+          active_repo: string | null
           avatar_url: string | null
           created_at: string
           github_id: number
@@ -114,6 +115,7 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          active_repo?: string | null
           avatar_url?: string | null
           created_at?: string
           github_id: number
@@ -124,6 +126,7 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          active_repo?: string | null
           avatar_url?: string | null
           created_at?: string
           github_id?: number

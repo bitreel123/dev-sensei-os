@@ -1,0 +1,1 @@
+ALTER TABLE public.github_connections ADD COLUMN IF NOT EXISTS active_repo text;

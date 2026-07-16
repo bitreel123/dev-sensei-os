@@ -183,10 +183,13 @@ export function ScreenIntelOverlay({
         </button>
       </div>
 
-      <div className="flex px-3 pt-2 shrink-0">
+      <div className="flex items-center gap-2 px-3 pt-2 shrink-0">
         <div className="inline-flex items-center gap-1.5 rounded bg-white/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white">
           <FileText className="h-3 w-3" />
           Analysis
+        </div>
+        <div className="ml-auto">
+          <RepoPicker />
         </div>
       </div>
 

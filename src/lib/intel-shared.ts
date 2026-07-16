@@ -36,6 +36,22 @@ export const TAXONOMY_PROMPT = `You classify every problem into ONE category fro
 - unknown: does not fit above`;
 
 // ---------- Shared shapes ----------
+export type DetectedStack = {
+  framework?: string | null;
+  language?: string | null;
+  database?: string | null;
+  runtime?: string | null;
+  buildTool?: string | null;
+};
+
+export type ScreenContext = {
+  currentFile?: string | null;
+  cursorLine?: number | null;
+  workflow?: string | null;   // e.g. "npm run dev", "debugging login flow"
+  ide?: string | null;
+  browser?: string | null;
+};
+
 export type Diagnosis = {
   category: DebugCategory;
   severity: "error" | "warning" | "info";
@@ -43,6 +59,11 @@ export type Diagnosis = {
   evidence: Array<{ source: string; snippet: string }>;
   suspectFiles: string[];
   hypothesis: string;                    // most likely root cause
+  // Optional richer context (Screen Intelligence uses these; other pipelines may omit)
+  stack?: DetectedStack;
+  context?: ScreenContext;
+  affectedFunction?: string | null;
+  affectedDependency?: string | null;
 };
 
 export type FixStep = {
@@ -51,13 +72,25 @@ export type FixStep = {
   codeAfter?: string | null;             // only when user likely can't write it
 };
 
+export type ImpactArea = {
+  area: string;                          // e.g. "Authentication", "Dashboard"
+  consequence: string;                   // what breaks if not fixed
+};
+
 export type FixPlan = {
   plainExplanation: string;              // layman, 1-2 sentences
   whyItHappened: string;                 // layman paragraph
   steps: FixStep[];
   references?: Array<{ title: string; url: string }>;
   additionalNotes?: string | null;
+  // Optional richer output (Screen Intelligence uses these)
+  technicalExplanation?: string | null;
+  recommendedActions?: string[];         // short imperative bullets
+  confidence?: number | null;            // 0-100
+  impact?: ImpactArea[];                 // areas affected if unfixed
+  learnMode?: string | null;             // teaching paragraph — the "why", not just the fix
 };
+
 
 // ---------- Claude "fixer" system prompt (shared) ----------
 export const FIXER_SYSTEM_PROMPT = `You are a friendly senior engineer who explains bugs in plain English so anyone — including a non-technical founder — can understand.

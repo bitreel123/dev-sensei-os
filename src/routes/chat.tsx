@@ -884,10 +884,59 @@ function ScreenAnalysisConversation({
       <article className="space-y-6">
         <p className="text-[14px] leading-6 text-white/50">{analysis.summary}</p>
 
+        {(() => {
+          const stack = analysis.stack;
+          const ctx = analysis.context;
+          const chips: Array<{ label: string; value: string }> = [];
+          if (stack?.framework) chips.push({ label: "Framework", value: stack.framework });
+          if (stack?.language) chips.push({ label: "Language", value: stack.language });
+          if (stack?.database) chips.push({ label: "Database", value: stack.database });
+          if (stack?.runtime) chips.push({ label: "Runtime", value: stack.runtime });
+          if (stack?.buildTool) chips.push({ label: "Build", value: stack.buildTool });
+          if (ctx?.ide || analysis.editor) chips.push({ label: "IDE", value: (ctx?.ide ?? analysis.editor)! });
+          if (ctx?.currentFile) chips.push({ label: "File", value: `${ctx.currentFile}${ctx.cursorLine ? `:${ctx.cursorLine}` : ""}` });
+          if (ctx?.workflow) chips.push({ label: "Running", value: ctx.workflow });
+          if (chips.length === 0) return null;
+          return (
+            <section className="space-y-2">
+              <h2 className="text-[19px] font-semibold text-white">Detected context</h2>
+              <div className="flex flex-wrap gap-2">
+                {chips.map((c, i) => (
+                  <span key={i} className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1 font-mono text-[12px] text-white/85">
+                    <span className="text-white/45">{c.label}:</span> {c.value}
+                  </span>
+                ))}
+              </div>
+            </section>
+          );
+        })()}
+
         <section className="space-y-2">
-          <h2 className="text-[19px] font-semibold text-white">What I found</h2>
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-[19px] font-semibold text-white">Root cause</h2>
+            {typeof fix.confidence === "number" && (
+              <span className="font-mono text-[12px] text-emerald-400/90">{fix.confidence}% confidence</span>
+            )}
+          </div>
+          <p>{analysis.hypothesis}</p>
+          {(analysis.affectedFunction || analysis.affectedDependency) && (
+            <p className="font-mono text-[12px] text-white/50">
+              {analysis.affectedFunction ? `fn ${analysis.affectedFunction}` : ""}
+              {analysis.affectedDependency ? `${analysis.affectedFunction ? " · " : ""}pkg ${analysis.affectedDependency}` : ""}
+            </p>
+          )}
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-[19px] font-semibold text-white">What happened</h2>
           <p>{fix.plainExplanation}</p>
-          <p className="text-white/78">{fix.whyItHappened}</p>
+          {fix.technicalExplanation && (
+            <div className="rounded-md border border-white/10 bg-white/[0.02] p-3">
+              <div className="mb-1 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/40">Technical</div>
+              <p className="text-[14px] leading-6 text-white/80">{fix.technicalExplanation}</p>
+            </div>
+          )}
+          <p className="text-white/70">{fix.whyItHappened}</p>
         </section>
 
         {analysis.errors.length > 0 && (
@@ -911,10 +960,38 @@ function ScreenAnalysisConversation({
 
         {analysis.suspectFiles.length > 0 && (
           <section className="space-y-3">
-            <h2 className="text-[19px] font-semibold text-white">Likely files involved</h2>
+            <h2 className="text-[19px] font-semibold text-white">Affected files</h2>
             <ul className="list-disc space-y-1 pl-6">
               {analysis.suspectFiles.map((file, i) => (
                 <li key={i} className="font-mono text-[13px] text-white/80">{file}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {fix.recommendedActions && fix.recommendedActions.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-[19px] font-semibold text-white">Recommended fix</h2>
+            <ul className="space-y-1.5">
+              {fix.recommendedActions.map((a, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="mt-1 text-emerald-400">✓</span>
+                  <span>{a}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {fix.impact && fix.impact.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-[19px] font-semibold text-white">If not fixed</h2>
+            <ul className="space-y-2">
+              {fix.impact.map((im, i) => (
+                <li key={i} className="rounded-md border border-red-500/20 bg-red-500/[0.04] p-3">
+                  <span className="font-semibold text-red-300">{im.area}</span>
+                  <span className="text-white/70"> — {im.consequence}</span>
+                </li>
               ))}
             </ul>
           </section>
@@ -939,10 +1016,18 @@ function ScreenAnalysisConversation({
           </section>
         )}
 
+        {fix.learnMode && (
+          <section className="space-y-2 rounded-md border border-orange-400/20 bg-orange-400/[0.04] p-4">
+            <h2 className="text-[15px] font-semibold text-orange-200">Learn mode</h2>
+            <p className="text-[14px] leading-6 text-white/85 italic">{fix.learnMode}</p>
+          </section>
+        )}
+
         {fix.additionalNotes && (
           <p className="border-t border-white/10 pt-5 text-[14px] leading-6 text-white/58">{fix.additionalNotes}</p>
         )}
       </article>
+
 
       {messages.length > 0 && (
         <div className="space-y-6">

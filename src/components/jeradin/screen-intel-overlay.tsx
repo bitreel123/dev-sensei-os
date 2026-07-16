@@ -248,6 +248,16 @@ export function ScreenIntelOverlay({
 
 
 export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix: FixSuggestion }) {
+  const stack = analysis.stack;
+  const ctx = analysis.context;
+  const stackChips: Array<{ label: string; value: string }> = [];
+  if (stack?.framework) stackChips.push({ label: "Framework", value: stack.framework });
+  if (stack?.language) stackChips.push({ label: "Language", value: stack.language });
+  if (stack?.database) stackChips.push({ label: "Database", value: stack.database });
+  if (stack?.runtime) stackChips.push({ label: "Runtime", value: stack.runtime });
+  if (stack?.buildTool) stackChips.push({ label: "Build", value: stack.buildTool });
+  if (ctx?.ide || analysis.editor) stackChips.push({ label: "IDE", value: (ctx?.ide ?? analysis.editor)! });
+
   return (
     <div className="space-y-4">
       <div>
@@ -255,12 +265,29 @@ export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix:
           What's on screen
         </div>
         <p className="text-[12.5px] text-white/85 leading-relaxed">{analysis.summary}</p>
-        {(analysis.editor || analysis.language) && (
+        {(ctx?.currentFile || ctx?.cursorLine || ctx?.workflow) && (
           <p className="mt-1 text-[10.5px] font-mono text-white/45">
-            {analysis.editor ?? "editor"} · {analysis.language ?? "unknown"}
+            {ctx?.currentFile ?? ""}
+            {ctx?.cursorLine ? `:${ctx.cursorLine}` : ""}
+            {ctx?.workflow ? ` · ${ctx.workflow}` : ""}
           </p>
         )}
       </div>
+
+      {stackChips.length > 0 && (
+        <div>
+          <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1.5">
+            Detected stack
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {stackChips.map((c, i) => (
+              <span key={i} className="inline-flex items-center gap-1 rounded border border-white/15 bg-white/[0.03] px-1.5 py-0.5 font-mono text-[10px] text-white/80">
+                <span className="text-white/40">{c.label}:</span> {c.value}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {analysis.errors.length > 0 && (
         <div>
@@ -287,10 +314,30 @@ export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix:
         </div>
       )}
 
+      <div className="border-t border-white/10 pt-3">
+        <div className="flex items-center justify-between mb-1">
+          <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40">
+            Root cause
+          </div>
+          {typeof fix.confidence === "number" && (
+            <span className="font-mono text-[10px] text-emerald-400/90">
+              {fix.confidence}% confidence
+            </span>
+          )}
+        </div>
+        <p className="text-[12.5px] text-white/90 leading-relaxed">{analysis.hypothesis}</p>
+        {(analysis.affectedFunction || analysis.affectedDependency) && (
+          <p className="mt-1 text-[10.5px] font-mono text-white/50">
+            {analysis.affectedFunction ? `fn ${analysis.affectedFunction}` : ""}
+            {analysis.affectedDependency ? `${analysis.affectedFunction ? " · " : ""}pkg ${analysis.affectedDependency}` : ""}
+          </p>
+        )}
+      </div>
+
       {analysis.suspectFiles.length > 0 && (
         <div>
           <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1">
-            Suspect files
+            Affected files
           </div>
           <div className="flex flex-wrap gap-1">
             {analysis.suspectFiles.map((f, i) => (
@@ -305,13 +352,55 @@ export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix:
         </div>
       )}
 
-      <div className="border-t border-white/10 pt-3">
-        <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1">
-          Plain-English explanation
+      <div className="border-t border-white/10 pt-3 grid gap-3">
+        <div>
+          <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1">
+            Plain-English
+          </div>
+          <p className="text-[12.5px] text-white/90 leading-relaxed">{fix.plainExplanation}</p>
         </div>
-        <p className="text-[12.5px] text-white/90 leading-relaxed">{fix.plainExplanation}</p>
-        <p className="mt-2 text-[12px] text-white/70 leading-relaxed">{fix.whyItHappened}</p>
+        {fix.technicalExplanation && (
+          <div>
+            <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1">
+              Technical
+            </div>
+            <p className="text-[12px] text-white/75 leading-relaxed">{fix.technicalExplanation}</p>
+          </div>
+        )}
+        <p className="text-[12px] text-white/60 leading-relaxed">{fix.whyItHappened}</p>
       </div>
+
+      {fix.recommendedActions && fix.recommendedActions.length > 0 && (
+        <div>
+          <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1.5">
+            Recommended fix
+          </div>
+          <ul className="space-y-1">
+            {fix.recommendedActions.map((a, i) => (
+              <li key={i} className="flex gap-2 text-[12.5px] text-white/85">
+                <span className="text-emerald-400 mt-0.5">✓</span>
+                <span>{a}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {fix.impact && fix.impact.length > 0 && (
+        <div>
+          <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40 mb-1.5">
+            If not fixed
+          </div>
+          <ul className="space-y-1.5">
+            {fix.impact.map((im, i) => (
+              <li key={i} className="text-[12px] text-white/80 border border-red-500/20 bg-red-500/[0.04] p-2 rounded">
+                <span className="font-medium text-red-300">{im.area}</span>
+                <span className="text-white/60"> — {im.consequence}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {fix.steps.length > 0 && (
         <div>
@@ -337,6 +426,15 @@ export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix:
         </div>
       )}
 
+      {fix.learnMode && (
+        <div className="border-t border-white/10 pt-3">
+          <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-orange-300/80 mb-1">
+            Learn mode
+          </div>
+          <p className="text-[12px] text-white/80 leading-relaxed italic">{fix.learnMode}</p>
+        </div>
+      )}
+
       {fix.additionalNotes && (
         <p className="text-[11.5px] text-white/55 italic border-t border-white/10 pt-2">
           {fix.additionalNotes}
@@ -345,6 +443,7 @@ export function AnalysisBody({ analysis, fix }: { analysis: ScreenAnalysis; fix:
     </div>
   );
 }
+
 
 function detectLang(file?: string | null): string {
   if (!file) return "typescript";

@@ -10,6 +10,7 @@ import {
   FileText,
   Send,
   Loader2,
+  Github,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -20,6 +21,11 @@ import {
   type FixSuggestion,
   type OverlayChatMessage,
 } from "@/lib/screen-intel.functions";
+import {
+  listMyGithubRepos,
+  getActiveRepo,
+  setActiveRepo,
+} from "@/lib/repo-intel.functions";
 
 
 type Props = {

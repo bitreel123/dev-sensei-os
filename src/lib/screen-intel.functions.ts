@@ -112,20 +112,29 @@ Additional fields for this specific analyst:
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin
       .from("github_connections")
-      .select("access_token")
+      .select("access_token, active_repo")
       .eq("user_id", context.userId)
       .maybeSingle();
     const ghToken = (conn as { access_token?: string } | null)?.access_token;
+    const activeRepo = (conn as { active_repo?: string | null } | null)?.active_repo ?? null;
+
+    let repoTools: ReturnType<typeof buildRepoTools> | Record<string, never> = {};
+    let repoContextLine = "";
+    if (ghToken && activeRepo && /^[^/\s]+\/[^/\s]+$/.test(activeRepo)) {
+      const [owner, name] = activeRepo.split("/");
+      repoTools = buildRepoTools(ghToken, owner, name);
+      repoContextLine = `\n\nActive project repo (search this FIRST with repo_* tools): ${activeRepo}`;
+    }
 
     const anthropic = createAnthropic({ apiKey: anthropicKey });
     const { text } = await generateText({
       model: anthropic("claude-sonnet-4-5"),
       system: FIXER_SYSTEM_PROMPT,
       prompt:
-        `Developer note: ${data.note || "(none)"}\n\n` +
+        `Developer note: ${data.note || "(none)"}${repoContextLine}\n\n` +
         `Diagnosis from upstream Gemini analyst:\n${JSON.stringify(analysis, null, 2)}\n\n` +
         `Produce the fix plan JSON.`,
-      tools: buildGithubTools(ghToken),
+      tools: { ...buildGithubTools(ghToken), ...repoTools },
       stopWhen: stepCountIs(50),
     });
 

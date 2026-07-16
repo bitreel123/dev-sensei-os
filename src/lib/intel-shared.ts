@@ -168,6 +168,74 @@ export function buildGithubTools(ghToken?: string) {
   };
 }
 
+// ---------- Repo-scoped tools (user's own connected repo) ----------
+// These narrow the search to `repo:owner/name` so the fixer grounds every
+// citation in the developer's actual project files.
+export function buildRepoTools(ghToken: string, owner: string, repoName: string) {
+  const fullName = `${owner}/${repoName}`;
+  return {
+    repo_get_meta: tool({
+      description: `Get metadata for the user's active repo ${fullName}: default branch, primary language, size, last push.`,
+      inputSchema: z.object({}),
+      execute: async () => {
+        const j = await gh<{
+          default_branch: string;
+          language: string | null;
+          size: number;
+          pushed_at: string;
+          description: string | null;
+        }>(`${GITHUB_API}/repos/${owner}/${repoName}`, ghToken);
+        return { repo: fullName, ...j };
+      },
+    }),
+    repo_list_tree: tool({
+      description: `List files in a directory of ${fullName}. Use path="" for repo root. Returns file paths and types.`,
+      inputSchema: z.object({
+        path: z.string().default(""),
+      }),
+      execute: async ({ path }) => {
+        const meta = await gh<{ default_branch: string }>(`${GITHUB_API}/repos/${owner}/${repoName}`, ghToken);
+        const contents = await gh<
+          Array<{ name: string; path: string; type: string; size: number }> | { message: string }
+        >(
+          `${GITHUB_API}/repos/${owner}/${repoName}/contents/${encodeURIComponent(path)}?ref=${meta.default_branch}`,
+          ghToken,
+        );
+        if (!Array.isArray(contents)) return { error: (contents as { message: string }).message };
+        return contents.slice(0, 100).map((c) => ({ path: c.path, type: c.type, size: c.size }));
+      },
+    }),
+    repo_search_code: tool({
+      description: `Search code inside ${fullName} only. Use to locate the exact file where a symbol, error string, function name, or config key lives.`,
+      inputSchema: z.object({
+        query: z.string().describe("keyword, symbol, or error text"),
+        limit: z.number().default(5),
+      }),
+      execute: async ({ query, limit }) => {
+        const q = `${query} repo:${fullName}`;
+        const j = await gh<{
+          items: Array<{ path: string; html_url: string; repository: { full_name: string } }>;
+        }>(`${GITHUB_API}/search/code?q=${encodeURIComponent(q)}&per_page=${limit}`, ghToken);
+        return (j.items ?? []).map((r) => ({ path: r.path, url: r.html_url }));
+      },
+    }),
+    repo_read_file: tool({
+      description: `Read a file from ${fullName} (max 20KB). Use after repo_search_code or repo_list_tree to inspect the actual code.`,
+      inputSchema: z.object({ path: z.string() }),
+      execute: async ({ path }) => {
+        const meta = await gh<{ default_branch: string }>(`${GITHUB_API}/repos/${owner}/${repoName}`, ghToken);
+        const res = await fetch(
+          `https://raw.githubusercontent.com/${owner}/${repoName}/${meta.default_branch}/${path}`,
+          { headers: { Authorization: `Bearer ${ghToken}` } },
+        );
+        if (!res.ok) return { error: `not found (${res.status})` };
+        const text = await res.text();
+        return { path, content: text.slice(0, 20_000), truncated: text.length > 20_000 };
+      },
+    }),
+  };
+}
+
 // ---------- Gemini caller (raw fetch to Google's native Generative Language API) ----------
 // Uses GEMINI_API_KEY from Google AI Studio directly — no Lovable gateway.
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";

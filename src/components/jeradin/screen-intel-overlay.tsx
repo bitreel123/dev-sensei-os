@@ -10,6 +10,7 @@ import {
   FileText,
   Send,
   Loader2,
+  Github,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -20,6 +21,144 @@ import {
   type FixSuggestion,
   type OverlayChatMessage,
 } from "@/lib/screen-intel.functions";
+import {
+  listMyGithubRepos,
+  getActiveRepo,
+  setActiveRepo,
+} from "@/lib/repo-intel.functions";
+
+
+// -----------------------------------------------------------------------------
+// Project Intelligence — active-repo picker
+// -----------------------------------------------------------------------------
+// Lets the developer pick which of their GitHub repos Screen Intelligence
+// should search when analyzing screenshots. Persisted on the server as
+// github_connections.active_repo and read automatically by the fixer.
+function RepoPicker() {
+  const loadRepos = useServerFn(listMyGithubRepos);
+  const loadActive = useServerFn(getActiveRepo);
+  const saveActive = useServerFn(setActiveRepo);
+
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [connected, setConnected] = useState(true);
+  const [active, setActive] = useState<string | null>(null);
+  const [repos, setRepos] = useState<Array<{ full_name: string; private: boolean }>>([]);
+  const [filter, setFilter] = useState("");
+
+  useEffect(() => {
+    loadActive({})
+      .then((r) => {
+        setActive(r.activeRepo);
+        setConnected(r.connected);
+      })
+      .catch(() => {
+        /* not signed in / no conn */
+      });
+  }, [loadActive]);
+
+  async function ensureRepos() {
+    if (repos.length > 0) return;
+    setLoading(true);
+    try {
+      const r = await loadRepos({});
+      setConnected(r.connected);
+      setRepos(r.repos.map((x) => ({ full_name: x.full_name, private: x.private })));
+    } catch {
+      setRepos([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function pick(repo: string | null) {
+    setActive(repo);
+    setOpen(false);
+    try {
+      await saveActive({ data: { repo } });
+    } catch {
+      /* keep local state; user can retry */
+    }
+  }
+
+  const label = active ?? (connected ? "Pick project repo" : "Connect GitHub");
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          if (!connected) {
+            window.location.href = "/chat";
+            return;
+          }
+          setOpen((o) => !o);
+          void ensureRepos();
+        }}
+        className="inline-flex items-center gap-1.5 rounded bg-white/5 hover:bg-white/10 border border-white/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-white/80 max-w-[220px]"
+        title={active ? `Active project: ${active}` : "Choose the repo Jeradin should search"}
+      >
+        <Github className="h-3 w-3 text-white/60" />
+        <span className="truncate">{label}</span>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-1 w-64 rounded-lg bg-black border border-white/15 shadow-xl z-[10000] overflow-hidden">
+          <div className="p-2 border-b border-white/10">
+            <input
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Search repos…"
+              className="w-full bg-white/5 rounded px-2 py-1 text-[12px] text-white placeholder:text-white/40 outline-none border border-transparent focus:border-white/20"
+            />
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {loading && (
+              <div className="p-3 text-[11px] text-white/50 flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+              </div>
+            )}
+            {!loading && repos.length === 0 && (
+              <div className="p-3 text-[11px] text-white/50">
+                No repos found. Connect GitHub in Chat.
+              </div>
+            )}
+            {!loading &&
+              repos
+                .filter((r) => !filter || r.full_name.toLowerCase().includes(filter.toLowerCase()))
+                .slice(0, 60)
+                .map((r) => (
+                  <button
+                    key={r.full_name}
+                    onClick={() => pick(r.full_name)}
+                    className={`w-full text-left px-3 py-1.5 text-[12px] hover:bg-white/10 flex items-center gap-2 ${
+                      active === r.full_name ? "bg-white/10 text-white" : "text-white/80"
+                    }`}
+                  >
+                    <span className="truncate flex-1">{r.full_name}</span>
+                    {r.private && (
+                      <span className="text-[9px] uppercase tracking-wider text-white/40">
+                        private
+                      </span>
+                    )}
+                  </button>
+                ))}
+          </div>
+          {active && (
+            <button
+              onClick={() => pick(null)}
+              className="w-full text-left px-3 py-1.5 text-[11px] text-white/50 hover:bg-white/10 border-t border-white/10"
+            >
+              Clear active project
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
 
 
 type Props = {
@@ -177,10 +316,13 @@ export function ScreenIntelOverlay({
         </button>
       </div>
 
-      <div className="flex px-3 pt-2 shrink-0">
+      <div className="flex items-center gap-2 px-3 pt-2 shrink-0">
         <div className="inline-flex items-center gap-1.5 rounded bg-white/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white">
           <FileText className="h-3 w-3" />
           Analysis
+        </div>
+        <div className="ml-auto">
+          <RepoPicker />
         </div>
       </div>
 

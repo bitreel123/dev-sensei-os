@@ -7,6 +7,7 @@ import {
   FIXER_SYSTEM_PROMPT,
   TAXONOMY_PROMPT,
   buildGithubTools,
+  buildRepoTools,
   callGeminiAnalyst,
   type Diagnosis,
   type FixPlan,
@@ -111,20 +112,29 @@ Additional fields for this specific analyst:
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin
       .from("github_connections")
-      .select("access_token")
+      .select("access_token, active_repo")
       .eq("user_id", context.userId)
       .maybeSingle();
     const ghToken = (conn as { access_token?: string } | null)?.access_token;
+    const activeRepo = (conn as { active_repo?: string | null } | null)?.active_repo ?? null;
+
+    let repoTools: ReturnType<typeof buildRepoTools> | Record<string, never> = {};
+    let repoContextLine = "";
+    if (ghToken && activeRepo && /^[^/\s]+\/[^/\s]+$/.test(activeRepo)) {
+      const [owner, name] = activeRepo.split("/");
+      repoTools = buildRepoTools(ghToken, owner, name);
+      repoContextLine = `\n\nActive project repo (search this FIRST with repo_* tools): ${activeRepo}`;
+    }
 
     const anthropic = createAnthropic({ apiKey: anthropicKey });
     const { text } = await generateText({
       model: anthropic("claude-sonnet-4-5"),
       system: FIXER_SYSTEM_PROMPT,
       prompt:
-        `Developer note: ${data.note || "(none)"}\n\n` +
+        `Developer note: ${data.note || "(none)"}${repoContextLine}\n\n` +
         `Diagnosis from upstream Gemini analyst:\n${JSON.stringify(analysis, null, 2)}\n\n` +
         `Produce the fix plan JSON.`,
-      tools: buildGithubTools(ghToken),
+      tools: { ...buildGithubTools(ghToken), ...repoTools },
       stopWhen: stepCountIs(50),
     });
 
@@ -174,15 +184,24 @@ export const chatAboutAnalysis = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin
       .from("github_connections")
-      .select("access_token")
+      .select("access_token, active_repo")
       .eq("user_id", context.userId)
       .maybeSingle();
     const ghToken = (conn as { access_token?: string } | null)?.access_token;
+    const activeRepo = (conn as { active_repo?: string | null } | null)?.active_repo ?? null;
+
+    let repoTools: ReturnType<typeof buildRepoTools> | Record<string, never> = {};
+    let repoLine = "";
+    if (ghToken && activeRepo && /^[^/\s]+\/[^/\s]+$/.test(activeRepo)) {
+      const [owner, name] = activeRepo.split("/");
+      repoTools = buildRepoTools(ghToken, owner, name);
+      repoLine = `\nActive project repo: ${activeRepo} (use repo_* tools to look inside).`;
+    }
 
     const anthropic = createAnthropic({ apiKey: anthropicKey });
     const system = `You are Jeradin — a friendly senior engineer helping a developer through a floating overlay while they work.
 
-You are already looking at an analysis of their screen. Answer their follow-up questions about the bug, the suggested fix, and adjacent concerns. Be concise (2-6 sentences unless they ask for more), plain English, no unnecessary code dumps. Use the GitHub search tools 0-3 times only when it materially helps.
+You are already looking at an analysis of their screen. Answer their follow-up questions about the bug, the suggested fix, and adjacent concerns. Be concise (2-6 sentences unless they ask for more), plain English, no unnecessary code dumps. Prefer the repo_* tools to look inside the developer's own project; use public GitHub search only when needed. Total tool calls: 0-4.${repoLine}
 
 Full context you already have:
 DIAGNOSIS: ${JSON.stringify(data.analysis).slice(0, 6000)}
@@ -192,7 +211,7 @@ FIX PLAN: ${JSON.stringify(data.fix).slice(0, 6000)}`;
       model: anthropic("claude-sonnet-4-5"),
       system,
       messages: data.messages,
-      tools: buildGithubTools(ghToken),
+      tools: { ...buildGithubTools(ghToken), ...repoTools },
       stopWhen: stepCountIs(6),
     });
     return { reply: text };

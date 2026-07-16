@@ -36,6 +36,22 @@ export const TAXONOMY_PROMPT = `You classify every problem into ONE category fro
 - unknown: does not fit above`;
 
 // ---------- Shared shapes ----------
+export type DetectedStack = {
+  framework?: string | null;
+  language?: string | null;
+  database?: string | null;
+  runtime?: string | null;
+  buildTool?: string | null;
+};
+
+export type ScreenContext = {
+  currentFile?: string | null;
+  cursorLine?: number | null;
+  workflow?: string | null;   // e.g. "npm run dev", "debugging login flow"
+  ide?: string | null;
+  browser?: string | null;
+};
+
 export type Diagnosis = {
   category: DebugCategory;
   severity: "error" | "warning" | "info";
@@ -43,6 +59,11 @@ export type Diagnosis = {
   evidence: Array<{ source: string; snippet: string }>;
   suspectFiles: string[];
   hypothesis: string;                    // most likely root cause
+  // Optional richer context (Screen Intelligence uses these; other pipelines may omit)
+  stack?: DetectedStack;
+  context?: ScreenContext;
+  affectedFunction?: string | null;
+  affectedDependency?: string | null;
 };
 
 export type FixStep = {
@@ -51,34 +72,56 @@ export type FixStep = {
   codeAfter?: string | null;             // only when user likely can't write it
 };
 
+export type ImpactArea = {
+  area: string;                          // e.g. "Authentication", "Dashboard"
+  consequence: string;                   // what breaks if not fixed
+};
+
 export type FixPlan = {
   plainExplanation: string;              // layman, 1-2 sentences
   whyItHappened: string;                 // layman paragraph
   steps: FixStep[];
   references?: Array<{ title: string; url: string }>;
   additionalNotes?: string | null;
+  // Optional richer output (Screen Intelligence uses these)
+  technicalExplanation?: string | null;
+  recommendedActions?: string[];         // short imperative bullets
+  confidence?: number | null;            // 0-100
+  impact?: ImpactArea[];                 // areas affected if unfixed
+  learnMode?: string | null;             // teaching paragraph — the "why", not just the fix
 };
+
 
 // ---------- Claude "fixer" system prompt (shared) ----------
 export const FIXER_SYSTEM_PROMPT = `You are a friendly senior engineer who explains bugs in plain English so anyone — including a non-technical founder — can understand.
 
-You receive a structured DIAGNOSIS from an upstream analyst model. You produce a step-by-step fix plan.
+You receive a structured DIAGNOSIS from an upstream analyst model. You produce a rich, human fix plan that helps a developer reach the correct solution fast AND understand *why*.
 
 ${TAXONOMY_PROMPT}
 
 Rules:
-- Use simple language. If you must use a technical term, define it in parentheses the first time (e.g. "RLS (Row-Level Security)").
-- Every step names ONE file and one clear change.
-- Only include \`codeAfter\` for steps where the change is non-trivial or the user is unlikely to write it themselves. Prefer written explanation over code dumps.
+- Use simple language in \`plainExplanation\`. If you must use a technical term, define it in parentheses the first time (e.g. "RLS (Row-Level Security)").
+- \`technicalExplanation\` is the same thing said precisely for an engineer.
+- \`recommendedActions\` are 3-6 short imperative bullets ("Update the environment variable", "Restart the dev server", "Clear the Next.js cache"). No file paths, no code.
+- Every \`steps\` entry names ONE file and one clear change. Only include \`codeAfter\` when the change is non-trivial or the user is unlikely to write it themselves.
+- \`confidence\` is your honest 0-100 estimate that this diagnosis + fix is correct.
+- \`impact\` lists user-visible areas that break if this stays unfixed (e.g. "Authentication", "Dashboard", "API"), each with a one-sentence consequence.
+- \`learnMode\` is a short teaching paragraph (2-4 sentences) — teach the underlying concept, not just the fix.
 - Use the GitHub search tools (search_github_repos, search_github_code) 1-4 times when it helps confirm the fix pattern; cite them in \`references\`.
 - Return STRICT JSON only, matching:
 {
   "plainExplanation": string,
+  "technicalExplanation": string,
   "whyItHappened": string,
+  "recommendedActions": string[],
+  "confidence": number,
+  "impact": [{ "area": string, "consequence": string }],
   "steps": [{ "file": string, "change": string, "codeAfter": string|null }],
   "references": [{ "title": string, "url": string }],
+  "learnMode": string,
   "additionalNotes": string|null
 }`;
+
 
 // ---------- GitHub tools for Claude ----------
 const GITHUB_API = "https://api.github.com";
@@ -223,5 +266,9 @@ export const ANALYST_INSTRUCTIONS = `Return STRICT JSON only (no markdown fences
   "summary": string,
   "evidence": [{ "source": string, "snippet": string }],
   "suspectFiles": string[],
-  "hypothesis": string
+  "hypothesis": string,
+  "stack": { "framework": string|null, "language": string|null, "database": string|null, "runtime": string|null, "buildTool": string|null },
+  "context": { "currentFile": string|null, "cursorLine": number|null, "workflow": string|null, "ide": string|null, "browser": string|null },
+  "affectedFunction": string|null,
+  "affectedDependency": string|null
 }`;

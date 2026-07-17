@@ -1,10 +1,15 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/jeradin/logo";
 import { motion } from "motion/react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
+
+function safeNext(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  return v.startsWith("/") && !v.startsWith("//") ? v : null;
+}
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -13,15 +18,24 @@ export const Route = createFileRoute("/signup")({
       { name: "description", content: "Get 5 free credits. No card required." },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({ next: safeNext(s.next) ?? undefined }),
   component: SignupPage,
 });
 
 function SignupPage() {
-  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const next = search.next ?? "/chat";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkEmail, setCheckEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") window.location.href = next;
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [next]);
 
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
@@ -29,7 +43,7 @@ function SignupPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/chat` },
+      options: { emailRedirectTo: `${window.location.origin}${next}` },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
@@ -39,14 +53,13 @@ function SignupPage() {
       return;
     }
     toast.success("Account created");
-    navigate({ to: "/chat" });
+    window.location.href = next;
   }
 
 
   async function signInGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
+    const backTo = `${window.location.origin}/login?next=${encodeURIComponent(next)}`;
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: backTo });
     if (result.error) toast.error(result.error.message ?? "Sign in failed");
   }
 

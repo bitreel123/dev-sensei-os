@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "sdk_version": "0.23.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://tlgplyfgwxxmqempfnnw.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "jeradin-mcp",
+      "version": "0.1.0",
+      "title": "Jeradin"
+    },
+    "tools": [
+      {
+        "name": "get_profile",
+        "title": "Get my Jeradin profile",
+        "description": "Return the signed-in user's Jeradin profile (email, display name).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_notifications",
+        "title": "List my notifications",
+        "description": "Return the signed-in user's most recent Jeradin notifications.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Max notifications to return (default 20)."
+            },
+            "unread_only": {
+              "type": "boolean",
+              "description": "If true, return only unread notifications."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_active_repo",
+        "title": "Get my active project repo",
+        "description": "Return the GitHub repo (owner/name) currently linked to the user's Jeradin workspace, if any.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "set_active_repo",
+        "title": "Set my active project repo",
+        "description": "Set the GitHub repo (owner/name) that Jeradin uses when analyzing screens. Pass null to clear it. Requires an existing GitHub connection.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "repo": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[^/\\s]+\\/[^/\\s]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "GitHub repo like 'octocat/hello-world', or null to clear."
+            }
+          },
+          "required": [
+            "repo"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

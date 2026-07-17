@@ -129,7 +129,9 @@ export async function runFastScreenIntel(
     suspectFiles: Array.isArray(a.suspectFiles) ? a.suspectFiles : [],
     hypothesis: a.hypothesis || "No root-cause hypothesis was returned.",
     rootCauseHypothesis: a.hypothesis || "No root-cause hypothesis was returned.",
-    errors: Array.isArray((a as { errors?: unknown }).errors) ? (a as { errors: unknown[] }).errors : [],
+    errors: Array.isArray((a as unknown as { errors?: unknown }).errors)
+      ? (a as unknown as { errors: unknown[] }).errors
+      : [],
     observedCodeSnippet: (a as { observedCodeSnippet?: string | null }).observedCodeSnippet ?? null,
     editor: (a as { editor?: string | null }).editor ?? null,
     language: (a as { language?: string | null }).language ?? null,

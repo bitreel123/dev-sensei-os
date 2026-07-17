@@ -1381,7 +1381,7 @@ const CAPABILITIES: Array<{
   {
     key: "repo",
     title: "Repo Intelligence",
-    desc: "Connect your GitHub account and Jeradin reads commit history, branches, PRs and diffs to trace root causes — perfect for regressions and 'it worked last week' bugs.",
+    desc: "Connect your GitHub repository and Jeradin understands how your software evolves over time. It analyzes commits, pull requests, branches, releases, and code history to trace regressions, explain architectural changes, and identify breaking updates.",
     mobileDesc: "Analyze commits and PRs",
     cta: "Connect GitHub",
     Icon: Github,

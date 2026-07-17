@@ -3,7 +3,7 @@
 // then runs the fast screen intelligence pipeline.
 
 import { createFileRoute } from "@tanstack/react-router";
-import { resolveExtensionTokenUserId } from "@/lib/extension-tokens.functions";
+import { resolveExtensionCaller } from "@/lib/extension-auth.server";
 import { runFastScreenIntel } from "@/lib/screen-intel-fast";
 
 const CORS_HEADERS: Record<string, string> = {
@@ -25,12 +25,9 @@ export const Route = createFileRoute("/api/public/extension/analyze")({
     handlers: {
       OPTIONS: () => new Response(null, { status: 204, headers: CORS_HEADERS }),
       POST: async ({ request }) => {
-        const auth = request.headers.get("authorization") ?? "";
-        const m = auth.match(/^Bearer\s+(jex_[A-Za-z0-9_-]+)$/);
-        if (!m) return json({ error: "Missing or invalid extension token" }, 401);
+        const caller = await resolveExtensionCaller(request.headers.get("authorization"));
+        if (!caller) return json({ error: "Not signed in. Open jeradin.com and sign in." }, 401);
 
-        const resolved = await resolveExtensionTokenUserId(m[1]);
-        if (!resolved) return json({ error: "Token is revoked or unknown" }, 401);
 
         let payload: { imageBase64?: string; note?: string };
         try {

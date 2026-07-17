@@ -17,6 +17,7 @@ import { runKnowledgeIntelligence, type KnowledgeReport } from "@/lib/knowledge-
 import { runGithubIntelligence, type GithubIntelReport } from "@/lib/github-intel.functions";
 import { SystemReportBody, KnowledgeReportBody, RepoReportBody } from "@/components/jeradin/intel-reports";
 import { NotificationsBell } from "@/components/jeradin/notifications-bell";
+import { SystemPanel } from "@/components/jeradin/system-panel";
 
 
 

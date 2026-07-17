@@ -1,10 +1,23 @@
-// Fast-path screen intelligence: single Gemini call that produces a rich,
-// information-dense analysis + fix plan in one shot. No Claude, no GitHub,
-// no repo lookup — targets 2-5s end-to-end.
+// Auto-routed screen intelligence.
+//
+// Two tiers behind one entry point (`runAutoScreenIntel`):
+//   ⚡ Instant Mode  — Gemini 3 Flash, ~1–3s, for simple bugs
+//                     (syntax, TS errors, missing imports, ESLint,
+//                      undefined vars, small React warnings).
+//   🧠 Smart Mode    — Gemini 3 Pro, ~5–8s, for anything the
+//                     Flash pass rates as complex or low-confidence
+//                     (hydration issues, race conditions, multi-file
+//                      root causes, database/auth flow bugs).
+//
+// The user does not choose. The router uses Flash's self-reported
+// `complexity` + `confidence` to decide, and the returned object
+// carries a `tier` field the UI can show as a badge.
 
 import { TAXONOMY_PROMPT, type Diagnosis, type FixPlan } from "./intel-shared";
 
-const GEMINI_FAST_MODEL = "gemini-3-pro-preview";
+const INSTANT_MODEL = "gemini-3.5-flash";        // fast triage + attempt
+const SMART_MODEL = "gemini-3-pro-preview";      // deep reasoning
+const ESCALATE_CONFIDENCE_THRESHOLD = 65;
 
 const FAST_SYSTEM_PROMPT = `You are Jeradin's rapid debugging engineer. You look at a single screenshot of a developer's IDE, editor, browser devtools, or terminal, and in ONE response produce a dense, structured debugging report.
 
@@ -15,6 +28,7 @@ ${TAXONOMY_PROMPT}
 Return a JSON object with these EXACT top-level keys:
 
 {
+  "complexity": "simple"|"complex",              // "simple" = syntax/type/import/lint/undefined-var/small React warning that a Flash-tier model can fully resolve. "complex" = hydration, race conditions, multi-file root causes, auth/database flow, ambiguous stack traces, or anything you're not confident about.
   "analysis": {
     "category": "runtime"|"api"|"database"|"auth"|"env"|"dependencies"|"performance"|"logs"|"deployment"|"ui"|"unknown",
     "severity": "error"|"warning"|"info",
@@ -32,59 +46,69 @@ Return a JSON object with these EXACT top-level keys:
     "observedCodeSnippet": string|null
   },
   "fix": {
-    "errorTitle": string,                         // short human title, e.g. "Undefined variable in login handler"
+    "errorTitle": string,
     "errorCategory": string,                      // broader label: Syntax | Runtime | Build | TypeScript | React | Network | API | Database | Security | Performance | Config | Dependency | Other
     "confidence": number,                         // 0-100 honest estimate
-    "confidenceExplanation": string,              // 1-2 sentences: why you believe this diagnosis is correct (what visible evidence supports it, what would lower confidence)
-    "rootCause": string,                          // 1 sentence, precise
-    "whyItHappened": string,                      // 1 short paragraph, layman
-    "affectedFile": string|null,                  // best-guess file path from the screen
-    "affectedComponent": string|null,             // function / component / class name
-    "suspectedCodeRegion": string|null,           // the exact code region highlighted from the screenshot (short)
-    "plainExplanation": string,                   // layman, 1-2 sentences
-    "technicalExplanation": string,               // precise, engineer-facing
-    "primaryFix": string,                         // the recommended fix, 1-3 sentences
-    "alternativeFix": string|null,                // one alternative approach, or null
-    "bestPractice": string|null,                  // best-practice recommendation to prevent recurrence
+    "confidenceExplanation": string,
+    "rootCause": string,
+    "whyItHappened": string,
+    "affectedFile": string|null,
+    "affectedComponent": string|null,
+    "suspectedCodeRegion": string|null,
+    "plainExplanation": string,
+    "technicalExplanation": string,
+    "primaryFix": string,
+    "alternativeFix": string|null,
+    "bestPractice": string|null,
     "difficulty": "Easy"|"Medium"|"Hard",
-    "estimatedFixTime": string,                   // e.g. "2 minutes", "15 minutes", "1 hour"
-    "sideEffects": string[],                      // 0-4 possible side effects of applying the primary fix
-    "nextDebuggingStep": string,                  // single concrete next action if the fix doesn't work
-    "errorLinks": string|null,                    // if multiple errors are visible, describe how they relate; else null
-    "recommendedActions": string[],               // 3-6 short imperative bullets
+    "estimatedFixTime": string,
+    "sideEffects": string[],
+    "nextDebuggingStep": string,
+    "errorLinks": string|null,
+    "recommendedActions": string[],
     "impact": [{ "area": string, "consequence": string }],
     "steps": [{ "file": string, "change": string, "codeAfter": string|null }],
     "references": [{ "title": string, "url": string }],
-    "learnMode": string,                          // 2-4 sentence teaching paragraph
+    "learnMode": string,
     "additionalNotes": string|null
   }
 }
 
 Rules:
-- Base every claim on what you can actually see in the screenshot. No hallucinated file paths, functions, or line numbers — use null when you cannot see it.
-- \`errorCategory\` uses the broader label list above (Syntax, Runtime, Build, TypeScript, React, Network, API, Database, Security, Performance, Config, Dependency, Other). \`analysis.category\` uses the narrower taxonomy.
-- \`suspectedCodeRegion\` quotes the visible highlighted code (max ~20 lines). If no code is visible, use null.
-- \`sideEffects\` should be concrete ("May break existing sessions", "Requires re-running migrations"). Empty array if none.
-- \`errorLinks\` only when 2+ distinct errors appear on screen; otherwise null.
-- Keep \`recommendedActions\` short and directly actionable.
-- \`steps\` entries name one file with a clear change; include \`codeAfter\` only when the change is non-trivial.
-- Skip \`references\` unless you're highly confident about a specific docs URL.
-- Return STRICT JSON only, no markdown, no commentary.`;
+- Be strict with \`complexity\`. Mark "complex" whenever the bug crosses multiple files, involves async/hydration/auth/database/build config, or you can't fully explain the root cause from the screen alone. When in doubt, choose "complex".
+- Base every claim on what you can actually see. No hallucinated paths or line numbers — use null when unseen.
+- \`errorCategory\` uses the broader label list; \`analysis.category\` uses the narrower taxonomy.
+- \`suspectedCodeRegion\` quotes the visible highlighted code (max ~20 lines) or null.
+- \`sideEffects\` concrete or []; \`errorLinks\` only when 2+ distinct errors appear.
+- STRICT JSON only.`;
+
+export type IntelTier = "instant" | "smart";
 
 export type FastScreenIntel = {
   analysis: Diagnosis & Record<string, unknown>;
   fix: FixPlan;
+  tier: IntelTier;              // which model produced this result
+  modelId: string;              // exact model id used
+  latencyMs: number;            // total time for the routed call (includes escalation)
+  escalated: boolean;           // true when Instant → Smart happened
 };
 
-export async function runFastScreenIntel(
+type RawIntel = {
+  complexity?: "simple" | "complex";
+  analysis: Diagnosis & Record<string, unknown>;
+  fix: FixPlan;
+};
+
+async function callGeminiIntel(
   geminiKey: string,
+  model: string,
   imageBase64: string,
   note?: string,
-): Promise<FastScreenIntel> {
+): Promise<RawIntel> {
   const cleaned = imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, "");
   const userText = note?.trim()
-    ? `Developer note: ${note.trim()}\n\nAnalyze this screen frame and return the combined analysis + fix JSON.`
-    : "Analyze this screen frame and return the combined analysis + fix JSON.";
+    ? `Developer note: ${note.trim()}\n\nAnalyze this screen frame and return the combined complexity + analysis + fix JSON.`
+    : "Analyze this screen frame and return the combined complexity + analysis + fix JSON.";
 
   const body = {
     systemInstruction: { parts: [{ text: FAST_SYSTEM_PROMPT }] },
@@ -105,7 +129,7 @@ export async function runFastScreenIntel(
   };
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_FAST_MODEL}:generateContent?key=${geminiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -114,7 +138,7 @@ export async function runFastScreenIntel(
   );
 
   if (!res.ok) {
-    throw new Error(`Gemini fast intel failed [${res.status}]: ${(await res.text()).slice(0, 400)}`);
+    throw new Error(`Gemini ${model} failed [${res.status}]: ${(await res.text()).slice(0, 400)}`);
   }
 
   const json = await res.json();
@@ -123,20 +147,20 @@ export async function runFastScreenIntel(
     .map((p: { text?: string }) => p.text ?? "")
     .join("");
 
-  if (!text) throw new Error("Fast intel returned no content");
+  if (!text) throw new Error(`Gemini ${model} returned no content`);
 
-  let parsed: FastScreenIntel;
   try {
-    parsed = JSON.parse(text) as FastScreenIntel;
+    return JSON.parse(text) as RawIntel;
   } catch {
     const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error("Fast intel returned unparseable JSON");
-    parsed = JSON.parse(m[0]) as FastScreenIntel;
+    if (!m) throw new Error(`Gemini ${model} returned unparseable JSON`);
+    return JSON.parse(m[0]) as RawIntel;
   }
+}
 
-  // Defensive normalisation so the overlay never crashes.
-  const a = (parsed.analysis ?? {}) as FastScreenIntel["analysis"];
-  const f = (parsed.fix ?? {}) as FastScreenIntel["fix"];
+function normalizeIntel(raw: RawIntel): { analysis: FastScreenIntel["analysis"]; fix: FixPlan; complexity: "simple" | "complex" } {
+  const a = (raw.analysis ?? {}) as FastScreenIntel["analysis"];
+  const f = (raw.fix ?? {}) as FixPlan;
 
   const analysis = {
     ...a,
@@ -172,7 +196,6 @@ export async function runFastScreenIntel(
     confidence: typeof f.confidence === "number" ? Math.max(0, Math.min(100, Math.round(f.confidence))) : null,
     impact: Array.isArray(f.impact) ? f.impact : [],
     learnMode: f.learnMode ?? null,
-    // Fast-mode richer fields
     errorTitle: (f as { errorTitle?: string | null }).errorTitle ?? null,
     errorCategory: (f as { errorCategory?: string | null }).errorCategory ?? null,
     rootCause: (f as { rootCause?: string | null }).rootCause ?? null,
@@ -192,5 +215,80 @@ export async function runFastScreenIntel(
     confidenceExplanation: (f as { confidenceExplanation?: string | null }).confidenceExplanation ?? null,
   };
 
-  return { analysis, fix };
+  const complexity = raw.complexity === "complex" ? "complex" : "simple";
+  return { analysis, fix, complexity };
 }
+
+/**
+ * Auto-routed screen intelligence.
+ *
+ * - Runs Instant Mode (Flash) first. Simple bugs return in ~1–3s.
+ * - Escalates to Smart Mode (Pro) automatically when Flash rates the
+ *   bug as complex OR its confidence is below the threshold. The Pro
+ *   answer replaces the Flash draft entirely.
+ *
+ * `forceTier` lets callers override the router (e.g. the overlay's
+ * existing Deep Dive button can still request "smart" directly).
+ */
+export async function runAutoScreenIntel(
+  geminiKey: string,
+  imageBase64: string,
+  note?: string,
+  forceTier?: IntelTier,
+): Promise<FastScreenIntel> {
+  const started = Date.now();
+
+  // Explicit override — skip the router.
+  if (forceTier === "smart") {
+    const raw = await callGeminiIntel(geminiKey, SMART_MODEL, imageBase64, note);
+    const { analysis, fix } = normalizeIntel(raw);
+    return { analysis, fix, tier: "smart", modelId: SMART_MODEL, latencyMs: Date.now() - started, escalated: false };
+  }
+
+  // Instant pass.
+  const flashRaw = await callGeminiIntel(geminiKey, INSTANT_MODEL, imageBase64, note);
+  const flash = normalizeIntel(flashRaw);
+
+  const flashConfidence = flash.fix.confidence ?? 0;
+  const shouldEscalate =
+    forceTier !== "instant" &&
+    (flash.complexity === "complex" || flashConfidence < ESCALATE_CONFIDENCE_THRESHOLD);
+
+  if (!shouldEscalate) {
+    return {
+      analysis: flash.analysis,
+      fix: flash.fix,
+      tier: "instant",
+      modelId: INSTANT_MODEL,
+      latencyMs: Date.now() - started,
+      escalated: false,
+    };
+  }
+
+  // Escalate: run Pro. If Pro fails for any reason, fall back to the
+  // Flash result so the user still sees something.
+  try {
+    const proRaw = await callGeminiIntel(geminiKey, SMART_MODEL, imageBase64, note);
+    const pro = normalizeIntel(proRaw);
+    return {
+      analysis: pro.analysis,
+      fix: pro.fix,
+      tier: "smart",
+      modelId: SMART_MODEL,
+      latencyMs: Date.now() - started,
+      escalated: true,
+    };
+  } catch {
+    return {
+      analysis: flash.analysis,
+      fix: flash.fix,
+      tier: "instant",
+      modelId: INSTANT_MODEL,
+      latencyMs: Date.now() - started,
+      escalated: false,
+    };
+  }
+}
+
+/** Backwards-compat alias so existing callers keep working. */
+export const runFastScreenIntel = runAutoScreenIntel;

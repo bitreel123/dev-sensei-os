@@ -63,8 +63,8 @@ export function SystemPanel() {
   const pollRef = useRef<number | null>(null);
 
   useEffect(() => {
-    listRepos().then((r) => setGhRepos(r.repos)).catch(() => undefined);
-    listMine().then((r) => {
+    listRepos().then((r: { repos: Array<{ full_name: string }> }) => setGhRepos(r.repos)).catch(() => undefined);
+    listMine().then((r: { repos: CodeRepoRow[] }) => {
       setMyRepos(r.repos);
       if (r.repos[0]) setActiveRepo(r.repos[0]);
     }).catch(() => undefined);
@@ -72,7 +72,7 @@ export function SystemPanel() {
   }, [listRepos, listMine]);
 
   async function refreshMine() {
-    const r = await listMine();
+    const r = (await listMine()) as { repos: CodeRepoRow[] };
     setMyRepos(r.repos);
     if (activeRepo) {
       const found = r.repos.find((x) => x.id === activeRepo.id);

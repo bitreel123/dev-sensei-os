@@ -12,6 +12,7 @@ import {
   type Diagnosis,
   type FixPlan,
 } from "./intel-shared";
+import { runFastScreenIntel } from "./screen-intel-fast";
 
 // Kept for backward compatibility with existing UI code.
 export type ScreenAnalysis = Diagnosis & {
@@ -34,17 +35,29 @@ export type FixSuggestion = FixPlan;
 
 export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { imageBase64: string; note?: string }) => {
+  .inputValidator((input: { imageBase64: string; note?: string; mode?: "fast" | "deep" }) => {
     if (!input?.imageBase64 || typeof input.imageBase64 !== "string") {
       throw new Error("imageBase64 is required");
     }
     const cleaned = input.imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, "");
-    return { imageBase64: cleaned, note: (input.note ?? "").slice(0, 2000) };
+    return {
+      imageBase64: cleaned,
+      note: (input.note ?? "").slice(0, 2000),
+      mode: input.mode === "deep" ? ("deep" as const) : ("fast" as const),
+    };
   })
   .handler(async ({ data, context }) => {
     const geminiKey = process.env.GEMINI_API_KEY;
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
+
+    // -------- FAST PATH (default): single Gemini call, 2-5s --------
+    if (data.mode === "fast") {
+      const { analysis, fix } = await runFastScreenIntel(geminiKey, data.imageBase64, data.note);
+      return { analysis: analysis as ScreenAnalysis, fix };
+    }
+
+    // -------- DEEP DIVE: Gemini analyst + Claude fixer + repo tools --------
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const screenAnalystSystem = `You are a senior debugging engineer analyzing a screenshot of a developer's IDE, code editor, browser devtools, or terminal.

@@ -49,6 +49,8 @@ function ChatPage() {
   const [activeCapability, setActiveCapability] = useState<CapabilityKey | null>(null);
   const [openedCapabilityPanel, setOpenedCapabilityPanel] = useState<Exclude<CapabilityKey, "screen"> | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [lastScreenshotBase64, setLastScreenshotBase64] = useState<string | null>(null);
+  const [lastScreenshotNote, setLastScreenshotNote] = useState<string>("");
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<{ analysis: ScreenAnalysis; fix: FixSuggestion } | null>(null);
   const [systemResult, setSystemResult] = useState<{ analysis: SystemAnalysis; filesAnalyzed: number } | null>(null);
@@ -124,8 +126,12 @@ function ChatPage() {
   async function analyzeImageBase64(base64: string, note: string, title: string) {
     setAnalyzing(true);
     setAnalysisError(null);
+    setLastScreenshotBase64(base64);
+    setLastScreenshotNote(note);
     try {
-      const result = await runAnalyze({ data: { imageBase64: base64, note } });
+      // Fast path (Gemini only) — targets 2-5s. Deep Dive button in the
+      // overlay re-runs with mode: "deep" (Claude + GitHub) on demand.
+      const result = await runAnalyze({ data: { imageBase64: base64, note, mode: "fast" } });
       setAnalysisResult(result);
       setOverlayMessages([]);
       setOverlayOpen(true);
@@ -736,6 +742,16 @@ function ChatPage() {
             initialMessages={overlayMessages}
             onMessagesChange={setOverlayMessages}
             onClose={() => setOverlayOpen(false)}
+            screenshotBase64={lastScreenshotBase64}
+            note={lastScreenshotNote}
+            onResultReplace={(next) => {
+              setAnalysisResult(next);
+              if (currentEntryId) {
+                updateHistoryEntry(currentEntryId, {
+                  payload: { mode: "screen", analysis: next.analysis, fix: next.fix, messages: overlayMessages },
+                });
+              }
+            }}
           />
         </div>
       )}

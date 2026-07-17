@@ -20,6 +20,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as ExtensionRouteImport } from './routes/extension'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ChatRouteImport } from './routes/chat'
@@ -34,6 +35,8 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicGithubCallbackRouteImport } from './routes/api/public/github.callback'
 import { Route as ApiPublicGithubAuthorizeRouteImport } from './routes/api/public/github.authorize'
+import { Route as ApiPublicExtensionWhoamiRouteImport } from './routes/api/public/extension/whoami'
+import { Route as ApiPublicExtensionAnalyzeRouteImport } from './routes/api/public/extension/analyze'
 
 const WorkflowRoute = WorkflowRouteImport.update({
   id: '/workflow',
@@ -88,6 +91,11 @@ const LoginRoute = LoginRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExtensionRoute = ExtensionRouteImport.update({
+  id: '/extension',
+  path: '/extension',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DownloadRoute = DownloadRouteImport.update({
@@ -166,6 +174,18 @@ const ApiPublicGithubAuthorizeRoute =
     path: '/api/public/github/authorize',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicExtensionWhoamiRoute =
+  ApiPublicExtensionWhoamiRouteImport.update({
+    id: '/api/public/extension/whoami',
+    path: '/api/public/extension/whoami',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicExtensionAnalyzeRoute =
+  ApiPublicExtensionAnalyzeRouteImport.update({
+    id: '/api/public/extension/analyze',
+    path: '/api/public/extension/analyze',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -174,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRoute
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
+  '/extension': typeof ExtensionRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
@@ -189,6 +210,8 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/extension/analyze': typeof ApiPublicExtensionAnalyzeRoute
+  '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
   '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -201,6 +224,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRoute
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
+  '/extension': typeof ExtensionRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
@@ -216,6 +240,8 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/extension/analyze': typeof ApiPublicExtensionAnalyzeRoute
+  '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
   '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -229,6 +255,7 @@ export interface FileRoutesById {
   '/chat': typeof ChatRoute
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
+  '/extension': typeof ExtensionRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
@@ -244,6 +271,8 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/extension/analyze': typeof ApiPublicExtensionAnalyzeRoute
+  '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
   '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -258,6 +287,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/docs'
     | '/download'
+    | '/extension'
     | '/forgot-password'
     | '/login'
     | '/mcp'
@@ -273,6 +303,8 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/extension/analyze'
+    | '/api/public/extension/whoami'
     | '/api/public/github/authorize'
     | '/api/public/github/callback'
     | '/api/public/payments/webhook'
@@ -285,6 +317,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/docs'
     | '/download'
+    | '/extension'
     | '/forgot-password'
     | '/login'
     | '/mcp'
@@ -300,6 +333,8 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/extension/analyze'
+    | '/api/public/extension/whoami'
     | '/api/public/github/authorize'
     | '/api/public/github/callback'
     | '/api/public/payments/webhook'
@@ -312,6 +347,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/docs'
     | '/download'
+    | '/extension'
     | '/forgot-password'
     | '/login'
     | '/mcp'
@@ -327,6 +363,8 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/extension/analyze'
+    | '/api/public/extension/whoami'
     | '/api/public/github/authorize'
     | '/api/public/github/callback'
     | '/api/public/payments/webhook'
@@ -340,6 +378,7 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRoute
   DocsRoute: typeof DocsRoute
   DownloadRoute: typeof DownloadRoute
+  ExtensionRoute: typeof ExtensionRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
@@ -355,6 +394,8 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicExtensionAnalyzeRoute: typeof ApiPublicExtensionAnalyzeRoute
+  ApiPublicExtensionWhoamiRoute: typeof ApiPublicExtensionWhoamiRoute
   ApiPublicGithubAuthorizeRoute: typeof ApiPublicGithubAuthorizeRoute
   ApiPublicGithubCallbackRoute: typeof ApiPublicGithubCallbackRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
@@ -438,6 +479,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/extension': {
+      id: '/extension'
+      path: '/extension'
+      fullPath: '/extension'
+      preLoaderRoute: typeof ExtensionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/download': {
@@ -538,6 +586,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicGithubAuthorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/extension/whoami': {
+      id: '/api/public/extension/whoami'
+      path: '/api/public/extension/whoami'
+      fullPath: '/api/public/extension/whoami'
+      preLoaderRoute: typeof ApiPublicExtensionWhoamiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/extension/analyze': {
+      id: '/api/public/extension/analyze'
+      path: '/api/public/extension/analyze'
+      fullPath: '/api/public/extension/analyze'
+      preLoaderRoute: typeof ApiPublicExtensionAnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -548,6 +610,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRoute,
   DocsRoute: DocsRoute,
   DownloadRoute: DownloadRoute,
+  ExtensionRoute: ExtensionRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
@@ -564,6 +627,8 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicExtensionAnalyzeRoute: ApiPublicExtensionAnalyzeRoute,
+  ApiPublicExtensionWhoamiRoute: ApiPublicExtensionWhoamiRoute,
   ApiPublicGithubAuthorizeRoute: ApiPublicGithubAuthorizeRoute,
   ApiPublicGithubCallbackRoute: ApiPublicGithubCallbackRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,

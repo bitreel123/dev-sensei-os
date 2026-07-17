@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Jeradin</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        width: 380px;
+        min-height: 200px;
+        background: #0a0a0a;
+        color: #f5f5f5;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+      }
+      header {
+        display: flex; align-items: center; gap: 8px;
+        padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      }
+      header .dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: linear-gradient(135deg, #f97316, #f59e0b);
+        box-shadow: 0 0 12px rgba(249,115,22,0.6);
+      }
+      header .title { font-weight: 600; letter-spacing: 0.02em; }
+      header .badge {
+        margin-left: auto; font-family: ui-monospace, monospace;
+        font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+        color: rgba(255,255,255,0.5);
+      }
+      main { padding: 14px; }
+      button {
+        appearance: none; border: none; cursor: pointer; font: inherit;
+        background: #f97316; color: white; border-radius: 8px;
+        padding: 10px 14px; font-weight: 500; width: 100%;
+      }
+      button:hover { background: #ea580c; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      button.secondary { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); }
+      button.secondary:hover { background: rgba(255,255,255,0.14); }
+      input[type=text], textarea {
+        width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+        color: white; border-radius: 8px; padding: 8px 10px; font: inherit;
+        font-size: 12px; outline: none;
+      }
+      input[type=text]:focus, textarea:focus { border-color: rgba(255,255,255,0.3); }
+      .row { display: flex; gap: 8px; }
+      .row > * { flex: 1; }
+      .hint { color: rgba(255,255,255,0.5); font-size: 11px; margin-top: 8px; line-height: 1.5; }
+      .link { color: #f97316; text-decoration: none; cursor: pointer; }
+      .link:hover { text-decoration: underline; }
+      .muted { color: rgba(255,255,255,0.5); font-size: 11px; }
+      .status { padding: 6px 10px; border-radius: 6px; font-size: 11px; margin-bottom: 10px; }
+      .status.ok { background: rgba(16,185,129,0.1); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); }
+      .status.err { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+      .result { margin-top: 12px; max-height: 380px; overflow-y: auto; }
+      .result h4 {
+        font-family: ui-monospace, monospace; font-size: 9.5px; letter-spacing: 0.22em;
+        text-transform: uppercase; color: rgba(255,255,255,0.4); margin: 12px 0 4px;
+      }
+      .result h4:first-child { margin-top: 0; }
+      .result .summary { color: white; line-height: 1.5; }
+      .result .hypothesis {
+        background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+        padding: 8px 10px; border-radius: 8px; line-height: 1.5;
+      }
+      .result ul { margin: 0; padding-left: 18px; line-height: 1.7; }
+      .result li { color: rgba(255,255,255,0.85); }
+      .badge-pill {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: rgba(16,185,129,0.15); color: #6ee7b7;
+        font-family: ui-monospace, monospace; font-size: 10px;
+        padding: 2px 6px; border-radius: 4px; margin-left: 6px;
+      }
+      .err-item {
+        background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2);
+        padding: 6px 8px; border-radius: 6px; margin: 4px 0;
+        font-size: 11.5px; color: rgba(255,255,255,0.85);
+      }
+      .kv { font-family: ui-monospace, monospace; font-size: 10.5px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+      .spinner {
+        display: inline-block; width: 12px; height: 12px;
+        border: 2px solid rgba(255,255,255,0.2); border-top-color: white;
+        border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="dot"></span>
+      <span class="title">Jeradin</span>
+      <span class="badge" id="who">not paired</span>
+    </header>
+    <main id="main"></main>
+    <script src="popup.js"></script>
+  </body>
+</html>

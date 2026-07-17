@@ -96,7 +96,7 @@ export function SystemPanel() {
           if (pollRef.current) window.clearInterval(pollRef.current);
           pollRef.current = null;
           await refreshMine();
-          const r = await listMine();
+          const r = (await listMine()) as { repos: CodeRepoRow[] };
           const found = r.repos.find((x) => x.id === repoId);
           if (found) setActiveRepo(found);
           setBusy(false);

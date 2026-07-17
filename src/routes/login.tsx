@@ -1,10 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/jeradin/logo";
 import { motion } from "motion/react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
+
+function safeNext(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  return v.startsWith("/") && !v.startsWith("//") ? v : null;
+}
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -13,14 +18,32 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Sign in to your Jeradin workspace." },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({ next: safeNext(s.next) ?? undefined }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
+  const next = search.next ?? "/chat";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // If already signed in (e.g. after Google round-trip), forward to `next`.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!cancelled && data.session) window.location.href = next;
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") window.location.href = next;
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, [next]);
 
   async function signInEmail(e: React.FormEvent) {
     e.preventDefault();
@@ -29,13 +52,12 @@ function LoginPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Signed in");
-    navigate({ to: "/chat" });
+    window.location.href = next;
   }
 
   async function signInGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
+    const backTo = `${window.location.origin}/login?next=${encodeURIComponent(next)}`;
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: backTo });
     if (result.error) toast.error(result.error.message ?? "Sign in failed");
   }
 

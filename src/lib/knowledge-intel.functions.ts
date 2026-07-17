@@ -390,9 +390,12 @@ Rules:
 - For Mermaid, no code fences and keep node labels short.
 - Build the knowledge graph so the answer feels connected (Domain → Market → Competitors → Frameworks → Architecture → Security → Database → Backend → Deployment → Pricing → Growth). 8-16 nodes is a good size.`;
 
+    const { recallIntel, memoryPromptSuffix } = await import("./intel-memory.server");
+    const memTail = memoryPromptSuffix(await recallIntel(context.userId, "knowledge", 5));
     const userPrompt =
       `Question: ${data.question}` +
-      (data.projectContext ? `\n\nProject context:\n${data.projectContext}` : "");
+      (data.projectContext ? `\n\nProject context:\n${data.projectContext}` : "") +
+      memTail;
 
     const { text: claudeText } = await generateText({
       model: claude,
@@ -432,5 +435,18 @@ Rules:
       launch: partial.launch,
       graph: partial.graph,
     };
+
+    const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
+    await chargeAndRemember(context.userId, "knowledge", INTEL_COST.knowledge, {
+      title: data.question.slice(0, 200),
+      summary: summary?.slice(0, 800) ?? null,
+      payload: {
+        vision: partial.productDiscovery?.vision ?? null,
+        competitors: (partial.competitors ?? []).map((c) => c.name).slice(0, 6),
+        stack: (partial.recommendedStack ?? []).slice(0, 8),
+      },
+      tags: (partial.recommendedStack ?? []).slice(0, 5),
+    });
+
     return { report };
   });

@@ -460,5 +460,18 @@ Rules:
     );
 
     const report: GithubIntelReport = { repo: data.repo, ...parsed, summary: laymanSummary };
+
+    const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
+    await chargeAndRemember(context.userId, "repo", INTEL_COST.repo, {
+      title: `${data.repo}${data.focus ? ` — ${data.focus.slice(0, 80)}` : ""}`,
+      summary: laymanSummary?.slice(0, 800) ?? null,
+      payload: {
+        repo: data.repo,
+        risks: (parsed.risks ?? []).slice(0, 5).map((r) => r.title),
+        regression: parsed.regression?.description ?? null,
+      },
+      tags: [data.repo],
+    });
+
     return { report };
   });

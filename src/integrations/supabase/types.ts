@@ -519,6 +519,42 @@ export type Database = {
         }
         Relationships: []
       }
+      intel_memory: {
+        Row: {
+          created_at: string
+          id: string
+          mode: string
+          payload: Json
+          summary: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mode: string
+          payload?: Json
+          summary?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mode?: string
+          payload?: Json
+          summary?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           category: string | null
@@ -686,6 +722,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      deduct_credit: {
+        Args: { p_amount: number; p_env?: string; p_user_id: string }
+        Returns: {
+          balance: number
+          ok: boolean
+        }[]
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

@@ -342,6 +342,15 @@ export const analyzeSystem = createServerFn({ method: "POST" })
       files,
       data.projectHint ?? "",
     );
+
+    const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
+    await chargeAndRemember(context.userId, "system", INTEL_COST.system, {
+      title: analysis.projectSummary?.slice(0, 200) || "System analysis",
+      summary: analysis.laymanOverview?.slice(0, 800) ?? null,
+      payload: { stack: analysis.stack, moduleCount: analysis.modules?.length ?? 0, source: data.source, repo: data.repo ?? null },
+      tags: analysis.stack?.slice(0, 6) ?? [],
+    });
+
     return { analysis, filesAnalyzed: files.length };
   });
 

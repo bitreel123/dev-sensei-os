@@ -356,41 +356,84 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
         },
       }),
     };
-          if (!t) return { error: "file not found" };
-          return { path, content: t.slice(0, 20_000) };
-        },
-      }),
-    };
 
     // ---------- Claude Sonnet agent loop ----------
     const anthropic = createAnthropic({ apiKey: anthropicKey });
     const claude = anthropic("claude-sonnet-4-5");
 
-    const systemPrompt = `You are a senior engineer auditing a GitHub repository for a developer who may not be highly technical.
+    const systemPrompt = `You are a senior engineer performing REPO INTELLIGENCE on a GitHub repository. Your job is to understand how the software has evolved over time — commits, PRs, branches, releases, contributors, regressions — and explain it in plain English.
 
-You have tools to read repo metadata, PRs, commits, issues, dependencies, and specific files. Call tools 4-10 times to build a complete picture BEFORE answering. Always call get_repo_meta first, then dependencies, then PRs + commits + issues, then read 1-3 key files if needed.
+Use the available tools aggressively. Recommended sequence (5-15 tool calls):
+1. get_repo_meta
+2. get_dependencies
+3. list_commits, list_pull_requests, list_issues
+4. list_branches, list_releases, list_contributors
+5. Read 1-3 key files with read_file if needed (auth, main entry, config)
+6. get_commit_detail on 1-3 suspicious commits (recent breaking changes, regressions)
+7. compare_branches when the user asks about diffs between branches
+8. get_pr_files for high-impact PRs
 
-When done, return STRICT JSON only (no markdown fences, no prose outside JSON):
+If the user's focus mentions a regression / "worked last week" / bug, actively hunt for the introducing commit via list_commits + get_commit_detail on likely candidates.
+
+When done, return STRICT JSON only (no markdown fences, no prose outside JSON). Every field is optional except summary, activityScore, risks, opportunities, patterns, dependencyNotes, glossary — fill the new sections whenever the tool data supports them:
 {
-  "summary": string,                       // 2-3 sentences in plain English
-  "activityScore": number,                 // 0-100. Recent commits/PRs = higher.
-  "risks": [
-    { "severity":"high"|"medium"|"low", "title":string, "detail":string, "where":string|null }
+  "summary": string,
+  "activityScore": number,
+  "risks": [{ "severity":"high"|"medium"|"low", "title":string, "detail":string, "where":string|null }],
+  "opportunities": [{ "title":string, "detail":string, "effort":"small"|"medium"|"large" }],
+  "patterns": [{ "name":string, "description":string, "examples":string[] }],
+  "dependencyNotes": [{ "name":string, "version":string, "note":string }],
+  "glossary": [{ "term":string, "meaning":string }],
+
+  "commitIntel": [
+    { "sha":string, "title":string, "what":string, "why":string,
+      "risk":"high"|"medium"|"low", "files":string[], "breaking":boolean,
+      "date":string|null, "author":string|null }
+  ],                                     // 4-8 most meaningful recent commits (not just newest)
+  "prIntel": [
+    { "number":number, "title":string, "purpose":string, "architectureImpact":string,
+      "risks":string[], "reviewSuggestions":string[], "missingTests":boolean,
+      "author":string|null, "url":string|null }
+  ],                                     // 3-6 notable PRs
+  "evolution": [
+    { "topic":string, "timeline":[{ "version":string, "change":string, "when":string|null }] }
+  ],                                     // 1-3 threads (e.g. Auth: v1 → JWT → OAuth → Session → RBAC)
+  "regression": {                        // null if nothing suspected
+    "description":string, "likelyCommit":string|null, "files":string[],
+    "confidence":number, "reasoning":string
+  } | null,
+  "contributors": [
+    { "area":string, "owner":string, "share":string }
+  ],                                     // e.g. { area:"Payments", owner:"john", share:"64%" }
+  "branches": [
+    { "branch":string, "vs":string, "summary":string, "differences":string[] }
+  ],                                     // only when compare data was collected
+  "releases": [
+    { "version":string, "newApis":number, "breakingChanges":number,
+      "databaseChanges":number, "migrationRequired":boolean,
+      "risk":"high"|"medium"|"low", "notes":string }
   ],
-  "opportunities": [
-    { "title":string, "detail":string, "effort":"small"|"medium"|"large" }
-  ],
-  "patterns": [
-    { "name":string, "description":string, "examples":string[] }
-  ],
-  "dependencyNotes": [ { "name":string, "version":string, "note":string } ],
-  "glossary": [ { "term":string, "meaning":string } ]   // define every abbreviation you use
+  "health": {
+    "overall":number,
+    "commits":"healthy"|"needs attention"|"poor",
+    "reviews":"healthy"|"needs attention"|"poor",
+    "testing":"healthy"|"needs attention"|"poor",
+    "security":"healthy"|"needs attention"|"poor",
+    "documentation":"healthy"|"needs attention"|"poor"
+  },
+  "historical": [
+    { "question":string, "answer":string, "commit":string|null, "pr":string|null,
+      "date":string|null, "reason":string|null }
+  ],                                     // 0-3 historical questions answered from the timeline
+  "memory": string[]                     // 3-6 durable notes: why architecture changed, prior bugs, prior fixes
 }
 
 Rules:
-- Plain English. Assume the reader is smart but not deeply technical.
-- Every finding is concrete and traceable (name PRs, files, or dep versions).
-- Include 3-6 risks, 3-6 opportunities, 2-4 patterns.`;
+- Plain English throughout. Assume a smart but non-deeply-technical reader.
+- Every finding is traceable (SHA, PR#, file path, dep version).
+- Include 3-6 risks, 3-6 opportunities, 2-4 patterns.
+- For regressions: only set "regression" when evidence supports it; state confidence honestly.
+- Never invent SHAs or PR numbers you did not observe via tools.`;
 
     const userPrompt =
       `Repository: ${data.repo}` +

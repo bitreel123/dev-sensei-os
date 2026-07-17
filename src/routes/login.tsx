@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/jeradin/logo";
 import { motion } from "motion/react";
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const navigate = useNavigate();
+  
   const search = Route.useSearch();
   const next = search.next ?? "/chat";
   const [email, setEmail] = useState("");

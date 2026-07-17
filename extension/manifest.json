@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Jeradin — Screen Intelligence",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Capture any tab and get an instant AI-powered debugging report from your Jeradin workspace.",
-  "permissions": ["activeTab", "storage", "tabs"],
+  "permissions": ["activeTab", "storage", "tabs", "scripting"],
   "host_permissions": [
     "https://jeradin.com/*",
     "https://*.lovable.app/*"
@@ -11,18 +11,16 @@
   "action": {
     "default_popup": "popup.html",
     "default_title": "Jeradin — capture & analyze",
-    "default_icon": {
-      "16": "icon.png",
-      "48": "icon.png",
-      "128": "icon.png"
+    "default_icon": { "16": "icon.png", "48": "icon.png", "128": "icon.png" }
+  },
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://jeradin.com/*", "https://*.lovable.app/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
     }
-  },
-  "background": {
-    "service_worker": "background.js"
-  },
-  "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
-  }
+  ],
+  "icons": { "16": "icon.png", "48": "icon.png", "128": "icon.png" }
 }

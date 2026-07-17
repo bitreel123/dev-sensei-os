@@ -50,9 +50,22 @@ export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
 
+    const { chargeAndRemember, recallIntel, memoryPromptSuffix, INTEL_COST } =
+      await import("./intel-memory.server");
+    const memoryTail = memoryPromptSuffix(await recallIntel(context.userId, "screen", 3));
+
     // -------- FAST PATH (default): single Gemini call, 2-5s --------
     if (data.mode === "fast") {
-      const { analysis, fix } = await runFastScreenIntel(geminiKey, data.imageBase64, data.note);
+      const noteWithMemory = memoryTail
+        ? `${data.note ?? ""}${memoryTail}`
+        : data.note;
+      const { analysis, fix } = await runFastScreenIntel(geminiKey, data.imageBase64, noteWithMemory);
+      await chargeAndRemember(context.userId, "screen", INTEL_COST.screen, {
+        title: analysis.summary?.slice(0, 200) || "Screen analysis",
+        summary: fix.plainExplanation?.slice(0, 800) ?? null,
+        payload: { hypothesis: analysis.hypothesis, category: analysis.category, severity: analysis.severity },
+        tags: analysis.category ? [analysis.category] : [],
+      });
       return { analysis: analysis as ScreenAnalysis, fix };
     }
 
@@ -160,6 +173,12 @@ Additional fields for this specific analyst:
       fix = normalizeFixPlan(JSON.parse(m[0]) as FixPlan);
     }
 
+    await chargeAndRemember(context.userId, "screen", INTEL_COST.screen_deep, {
+      title: analysis.summary?.slice(0, 200) || "Deep screen analysis",
+      summary: fix.plainExplanation?.slice(0, 800) ?? null,
+      payload: { hypothesis: analysis.hypothesis, activeRepo },
+      tags: ["deep", ...(analysis.category ? [analysis.category] : [])],
+    });
     return { analysis, fix };
   });
 

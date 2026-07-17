@@ -435,10 +435,13 @@ Rules:
 - For regressions: only set "regression" when evidence supports it; state confidence honestly.
 - Never invent SHAs or PR numbers you did not observe via tools.`;
 
+    const { recallIntel, memoryPromptSuffix } = await import("./intel-memory.server");
+    const memTail = memoryPromptSuffix(await recallIntel(context.userId, "repo", 3));
     const userPrompt =
       `Repository: ${data.repo}` +
       (data.focus ? `\nExtra focus from the user: ${data.focus}` : "") +
-      `\n\nAudit it now.`;
+      `\n\nAudit it now.` +
+      memTail;
 
     const { text: claudeText } = await generateText({
       model: claude,
@@ -460,5 +463,18 @@ Rules:
     );
 
     const report: GithubIntelReport = { repo: data.repo, ...parsed, summary: laymanSummary };
+
+    const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
+    await chargeAndRemember(context.userId, "repo", INTEL_COST.repo, {
+      title: `${data.repo}${data.focus ? ` — ${data.focus.slice(0, 80)}` : ""}`,
+      summary: laymanSummary?.slice(0, 800) ?? null,
+      payload: {
+        repo: data.repo,
+        risks: (parsed.risks ?? []).slice(0, 5).map((r) => r.title),
+        regression: parsed.regression?.description ?? null,
+      },
+      tags: [data.repo],
+    });
+
     return { report };
   });

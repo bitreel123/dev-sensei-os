@@ -89,6 +89,22 @@ export type FixPlan = {
   confidence?: number | null;            // 0-100
   impact?: ImpactArea[];                 // areas affected if unfixed
   learnMode?: string | null;             // teaching paragraph — the "why", not just the fix
+  // Fast-mode richer fields (all optional so deep-dive path stays valid)
+  errorTitle?: string | null;
+  errorCategory?: string | null;         // broader: Syntax, Runtime, Build, TypeScript, React, Network, API, Database, Security, Performance, etc.
+  rootCause?: string | null;
+  affectedFile?: string | null;
+  affectedComponent?: string | null;     // function/component/class
+  suspectedCodeRegion?: string | null;   // the highlighted snippet from the screenshot
+  primaryFix?: string | null;
+  alternativeFix?: string | null;
+  bestPractice?: string | null;
+  difficulty?: "Easy" | "Medium" | "Hard" | null;
+  estimatedFixTime?: string | null;      // e.g. "2 minutes", "30 minutes"
+  sideEffects?: string[];                // possible side effects of applying the fix
+  nextDebuggingStep?: string | null;
+  errorLinks?: string | null;            // description of how visible errors relate
+  confidenceExplanation?: string | null;
 };
 
 

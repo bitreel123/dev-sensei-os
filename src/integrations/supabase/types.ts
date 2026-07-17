@@ -14,6 +14,358 @@ export type Database = {
   }
   public: {
     Tables: {
+      code_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          embedding: string | null
+          file_id: string
+          id: string
+          repo_id: string
+          user_id: string
+        }
+        Insert: {
+          chunk_index: number
+          content: string
+          created_at?: string
+          embedding?: string | null
+          file_id: string
+          id?: string
+          repo_id: string
+          user_id: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          file_id?: string
+          id?: string
+          repo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_chunks_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "code_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "code_chunks_repo_id_fkey"
+            columns: ["repo_id"]
+            isOneToOne: false
+            referencedRelation: "code_repos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_edges: {
+        Row: {
+          created_at: string
+          dst_external: string | null
+          dst_file_id: string | null
+          dst_symbol: string | null
+          id: string
+          kind: string
+          repo_id: string
+          src_file_id: string | null
+          src_symbol: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dst_external?: string | null
+          dst_file_id?: string | null
+          dst_symbol?: string | null
+          id?: string
+          kind: string
+          repo_id: string
+          src_file_id?: string | null
+          src_symbol?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dst_external?: string | null
+          dst_file_id?: string | null
+          dst_symbol?: string | null
+          id?: string
+          kind?: string
+          repo_id?: string
+          src_file_id?: string | null
+          src_symbol?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_edges_dst_file_id_fkey"
+            columns: ["dst_file_id"]
+            isOneToOne: false
+            referencedRelation: "code_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "code_edges_repo_id_fkey"
+            columns: ["repo_id"]
+            isOneToOne: false
+            referencedRelation: "code_repos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "code_edges_src_file_id_fkey"
+            columns: ["src_file_id"]
+            isOneToOne: false
+            referencedRelation: "code_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_files: {
+        Row: {
+          created_at: string
+          embedding: string | null
+          id: string
+          language: string | null
+          path: string
+          repo_id: string
+          sha: string | null
+          size: number | null
+          summary: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          language?: string | null
+          path: string
+          repo_id: string
+          sha?: string | null
+          size?: number | null
+          summary?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          language?: string | null
+          path?: string
+          repo_id?: string
+          sha?: string | null
+          size?: number | null
+          summary?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_files_repo_id_fkey"
+            columns: ["repo_id"]
+            isOneToOne: false
+            referencedRelation: "code_repos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_repos: {
+        Row: {
+          created_at: string
+          default_branch: string
+          edge_count: number
+          file_count: number
+          full_name: string
+          id: string
+          last_scanned_at: string | null
+          last_scanned_sha: string | null
+          symbol_count: number
+          updated_at: string
+          user_id: string
+          webhook_id: number | null
+          webhook_secret: string | null
+        }
+        Insert: {
+          created_at?: string
+          default_branch?: string
+          edge_count?: number
+          file_count?: number
+          full_name: string
+          id?: string
+          last_scanned_at?: string | null
+          last_scanned_sha?: string | null
+          symbol_count?: number
+          updated_at?: string
+          user_id: string
+          webhook_id?: number | null
+          webhook_secret?: string | null
+        }
+        Update: {
+          created_at?: string
+          default_branch?: string
+          edge_count?: number
+          file_count?: number
+          full_name?: string
+          id?: string
+          last_scanned_at?: string | null
+          last_scanned_sha?: string | null
+          symbol_count?: number
+          updated_at?: string
+          user_id?: string
+          webhook_id?: number | null
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
+      code_scans: {
+        Row: {
+          error: string | null
+          files_done: number
+          files_total: number
+          finished_at: string | null
+          id: string
+          phase: string | null
+          repo_id: string
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          error?: string | null
+          files_done?: number
+          files_total?: number
+          finished_at?: string | null
+          id?: string
+          phase?: string | null
+          repo_id: string
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          error?: string | null
+          files_done?: number
+          files_total?: number
+          finished_at?: string | null
+          id?: string
+          phase?: string | null
+          repo_id?: string
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_scans_repo_id_fkey"
+            columns: ["repo_id"]
+            isOneToOne: false
+            referencedRelation: "code_repos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_snapshots: {
+        Row: {
+          edge_count: number
+          file_count: number
+          id: string
+          repo_id: string
+          sha: string
+          symbol_count: number
+          taken_at: string
+          user_id: string
+        }
+        Insert: {
+          edge_count?: number
+          file_count?: number
+          id?: string
+          repo_id: string
+          sha: string
+          symbol_count?: number
+          taken_at?: string
+          user_id: string
+        }
+        Update: {
+          edge_count?: number
+          file_count?: number
+          id?: string
+          repo_id?: string
+          sha?: string
+          symbol_count?: number
+          taken_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_snapshots_repo_id_fkey"
+            columns: ["repo_id"]
+            isOneToOne: false
+            referencedRelation: "code_repos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_symbols: {
+        Row: {
+          created_at: string
+          docstring: string | null
+          end_line: number | null
+          file_id: string
+          id: string
+          kind: string
+          name: string
+          repo_id: string
+          signature: string | null
+          start_line: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          docstring?: string | null
+          end_line?: number | null
+          file_id: string
+          id?: string
+          kind: string
+          name: string
+          repo_id: string
+          signature?: string | null
+          start_line?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          docstring?: string | null
+          end_line?: number | null
+          file_id?: string
+          id?: string
+          kind?: string
+          name?: string
+          repo_id?: string
+          signature?: string | null
+          start_line?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_symbols_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "code_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "code_symbols_repo_id_fkey"
+            columns: ["repo_id"]
+            isOneToOne: false
+            referencedRelation: "code_repos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -347,6 +699,16 @@ export type Database = {
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
+      }
+      match_code_chunks: {
+        Args: { p_limit?: number; p_query: string; p_repo_id: string }
+        Returns: {
+          chunk_id: string
+          content: string
+          file_id: string
+          path: string
+          similarity: number
+        }[]
       }
       move_to_dlq: {
         Args: {

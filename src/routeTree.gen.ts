@@ -34,6 +34,7 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicGithubWebhookRouteImport } from './routes/api/public/github/webhook'
 import { Route as ApiPublicGithubCallbackRouteImport } from './routes/api/public/github.callback'
 import { Route as ApiPublicGithubAuthorizeRouteImport } from './routes/api/public/github.authorize'
 import { Route as ApiPublicExtensionWhoamiRouteImport } from './routes/api/public/extension/whoami'
@@ -169,6 +170,11 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicGithubWebhookRoute = ApiPublicGithubWebhookRouteImport.update({
+  id: '/api/public/github/webhook',
+  path: '/api/public/github/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicGithubCallbackRoute = ApiPublicGithubCallbackRouteImport.update({
   id: '/api/public/github/callback',
   path: '/api/public/github/callback',
@@ -221,6 +227,7 @@ export interface FileRoutesByFullPath {
   '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
   '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
+  '/api/public/github/webhook': typeof ApiPublicGithubWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
@@ -252,6 +259,7 @@ export interface FileRoutesByTo {
   '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
   '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
+  '/api/public/github/webhook': typeof ApiPublicGithubWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
@@ -284,6 +292,7 @@ export interface FileRoutesById {
   '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
   '/api/public/github/callback': typeof ApiPublicGithubCallbackRoute
+  '/api/public/github/webhook': typeof ApiPublicGithubWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
@@ -317,6 +326,7 @@ export interface FileRouteTypes {
     | '/api/public/extension/whoami'
     | '/api/public/github/authorize'
     | '/api/public/github/callback'
+    | '/api/public/github/webhook'
     | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
@@ -348,6 +358,7 @@ export interface FileRouteTypes {
     | '/api/public/extension/whoami'
     | '/api/public/github/authorize'
     | '/api/public/github/callback'
+    | '/api/public/github/webhook'
     | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
   id:
@@ -379,6 +390,7 @@ export interface FileRouteTypes {
     | '/api/public/extension/whoami'
     | '/api/public/github/authorize'
     | '/api/public/github/callback'
+    | '/api/public/github/webhook'
     | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
@@ -411,6 +423,7 @@ export interface RootRouteChildren {
   ApiPublicExtensionWhoamiRoute: typeof ApiPublicExtensionWhoamiRoute
   ApiPublicGithubAuthorizeRoute: typeof ApiPublicGithubAuthorizeRoute
   ApiPublicGithubCallbackRoute: typeof ApiPublicGithubCallbackRoute
+  ApiPublicGithubWebhookRoute: typeof ApiPublicGithubWebhookRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
@@ -592,6 +605,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/github/webhook': {
+      id: '/api/public/github/webhook'
+      path: '/api/public/github/webhook'
+      fullPath: '/api/public/github/webhook'
+      preLoaderRoute: typeof ApiPublicGithubWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/github/callback': {
       id: '/api/public/github/callback'
       path: '/api/public/github/callback'
@@ -652,6 +672,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicExtensionWhoamiRoute: ApiPublicExtensionWhoamiRoute,
   ApiPublicGithubAuthorizeRoute: ApiPublicGithubAuthorizeRoute,
   ApiPublicGithubCallbackRoute: ApiPublicGithubCallbackRoute,
+  ApiPublicGithubWebhookRoute: ApiPublicGithubWebhookRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }

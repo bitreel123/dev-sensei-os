@@ -1,84 +1,97 @@
+# System Intelligence — Phases 1 + 2 + 3
 
-## Scope
+Turn the current one-shot summarizer into a **living digital twin** of the codebase: a persistent graph in Postgres, kept in sync with GitHub, queried by 10 specialized reasoning modes.
 
-Three tightly related changes to `/chat`. All work stays in that route + the three server functions + the sidebar. No new tables, no new routes.
-
----
-
-## 1. Agentic backend-debugging upgrade
-
-New shared capability across `screen-intel`, `system-intel`, and `github-intel` (renamed from repo intel in UI). All three become **two-role agent pipelines** so results are consistent.
-
-**Role split (same for all three):**
-
-- **Gemini 3 Pro** = *Analyst.* Reads raw evidence (screenshot / repo files / commits) and produces a structured "diagnosis" JSON: what's broken, in which category (runtime, API, DB, auth, env, deps, perf, deployment, log root-cause), suspect files, evidence snippets, severity. Cheap, huge context, strong multimodal.
-- **Claude Sonnet 4.5** = *Fixer.* Takes Gemini's diagnosis as input and, with tool access (`search_github_repos`, `search_github_code`, `read_repo_file`), produces a step-by-step fix plan: file-by-file suggestions, and — for each step — an optional `codeAfter` block only when the user won't be able to write it themselves. Uses Vercel AI SDK `generateText` + `tool()` + `stopWhen: stepCountIs(50)`.
-
-**Backend-debugging taxonomy** (added to Gemini prompt + Claude prompt so both know the 9 categories):
-runtime · API · database · auth · env/config · dependencies · performance · logs · deployment.
-
-Each server fn returns:
-```
-{ diagnosis: { category, summary, evidence[], suspectFiles[], severity },
-  fix: { plainExplanation, whyItHappened, steps[{file, change, codeAfter?}], references[] } }
-```
-
-**Files touched:**
-- `src/lib/screen-intel.functions.ts` — swap Gemini model to `google/gemini-3-pro-image`… actually keep chat model `google/gemini-3.1-pro-preview` (already used), extend prompt with the 9-category taxonomy; hand off to Claude via AI SDK agent loop with GitHub tools.
-- `src/lib/system-intel.functions.ts` — add Gemini pre-pass (analyst) before Claude (fixer). Currently Claude does both; split them.
-- `src/lib/github-intel.functions.ts` — same split.
-
-Shared helper `src/lib/intel-shared.ts` — the 9-category taxonomy string, Zod schemas, GitHub tool definitions, so all three fns stay in sync.
+I'll ship all three phases in one continuous build. Phase 1 lays the foundation; Phase 2 makes it durable and incremental; Phase 3 exposes it as the 10 modes you described.
 
 ---
 
-## 2. Sidebar cleanup
+## Phase 1 — Real ingestion & graph storage
 
-`src/components/jeradin/chat-sidebar.tsx`: delete the three `SideItem` entries for System / Knowledge / GitHub Intelligence (lines 64-66) and drop unused `Brain`, `Library`, `Github` imports. The routes stay reachable via the new mobile picker + direct URL.
+**Goal:** replace the 60-file cap + text dump with a real parsed graph, stored in your database.
 
----
+**New database tables** (per user + per repo, RLS scoped to `auth.uid()`):
+- `code_repos` — one row per connected repo (`owner/name`, default branch, last synced SHA, last full-scan time).
+- `code_files` — every ingested file (path, language, size, SHA, summary, embedding).
+- `code_symbols` — functions / classes / exports / routes / tables extracted via AST (name, kind, file_id, line range, signature, docstring, embedding).
+- `code_edges` — typed relationships between symbols/files: `imports`, `calls`, `renders`, `reads_table`, `writes_table`, `defines_route`, `depends_on_package`.
+- `code_chunks` — semantic chunks of file content (for RAG retrieval), pgvector-embedded.
 
-## 3. Mobile chat UI — Claude-style bottom sheet
+All tables get RLS: users can only see their own rows. `pgvector` enabled; HNSW index on embeddings.
 
-Rebuild `/chat` mobile layout to match the uploaded screenshots.
+**Ingestion pipeline** (new `src/lib/code-graph/*.server.ts`):
+1. Walk the full repo tree via GitHub API — no 60-file cap. Skip `node_modules`, build output, lockfiles, binaries.
+2. For each source file: parse with a lightweight regex/AST pass (TS/JS/Python/Go first, then Java/Ruby/PHP) to extract imports, exports, function/class definitions, JSX components, DB table references, route definitions.
+3. Chunk file content (~1000 chars, 100 overlap) and embed via `google/gemini-embedding-001`.
+4. Insert `code_files` → `code_symbols` → `code_edges` → `code_chunks` in a single transaction per file.
+5. Store `last_scanned_sha` on `code_repos` when done.
 
-**Mobile navbar (top):**
-- Left: hamburger icon → opens sidebar as a slide-in drawer.
-- Center: empty.
-- Right: ghost-face avatar icon → account menu.
-- Below navbar: "Get more with Jeradin Pro / Upgrade" thin banner (link to `/pricing`).
-
-**Empty state (center):**
-- Small orange spark/asterisk icon (reuse `Sparkles` from lucide, orange).
-- Greeting: `"{firstName} returns!"` in serif (`Instrument Serif`), matching Claude's typography.
-
-**Composer (bottom, pill-shape):**
-- Rounded 2xl container, dark surface.
-- Placeholder: "Chat with Jeradin…"
-- Row below input: `[+]` attach button · **capability pill** (shows current mode name, e.g. "Screen Intelligence") · mic button · send button.
-- Tapping the **capability pill** opens a **bottom sheet** (`Sheet` from `@/components/ui/sheet` side="bottom") titled **"Select capability"** listing:
-  - Screen Intelligence — "See your screen, diagnose bugs" ✓
-  - System Intelligence — "Map your whole codebase"
-  - Knowledge Intelligence — "Find repos, APIs, models"
-  - GitHub Intelligence — "Analyze commits & PRs"
-  Each row: title + one-line description, checkmark on current selection, tap = select + close sheet.
-
-**Desktop unchanged** — keep the existing 4-tile grid + sidebar. All new mobile UI lives inside `md:hidden` / new `<div className="md:hidden">` blocks; the current desktop block gets `hidden md:flex`.
+**Trigger:** the existing "Analyze system" button now enqueues a background scan (server function returns immediately with a `scan_id`); UI polls a small `scan_status` row for progress.
 
 ---
 
-## Technical notes
+## Phase 2 — Persistent memory & incremental sync
 
-- Vercel AI SDK stays. Agent loop pattern: `generateText({ model: claude, tools, stopWhen: stepCountIs(50) })` where tools' `execute` calls GitHub REST.
-- No schema bounds in tool inputSchemas (per AI SDK rules) — only types + descriptions.
-- Gemini call stays raw `fetch` to gateway (already works). Claude call moves to AI SDK with `createAnthropic`.
-- Selected capability is stored in `useState<CapabilityKey>("screen")`; drives both the pill label and which server fn `send()` triggers.
-- No changes to auth, DB, or routes.
+**Goal:** the graph survives across sessions and stays fresh without re-scanning everything.
+
+- **Cache-first reads:** every mode reads from the stored graph, not GitHub, unless the graph is stale.
+- **Incremental updates:** a `POST /api/public/github/webhook` route receives `push` events. For each changed file in the diff:
+  - Delete its old symbols/edges/chunks.
+  - Re-parse and re-embed only that file.
+  - Update `code_repos.last_scanned_sha`.
+- **Manual "Re-sync" button** on the System panel for repos without webhook access — diffs `last_scanned_sha…HEAD` and updates changed files only.
+- **Snapshot history:** a lightweight `code_snapshots` table (repo_id, sha, taken_at, node_count, edge_count) so we can later diff snapshots for change intelligence.
+
+Result: after the first scan, every subsequent question is answered in <2s from local Postgres + a targeted LLM call over retrieved context — no more full re-reads.
 
 ---
 
-## Out of scope (call out if you want them next)
+## Phase 3 — The 10 intelligence modes
 
-- Actually wiring System/Knowledge/GitHub runs from the mobile composer (currently only Screen runs end-to-end from `/chat`). I'll leave those pill selections wired to open their dedicated routes on tap of Send, unless you want inline execution.
-- Sidebar drawer animation polish.
-- Renaming the `/github-intelligence` route to `/repo-intelligence`.
+A single mode-router server function: `runIntelMode({ repo, mode, question, focusPath? })`.
+
+Each mode is a small strategy: it queries the graph in a mode-specific way, retrieves the top-K relevant chunks/symbols via embedding + graph traversal, and calls the LLM with a mode-specific system prompt returning structured JSON.
+
+| # | Mode | What it queries | What it returns |
+|---|------|-----------------|-----------------|
+| 1 | **Architecture** | files + edges grouped by folder/layer | Mermaid graph + layer summary |
+| 2 | **Dependency** | `depends_on_package` edges + `imports` chains | Dep tree, unused deps, version risks |
+| 3 | **Impact** | reverse-BFS on `calls`/`imports` from `focusPath` | "If you change X, these Y files/tests break" |
+| 4 | **Data Flow** | `reads_table`/`writes_table` edges | Which endpoints touch which tables, w/ Mermaid |
+| 5 | **Business Logic** | symbols tagged as route/handler + their call trees | Plain-English feature map |
+| 6 | **Knowledge** | free-form RAG over `code_chunks` | ChatGPT-style Q&A grounded in the repo |
+| 7 | **Security** | routes + auth middleware presence + secret refs | Findings list (severity, file, line, fix) |
+| 8 | **Performance** | N+1 patterns, missing indexes, large bundles | Hotspot list |
+| 9 | **Technical Debt** | TODO/FIXME, dead exports, cyclomatic complexity | Debt score + top offenders |
+| 10 | **Refactoring** | duplicate symbol signatures, oversized files | Concrete refactor suggestions |
+
+Modes 1-6 ship fully; 7-10 ship with the graph queries wired and a v1 prompt (they'll get sharper as we tune them).
+
+**UI (System panel in the dashboard):**
+- Repo picker (existing) → "Scan repo" button → progress bar.
+- After scan: 10 mode chips. Selecting one shows a mode-specific input (question, or a file picker for Impact).
+- Results render in the same ChatGPT-style block already used for Screen Intelligence, with Mermaid diagrams inline where applicable.
+
+---
+
+## Technical notes (for reference)
+
+- **Parsing:** start with regex-based extractors per language (fast, Worker-safe). Tree-sitter WASM is a later upgrade — its Worker bundling is fragile and not needed for v1 signal quality.
+- **Embeddings:** `google/gemini-embedding-001` (3072-dim, halfvec-indexed).
+- **LLM:** Claude Sonnet 4.5 for mode reasoning (already wired via `ANTHROPIC_API_KEY`); Gemini stays reserved for Screen Intelligence.
+- **Background scans:** implemented as a server function that streams progress into a `scan_status` row; no separate queue infrastructure needed for v1.
+- **Webhook security:** HMAC-verify GitHub's `X-Hub-Signature-256` before any DB write. New `GITHUB_WEBHOOK_SECRET` will be requested via `add_secret`.
+- **No client leakage:** all graph queries and LLM calls happen in `*.functions.ts` / `*.server.ts`; `supabaseAdmin` loaded inside handlers only.
+
+---
+
+## Order of execution
+
+1. Migration: `pgvector` + all 6 new tables + RLS + GRANTs.
+2. Ingestion pipeline + scan server function + progress polling.
+3. Webhook route + incremental updater + manual re-sync.
+4. Mode router + 10 mode implementations.
+5. Rewire the System panel UI to the new flow.
+6. End-to-end test on a real repo.
+
+Ready to start on the migration when you approve.

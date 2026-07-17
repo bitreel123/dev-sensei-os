@@ -23,7 +23,7 @@ export default defineTool({
     const { error } = await supabase
       .from("github_connections")
       .update({ active_repo: repo })
-      .eq("user_id", ctx.getUserId());
+      .eq("user_id", ctx.getUserId()!);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     return {
       content: [{ type: "text", text: repo ? `Active repo set to ${repo}` : "Active repo cleared" }],

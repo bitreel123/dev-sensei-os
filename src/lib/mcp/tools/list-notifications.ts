@@ -19,7 +19,7 @@ export default defineTool({
     let q = supabase
       .from("notifications")
       .select("*")
-      .eq("user_id", ctx.getUserId())
+      .eq("user_id", ctx.getUserId()!)
       .order("created_at", { ascending: false })
       .limit(limit ?? 20);
     if (unread_only) q = q.is("read_at", null);

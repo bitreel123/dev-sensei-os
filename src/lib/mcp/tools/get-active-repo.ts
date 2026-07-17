@@ -15,7 +15,7 @@ export default defineTool({
     const { data, error } = await supabase
       .from("github_connections")
       .select("active_repo, login")
-      .eq("user_id", ctx.getUserId())
+      .eq("user_id", ctx.getUserId()!)
       .maybeSingle();
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     const active = data?.active_repo ?? null;

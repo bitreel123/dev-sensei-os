@@ -15,13 +15,130 @@ export type KnowledgeResource = {
   tags?: string[];
 };
 
+export type KnowledgeCompetitor = {
+  name: string;
+  url?: string;
+  positioning?: string;
+  strengths: string[];
+  weaknesses: string[];
+  pricing?: string;
+  gap?: string; // opportunity vs. this competitor
+};
+
+export type KnowledgeTradeoff = {
+  choice: string;             // e.g. "Next.js"
+  why: string;                // one-sentence rationale
+  alternatives?: string[];    // e.g. ["Remix", "SvelteKit"]
+  tradeoffs?: string;         // when NOT to pick this
+};
+
+export type KnowledgeGraphNode = {
+  id: string;
+  label: string;
+  category:
+    | "domain" | "market" | "competitor" | "framework"
+    | "architecture" | "security" | "database" | "backend"
+    | "deployment" | "pricing" | "growth";
+};
+
+export type KnowledgeGraphEdge = { from: string; to: string; relation: string };
+
 export type KnowledgeReport = {
   question: string;
-  laymanSummary: string; // Gemini-written plain-English overview
+  laymanSummary: string;
+
+  // Product Discovery
+  productDiscovery?: {
+    clarifyingQuestions: string[];
+    vision: string;
+    targetUsers: string[];
+    problem: string;
+    solution: string;
+    businessModel: string;
+    mvpRoadmap: string[];
+  };
+
+  // Market Intelligence
+  marketIntelligence?: {
+    trends: string[];
+    unsolvedProblems: string[];
+    sources: Array<{ title: string; url: string; kind: string }>;
+  };
+
+  // Competitors
+  competitors?: KnowledgeCompetitor[];
+
+  // Architecture
+  architecture?: {
+    folderStructure?: string;   // ascii tree
+    repoLayout?: string;
+    databaseSchema?: string;    // brief description or dbml
+    apiStyle?: string;          // REST / GraphQL / RPC
+    monolithVsMicroservices?: string;
+    auth?: string;
+    queues?: string;
+    caching?: string;
+    deployment?: string;
+    mermaid?: string;           // architecture diagram
+  };
+
+  // Technology choices with tradeoffs
+  technologyChoices?: KnowledgeTradeoff[];
+
+  // Security
+  security?: {
+    recommendations: Array<{ title: string; why: string }>;
+    compliance?: string[];
+  };
+
+  // System Design diagrams (Mermaid)
+  systemDesign?: {
+    sequence?: string;   // mermaid sequenceDiagram
+    er?: string;         // mermaid erDiagram
+    dataflow?: string;   // mermaid flowchart
+    services?: string;   // mermaid graph
+  };
+
+  // Development plan
+  developmentPlan?: {
+    weeks: Array<{ label: string; goals: string[] }>;
+    milestones: string[];
+    testing?: string;
+    deployment?: string;
+  };
+
+  // Learning explainer (for "explain X" questions)
+  learning?: {
+    technical: string;
+    layman: string;
+    whenToUse: string[];
+    whenNotToUse: string[];
+    example?: string;
+  };
+
+  // Launch
+  launch?: {
+    analytics: string[];
+    monitoring: string[];
+    cicd: string[];
+    featureFlags?: string;
+    pricingIdeas?: string[];
+    betaStrategy?: string;
+    growthExperiments?: string[];
+    checklist: string[];
+  };
+
+  // Knowledge graph nodes & edges — this is the moat
+  graph?: {
+    nodes: KnowledgeGraphNode[];
+    edges: KnowledgeGraphEdge[];
+  };
+
+  // Legacy fields (kept for back-compat)
   recommendedStack: string[];
   resources: KnowledgeResource[];
-  nextSteps: string[]; // 3-6 concrete steps in plain English
-  glossary: Array<{ term: string; meaning: string }>; // define any abbreviations
+  nextSteps: string[];
+  glossary: Array<{ term: string; meaning: string }>;
 };
 
 // ---------------- GitHub helpers ----------------

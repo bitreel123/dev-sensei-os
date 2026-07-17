@@ -17,6 +17,7 @@ import { runKnowledgeIntelligence, type KnowledgeReport } from "@/lib/knowledge-
 import { runGithubIntelligence, type GithubIntelReport } from "@/lib/github-intel.functions";
 import { SystemReportBody, KnowledgeReportBody, RepoReportBody } from "@/components/jeradin/intel-reports";
 import { NotificationsBell } from "@/components/jeradin/notifications-bell";
+import { SystemPanel } from "@/components/jeradin/system-panel";
 
 
 
@@ -648,6 +649,10 @@ function ChatPage() {
                   <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
                     <RepoReportBody report={repoResult} />
                   </IntelResultFrame>
+                ) : !analyzing && activeCapability === "system" ? (
+                  <div className="w-full">
+                    <SystemPanel />
+                  </div>
                 ) : !analyzing ? (
                   <div className="flex flex-col items-center justify-center">
                     <h1

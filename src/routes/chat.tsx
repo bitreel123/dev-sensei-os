@@ -1373,7 +1373,7 @@ const CAPABILITIES: Array<{
   {
     key: "knowledge",
     title: "Knowledge Intelligence",
-    desc: "Pulls in docs, tickets, prior PR discussions and past decisions relevant to the current issue so you don't have to hunt for context across five tools.",
+    desc: "Knowledge Intelligence transforms ideas into production-ready software by combining technical knowledge, market research, competitor teardowns, architecture planning and engineering best practices — grounded in a live knowledge graph, not just a chatbot completion.",
     mobileDesc: "Find repos, APIs, models",
     cta: "Enable knowledge",
     Icon: BookOpen,

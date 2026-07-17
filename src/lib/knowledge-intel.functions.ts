@@ -15,13 +15,130 @@ export type KnowledgeResource = {
   tags?: string[];
 };
 
+export type KnowledgeCompetitor = {
+  name: string;
+  url?: string;
+  positioning?: string;
+  strengths: string[];
+  weaknesses: string[];
+  pricing?: string;
+  gap?: string; // opportunity vs. this competitor
+};
+
+export type KnowledgeTradeoff = {
+  choice: string;             // e.g. "Next.js"
+  why: string;                // one-sentence rationale
+  alternatives?: string[];    // e.g. ["Remix", "SvelteKit"]
+  tradeoffs?: string;         // when NOT to pick this
+};
+
+export type KnowledgeGraphNode = {
+  id: string;
+  label: string;
+  category:
+    | "domain" | "market" | "competitor" | "framework"
+    | "architecture" | "security" | "database" | "backend"
+    | "deployment" | "pricing" | "growth";
+};
+
+export type KnowledgeGraphEdge = { from: string; to: string; relation: string };
+
 export type KnowledgeReport = {
   question: string;
-  laymanSummary: string; // Gemini-written plain-English overview
+  laymanSummary: string;
+
+  // Product Discovery
+  productDiscovery?: {
+    clarifyingQuestions: string[];
+    vision: string;
+    targetUsers: string[];
+    problem: string;
+    solution: string;
+    businessModel: string;
+    mvpRoadmap: string[];
+  };
+
+  // Market Intelligence
+  marketIntelligence?: {
+    trends: string[];
+    unsolvedProblems: string[];
+    sources: Array<{ title: string; url: string; kind: string }>;
+  };
+
+  // Competitors
+  competitors?: KnowledgeCompetitor[];
+
+  // Architecture
+  architecture?: {
+    folderStructure?: string;   // ascii tree
+    repoLayout?: string;
+    databaseSchema?: string;    // brief description or dbml
+    apiStyle?: string;          // REST / GraphQL / RPC
+    monolithVsMicroservices?: string;
+    auth?: string;
+    queues?: string;
+    caching?: string;
+    deployment?: string;
+    mermaid?: string;           // architecture diagram
+  };
+
+  // Technology choices with tradeoffs
+  technologyChoices?: KnowledgeTradeoff[];
+
+  // Security
+  security?: {
+    recommendations: Array<{ title: string; why: string }>;
+    compliance?: string[];
+  };
+
+  // System Design diagrams (Mermaid)
+  systemDesign?: {
+    sequence?: string;   // mermaid sequenceDiagram
+    er?: string;         // mermaid erDiagram
+    dataflow?: string;   // mermaid flowchart
+    services?: string;   // mermaid graph
+  };
+
+  // Development plan
+  developmentPlan?: {
+    weeks: Array<{ label: string; goals: string[] }>;
+    milestones: string[];
+    testing?: string;
+    deployment?: string;
+  };
+
+  // Learning explainer (for "explain X" questions)
+  learning?: {
+    technical: string;
+    layman: string;
+    whenToUse: string[];
+    whenNotToUse: string[];
+    example?: string;
+  };
+
+  // Launch
+  launch?: {
+    analytics: string[];
+    monitoring: string[];
+    cicd: string[];
+    featureFlags?: string;
+    pricingIdeas?: string[];
+    betaStrategy?: string;
+    growthExperiments?: string[];
+    checklist: string[];
+  };
+
+  // Knowledge graph nodes & edges — this is the moat
+  graph?: {
+    nodes: KnowledgeGraphNode[];
+    edges: KnowledgeGraphEdge[];
+  };
+
+  // Legacy fields (kept for back-compat)
   recommendedStack: string[];
   resources: KnowledgeResource[];
-  nextSteps: string[]; // 3-6 concrete steps in plain English
-  glossary: Array<{ term: string; meaning: string }>; // define any abbreviations
+  nextSteps: string[];
+  glossary: Array<{ term: string; meaning: string }>;
 };
 
 // ---------------- GitHub helpers ----------------
@@ -179,32 +296,103 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
     const anthropic = createAnthropic({ apiKey: anthropicKey });
     const claude = anthropic("claude-sonnet-4-5");
 
-    const systemPrompt = `You are a senior engineer helping a developer discover the best tools, libraries, APIs, datasets, and models for their project.
+    const systemPrompt = `You are Knowledge Intelligence — a senior product engineer + market analyst + software architect combined. You transform an idea or question into a production-ready plan grounded in a structured knowledge graph.
 
-You have search tools for GitHub (repos + code), npm, and Hugging Face (models + datasets). Use them 2-6 times, mixing tools, before answering. Search broadly then narrow down.
+You have search tools for GitHub (repos + code), npm, and Hugging Face. Use them 3-8 times, mixing tools, to ground your answer in real projects and libraries. Then reason across product discovery, market, competitors, architecture, technology tradeoffs, security, system design, plan, and launch.
 
-When you finish researching, return STRICT JSON only (no markdown fences, no prose outside JSON) with this shape:
+Return STRICT JSON only (no markdown fences, no prose outside JSON). Any field may be omitted when clearly not relevant to the user's question, but prefer to include as many as possible. Shape:
+
 {
   "recommendedStack": string[],
-  "resources": [
-    { "kind": "repo"|"api"|"dataset"|"model"|"framework"|"package"|"article",
-      "title": string, "url": string, "why": string, "stars": number|null, "tags": string[] }
-  ],
-  "nextSteps": string[],           // 3-6 concrete, plain-English steps
-  "glossary": [ { "term": string, "meaning": string } ]  // define every abbreviation you use (e.g. "API", "SDK", "ORM")
+  "resources": [{ "kind":"repo"|"api"|"dataset"|"model"|"framework"|"package"|"article",
+                  "title": string, "url": string, "why": string, "stars": number|null, "tags": string[] }],
+  "nextSteps": string[],
+  "glossary": [{ "term": string, "meaning": string }],
+
+  "productDiscovery": {
+    "clarifyingQuestions": string[],   // 4-8 questions to sharpen scope
+    "vision": string,
+    "targetUsers": string[],
+    "problem": string,
+    "solution": string,
+    "businessModel": string,
+    "mvpRoadmap": string[]             // 4-8 bullets
+  },
+
+  "marketIntelligence": {
+    "trends": string[],
+    "unsolvedProblems": string[],
+    "sources": [{ "title": string, "url": string, "kind": string }]  // reports, reddit, HN, YC, papers
+  },
+
+  "competitors": [{
+    "name": string, "url": string|null, "positioning": string,
+    "strengths": string[], "weaknesses": string[], "pricing": string|null, "gap": string
+  }],
+
+  "architecture": {
+    "folderStructure": string,       // ascii tree
+    "repoLayout": string,
+    "databaseSchema": string,        // brief description or dbml
+    "apiStyle": string,
+    "monolithVsMicroservices": string,
+    "auth": string, "queues": string, "caching": string, "deployment": string,
+    "mermaid": string                // Mermaid architecture diagram (graph TD ...), no code fences
+  },
+
+  "technologyChoices": [{
+    "choice": string, "why": string,
+    "alternatives": string[], "tradeoffs": string
+  }],
+
+  "security": {
+    "recommendations": [{ "title": string, "why": string }],
+    "compliance": string[]
+  },
+
+  "systemDesign": {
+    "sequence": string,   // mermaid sequenceDiagram
+    "er": string,         // mermaid erDiagram
+    "dataflow": string,   // mermaid flowchart LR
+    "services": string    // mermaid graph LR of services
+  },
+
+  "developmentPlan": {
+    "weeks": [{ "label": string, "goals": string[] }],
+    "milestones": string[],
+    "testing": string,
+    "deployment": string
+  },
+
+  "learning": {  // only for "explain X" style questions
+    "technical": string, "layman": string,
+    "whenToUse": string[], "whenNotToUse": string[], "example": string
+  },
+
+  "launch": {
+    "analytics": string[], "monitoring": string[], "cicd": string[],
+    "featureFlags": string, "pricingIdeas": string[],
+    "betaStrategy": string, "growthExperiments": string[], "checklist": string[]
+  },
+
+  "graph": {
+    "nodes": [{ "id": string, "label": string,
+                "category":"domain"|"market"|"competitor"|"framework"|"architecture"|"security"|"database"|"backend"|"deployment"|"pricing"|"growth" }],
+    "edges": [{ "from": string, "to": string, "relation": string }]
+  }
 }
 
 Rules:
-- Use PLAIN ENGLISH. Assume the reader may not be highly technical.
-- Every "why" is one short sentence explaining the benefit for THIS project.
-- Include 6-12 resources across different kinds.
-- Prefer maintained, popular options (higher stars, recent activity).`;
+- PLAIN ENGLISH. Assume the reader may not be highly technical. Define abbreviations in "glossary".
+- Every "why" is ONE short sentence explaining benefit for THIS project.
+- 6-12 resources across different kinds.
+- Prefer maintained, popular options (higher stars, recent activity).
+- For Mermaid, no code fences and keep node labels short.
+- Build the knowledge graph so the answer feels connected (Domain → Market → Competitors → Frameworks → Architecture → Security → Database → Backend → Deployment → Pricing → Growth). 8-16 nodes is a good size.`;
 
     const userPrompt =
       `Question: ${data.question}` +
-      (data.projectContext
-        ? `\n\nProject context:\n${data.projectContext}`
-        : "");
+      (data.projectContext ? `\n\nProject context:\n${data.projectContext}` : "");
 
     const { text: claudeText } = await generateText({
       model: claude,
@@ -215,17 +403,15 @@ Rules:
     });
 
     const jsonMatch = claudeText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Claude returned no JSON payload.");
+    if (!jsonMatch) throw new Error("Knowledge model returned no JSON payload.");
     const partial = JSON.parse(jsonMatch[0]) as Omit<KnowledgeReport, "question" | "laymanSummary">;
 
-    // ---------- Step 2: Gemini plain-English summary ----------
+    // ---------- Step 2: Plain-English overview ----------
     const summary = await callGeminiText(
       geminiKey,
       "You write friendly, plain-English summaries for developers who may not be highly technical. 2-3 short paragraphs. Define any abbreviation the first time you use it, e.g. 'API (Application Programming Interface)'.",
-      `Question: ${data.question}\n\nResearch findings (JSON):\n${JSON.stringify(partial).slice(0, 8000)}\n\nWrite a plain-English summary explaining what the developer should build with, why, and how the pieces fit together.`,
+      `Question: ${data.question}\n\nStructured findings (JSON):\n${JSON.stringify(partial).slice(0, 12000)}\n\nWrite a plain-English overview tying the discovery, market, competitors, architecture and next steps together.`,
     );
-
-
 
     const report: KnowledgeReport = {
       question: data.question,
@@ -234,6 +420,17 @@ Rules:
       resources: partial.resources ?? [],
       nextSteps: partial.nextSteps ?? [],
       glossary: partial.glossary ?? [],
+      productDiscovery: partial.productDiscovery,
+      marketIntelligence: partial.marketIntelligence,
+      competitors: partial.competitors,
+      architecture: partial.architecture,
+      technologyChoices: partial.technologyChoices,
+      security: partial.security,
+      systemDesign: partial.systemDesign,
+      developmentPlan: partial.developmentPlan,
+      learning: partial.learning,
+      launch: partial.launch,
+      graph: partial.graph,
     };
     return { report };
   });

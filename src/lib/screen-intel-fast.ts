@@ -99,7 +99,7 @@ export async function runFastScreenIntel(
     ],
     generationConfig: {
       temperature: 0.2,
-      maxOutputTokens: 6144,
+      maxOutputTokens: 16384,
       responseMimeType: "application/json",
     },
   };

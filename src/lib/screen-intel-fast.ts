@@ -4,7 +4,7 @@
 
 import { TAXONOMY_PROMPT, type Diagnosis, type FixPlan } from "./intel-shared";
 
-const GEMINI_FAST_MODEL = "gemini-3.5-flash";
+const GEMINI_FAST_MODEL = "gemini-3-pro-preview";
 
 const FAST_SYSTEM_PROMPT = `You are Jeradin's rapid debugging engineer. You look at a single screenshot of a developer's IDE, editor, browser devtools, or terminal, and in ONE response produce a dense, structured debugging report.
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { Loader2, RefreshCw, Send, Network, Layers, GitBranch, Zap, Database, Sparkles, ShieldCheck, Gauge, AlertTriangle, Wrench, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -7,7 +7,14 @@ import {
   type CodeRepoRow, type ScanStatusRow, type IntelMode, type IntelResult,
 } from "@/lib/code-graph.functions";
 import { listMyGithubRepos } from "@/lib/repo-intel.functions";
-import { MermaidDiagram } from "./intel-reports";
+
+function MermaidDiagram({ chart }: { chart: string }) {
+  return (
+    <pre className="text-[11px] font-mono text-white/70 bg-black/40 border border-white/10 rounded p-3 overflow-x-auto whitespace-pre">
+      {chart}
+    </pre>
+  );
+}
 
 const MODE_META: Array<{ id: IntelMode; label: string; icon: React.ComponentType<{ className?: string }>; hint: string }> = [
   { id: "architecture", label: "Architecture", icon: Layers, hint: "How the codebase is organised" },

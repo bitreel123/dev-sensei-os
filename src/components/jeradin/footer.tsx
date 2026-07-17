@@ -15,8 +15,8 @@ const cols = [
     title: "Resources",
     links: [
       { label: "Docs", href: "/docs" },
-      { label: "Changelog", href: "/docs" },
-      { label: "Support", href: "/docs" },
+      { label: "Extension", href: "/extension" },
+      { label: "Support", href: "/support" },
     ],
   },
   {

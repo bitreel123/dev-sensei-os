@@ -263,6 +263,103 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
           return { path, content: t.slice(0, 20_000) };
         },
       }),
+      list_branches: tool({
+        description: "List branches on the repo.",
+        inputSchema: z.object({ limit: z.number().min(1).max(50).default(20) }),
+        execute: async ({ limit }) => {
+          const b = await gh<Array<{ name: string; commit: { sha: string } }>>(
+            `/repos/${owner}/${repoName}/branches?per_page=${limit}`,
+            ghToken,
+          );
+          return b.map((x) => ({ name: x.name, sha: x.commit.sha.slice(0, 7) }));
+        },
+      }),
+      compare_branches: tool({
+        description: "Compare two branches (base...head): commits, files changed, additions/deletions.",
+        inputSchema: z.object({ base: z.string(), head: z.string() }),
+        execute: async ({ base, head }) => {
+          const c = await gh<{
+            status: string;
+            ahead_by: number;
+            behind_by: number;
+            total_commits: number;
+            files: Array<{ filename: string; status: string; additions: number; deletions: number }>;
+          }>(`/repos/${owner}/${repoName}/compare/${base}...${head}`, ghToken);
+          return {
+            status: c.status,
+            ahead_by: c.ahead_by,
+            behind_by: c.behind_by,
+            total_commits: c.total_commits,
+            files: (c.files ?? []).slice(0, 30),
+          };
+        },
+      }),
+      list_releases: tool({
+        description: "List releases (tags with notes) for the repo.",
+        inputSchema: z.object({ limit: z.number().min(1).max(20).default(10) }),
+        execute: async ({ limit }) => {
+          const rels = await gh<
+            Array<{ tag_name: string; name: string; published_at: string; body: string; html_url: string }>
+          >(`/repos/${owner}/${repoName}/releases?per_page=${limit}`, ghToken);
+          return rels.map((r) => ({
+            tag: r.tag_name,
+            name: r.name,
+            published: r.published_at,
+            notes: (r.body ?? "").slice(0, 2000),
+            url: r.html_url,
+          }));
+        },
+      }),
+      list_contributors: tool({
+        description: "List top contributors and their commit counts.",
+        inputSchema: z.object({ limit: z.number().min(1).max(30).default(15) }),
+        execute: async ({ limit }) => {
+          const cs = await gh<Array<{ login: string; contributions: number }>>(
+            `/repos/${owner}/${repoName}/contributors?per_page=${limit}`,
+            ghToken,
+          );
+          return cs.map((c) => ({ login: c.login, commits: c.contributions }));
+        },
+      }),
+      get_commit_detail: tool({
+        description: "Get a single commit's diff: files changed with additions/deletions.",
+        inputSchema: z.object({ sha: z.string() }),
+        execute: async ({ sha }) => {
+          const c = await gh<{
+            sha: string;
+            commit: { message: string; author: { name: string; date: string } };
+            files: Array<{ filename: string; status: string; additions: number; deletions: number; patch?: string }>;
+          }>(`/repos/${owner}/${repoName}/commits/${sha}`, ghToken);
+          return {
+            sha: c.sha.slice(0, 7),
+            message: c.commit.message.slice(0, 500),
+            author: c.commit.author?.name,
+            date: c.commit.author?.date,
+            files: (c.files ?? []).slice(0, 20).map((f) => ({
+              filename: f.filename,
+              status: f.status,
+              additions: f.additions,
+              deletions: f.deletions,
+              patch: (f.patch ?? "").slice(0, 1500),
+            })),
+          };
+        },
+      }),
+      get_pr_files: tool({
+        description: "List files changed in a pull request.",
+        inputSchema: z.object({ number: z.number() }),
+        execute: async ({ number }) => {
+          const files = await gh<
+            Array<{ filename: string; status: string; additions: number; deletions: number }>
+          >(`/repos/${owner}/${repoName}/pulls/${number}/files?per_page=30`, ghToken);
+          return files.slice(0, 30);
+        },
+      }),
+    };
+          if (!t) return { error: "file not found" };
+          return { path, content: t.slice(0, 20_000) };
+        },
+      }),
     };
 
     // ---------- Claude Sonnet agent loop ----------

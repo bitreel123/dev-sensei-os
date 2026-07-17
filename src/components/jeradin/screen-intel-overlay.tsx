@@ -11,11 +11,13 @@ import {
   Send,
   Loader2,
   Github,
+  Zap,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useServerFn } from "@tanstack/react-start";
 import {
+  analyzeScreenAndSuggestFix,
   chatAboutAnalysis,
   type ScreenAnalysis,
   type FixSuggestion,
@@ -167,6 +169,11 @@ type Props = {
   initialMessages?: OverlayChatMessage[];
   onClose: () => void;
   onMessagesChange?: (messages: OverlayChatMessage[]) => void;
+  // Optional: raw screenshot base64 + note so the overlay can re-run a
+  // "Deep Dive" (Claude + GitHub) against the same frame.
+  screenshotBase64?: string | null;
+  note?: string | null;
+  onResultReplace?: (next: { analysis: ScreenAnalysis; fix: FixSuggestion }) => void;
 };
 
 export function ScreenIntelOverlay({
@@ -175,6 +182,9 @@ export function ScreenIntelOverlay({
   initialMessages,
   onClose,
   onMessagesChange,
+  screenshotBase64,
+  note,
+  onResultReplace,
 }: Props) {
 
   const [minimized, setMinimized] = useState(false);
@@ -182,8 +192,29 @@ export function ScreenIntelOverlay({
   const [messages, setMessages] = useState<OverlayChatMessage[]>(initialMessages ?? []);
   const [chatInput, setChatInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [deepDiving, setDeepDiving] = useState(false);
+  const [deepError, setDeepError] = useState<string | null>(null);
+  const [didDeepDive, setDidDeepDive] = useState(false);
   const askFollowUp = useServerFn(chatAboutAnalysis);
+  const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  async function runDeepDive() {
+    if (!screenshotBase64 || deepDiving) return;
+    setDeepDiving(true);
+    setDeepError(null);
+    try {
+      const res = await runAnalyze({
+        data: { imageBase64: screenshotBase64, note: note ?? "", mode: "deep" },
+      });
+      onResultReplace?.({ analysis: res.analysis, fix: res.fix });
+      setDidDeepDive(true);
+    } catch (e) {
+      setDeepError((e as Error).message || "Deep dive failed");
+    } finally {
+      setDeepDiving(false);
+    }
+  }
 
   useEffect(() => {
     onMessagesChange?.(messages);

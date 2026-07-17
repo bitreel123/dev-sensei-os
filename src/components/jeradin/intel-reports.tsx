@@ -606,6 +606,211 @@ export function RepoReportBody({ report }: { report: GithubIntelReport }) {
         </div>
       )}
 
+      {report.commitIntel && report.commitIntel.length > 0 && (
+        <div>
+          <SectionLabel>Commit intelligence</SectionLabel>
+          <ul className="space-y-2">
+            {report.commitIntel.map((c, i) => (
+              <li key={i} className={`border rounded p-3 ${priorityColor(c.risk)}`}>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="font-mono text-[11px] text-white">{c.sha} · {c.title}</span>
+                  <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] opacity-70">
+                    {c.risk}{c.breaking ? " · breaking" : ""}
+                  </span>
+                </div>
+                <p className="text-[12.5px]"><span className="text-white/60">What: </span>{c.what}</p>
+                <p className="text-[12.5px]"><span className="text-white/60">Why: </span>{c.why}</p>
+                {c.files?.length > 0 && (
+                  <div className="mt-1 font-mono text-[10.5px] text-white/45">files: {c.files.join(", ")}</div>
+                )}
+                {(c.author || c.date) && (
+                  <div className="mt-0.5 font-mono text-[10px] text-white/35">{c.author}{c.author && c.date ? " · " : ""}{c.date?.slice(0,10)}</div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {report.prIntel && report.prIntel.length > 0 && (
+        <div>
+          <SectionLabel>Pull request intelligence</SectionLabel>
+          <ul className="space-y-2">
+            {report.prIntel.map((p, i) => (
+              <li key={i} className="border border-white/10 bg-white/[0.02] rounded p-3">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="font-mono text-[11px] text-white">#{p.number} · {p.title}</span>
+                  {p.missingTests && (
+                    <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-amber-300/80">missing tests</span>
+                  )}
+                </div>
+                <p className="text-[12.5px] text-white/75"><span className="text-white/50">Purpose: </span>{p.purpose}</p>
+                <p className="text-[12.5px] text-white/75"><span className="text-white/50">Architecture: </span>{p.architectureImpact}</p>
+                {p.risks?.length > 0 && (
+                  <div className="text-[12px] text-white/70 mt-1">Risks: {p.risks.join("; ")}</div>
+                )}
+                {p.reviewSuggestions?.length > 0 && (
+                  <div className="text-[12px] text-white/70">Review: {p.reviewSuggestions.join("; ")}</div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {report.evolution && report.evolution.length > 0 && (
+        <div>
+          <SectionLabel>Evolution intelligence</SectionLabel>
+          <div className="space-y-3">
+            {report.evolution.map((thread, i) => (
+              <div key={i} className="border border-white/10 bg-white/[0.02] rounded p-3">
+                <div className="font-mono text-[11px] text-white mb-2">{thread.topic}</div>
+                <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-white/80">
+                  {thread.timeline.map((step, j) => (
+                    <span key={j} className="inline-flex items-center gap-1.5">
+                      <span className="border border-white/15 rounded px-1.5 py-0.5 font-mono text-[10.5px]">
+                        {step.version}
+                      </span>
+                      <span className="text-white/60">{step.change}</span>
+                      {j < thread.timeline.length - 1 && <span className="text-white/30">→</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {report.regression && (
+        <div>
+          <SectionLabel>Regression intelligence</SectionLabel>
+          <div className={`border rounded p-3 ${priorityColor("high")}`}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-mono text-[11px] text-white">Regression detected</span>
+              <span className="font-mono text-[10px] text-white/70">confidence {report.regression.confidence}%</span>
+            </div>
+            <p className="text-[12.5px]">{report.regression.description}</p>
+            {report.regression.likelyCommit && (
+              <div className="mt-1 font-mono text-[11px]">likely commit: {report.regression.likelyCommit}</div>
+            )}
+            {report.regression.files?.length > 0 && (
+              <div className="mt-0.5 font-mono text-[10.5px] text-white/60">files: {report.regression.files.join(", ")}</div>
+            )}
+            <p className="mt-1 text-[12px] text-white/70">{report.regression.reasoning}</p>
+          </div>
+        </div>
+      )}
+
+      {report.contributors && report.contributors.length > 0 && (
+        <div>
+          <SectionLabel>Contributor intelligence</SectionLabel>
+          <ul className="space-y-1">
+            {report.contributors.map((c, i) => (
+              <li key={i} className="text-[12.5px]">
+                <span className="text-white/60">{c.area}</span>
+                <span className="text-white/40"> · mostly maintained by </span>
+                <span className="font-mono text-white">{c.owner}</span>
+                <span className="text-white/40"> ({c.share})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {report.branches && report.branches.length > 0 && (
+        <div>
+          <SectionLabel>Branch intelligence</SectionLabel>
+          <ul className="space-y-2">
+            {report.branches.map((b, i) => (
+              <li key={i} className="border border-white/10 bg-white/[0.02] rounded p-3">
+                <div className="font-mono text-[11px] text-white mb-1">{b.branch} vs {b.vs}</div>
+                <p className="text-[12.5px] text-white/75">{b.summary}</p>
+                {b.differences?.length > 0 && (
+                  <ul className="mt-1 list-disc pl-4 text-[12px] text-white/70">
+                    {b.differences.map((d, j) => <li key={j}>{d}</li>)}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {report.releases && report.releases.length > 0 && (
+        <div>
+          <SectionLabel>Release intelligence</SectionLabel>
+          <ul className="space-y-2">
+            {report.releases.map((r, i) => (
+              <li key={i} className={`border rounded p-3 ${priorityColor(r.risk)}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-mono text-[11px] text-white">{r.version}</span>
+                  <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] opacity-70">risk {r.risk}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[12px] text-white/75">
+                  <div>New APIs: <span className="text-white">{r.newApis}</span></div>
+                  <div>Breaking: <span className="text-white">{r.breakingChanges}</span></div>
+                  <div>DB changes: <span className="text-white">{r.databaseChanges}</span></div>
+                  <div>Migration: <span className="text-white">{r.migrationRequired ? "yes" : "no"}</span></div>
+                </div>
+                {r.notes && <p className="mt-1 text-[12px] text-white/70">{r.notes}</p>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {report.health && (
+        <div>
+          <SectionLabel>Repository health</SectionLabel>
+          <div className="border border-white/10 bg-white/[0.02] rounded p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[12.5px] text-white/80">Overall</span>
+              <span className="font-mono text-[13px] text-white">{report.health.overall}%</span>
+            </div>
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
+              {(["commits","reviews","testing","security","documentation"] as const).map((k) => {
+                const v = report.health![k];
+                const color = v === "healthy" ? "text-emerald-300" : v === "needs attention" ? "text-amber-300" : "text-red-300";
+                return (
+                  <li key={k} className="flex justify-between">
+                    <span className="text-white/60 capitalize">{k}</span>
+                    <span className={`font-mono ${color}`}>{v}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {report.historical && report.historical.length > 0 && (
+        <div>
+          <SectionLabel>Historical search</SectionLabel>
+          <ul className="space-y-2">
+            {report.historical.map((h, i) => (
+              <li key={i} className="border border-white/10 bg-white/[0.02] rounded p-3">
+                <div className="text-[12.5px] text-white/85">Q: {h.question}</div>
+                <div className="text-[12.5px] text-white/70 mt-0.5">A: {h.answer}</div>
+                <div className="mt-1 font-mono text-[10.5px] text-white/45">
+                  {[h.commit && `commit ${h.commit}`, h.pr && `PR ${h.pr}`, h.date?.slice(0,10)].filter(Boolean).join(" · ")}
+                </div>
+                {h.reason && <div className="text-[12px] text-white/60 mt-0.5">{h.reason}</div>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {report.memory && report.memory.length > 0 && (
+        <div>
+          <SectionLabel>Repository memory</SectionLabel>
+          <ul className="list-disc pl-4 space-y-1 text-[12.5px] text-white/75">
+            {report.memory.map((m, i) => <li key={i}>{m}</li>)}
+          </ul>
+        </div>
+      )}
+
       {report.glossary?.length > 0 && (
         <div>
           <SectionLabel>Glossary</SectionLabel>

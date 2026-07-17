@@ -25,6 +25,73 @@ export type RepoPattern = {
   examples: string[]; // file paths or PR titles
 };
 
+export type CommitInsight = {
+  sha: string;
+  title: string;
+  what: string;
+  why: string;
+  risk: "high" | "medium" | "low";
+  files: string[];
+  breaking: boolean;
+  date?: string;
+  author?: string;
+};
+
+export type PRInsight = {
+  number: number;
+  title: string;
+  purpose: string;
+  architectureImpact: string;
+  risks: string[];
+  reviewSuggestions: string[];
+  missingTests: boolean;
+  author?: string;
+  url?: string;
+};
+
+export type EvolutionStep = { version: string; change: string; when?: string };
+export type EvolutionThread = { topic: string; timeline: EvolutionStep[] };
+
+export type RegressionFinding = {
+  description: string;
+  likelyCommit?: string;
+  files: string[];
+  confidence: number; // 0-100
+  reasoning: string;
+};
+
+export type ContributorArea = { area: string; owner: string; share: string };
+
+export type BranchDiff = { branch: string; vs: string; summary: string; differences: string[] };
+
+export type ReleaseInsight = {
+  version: string;
+  newApis: number;
+  breakingChanges: number;
+  databaseChanges: number;
+  migrationRequired: boolean;
+  risk: "high" | "medium" | "low";
+  notes: string;
+};
+
+export type RepoHealth = {
+  overall: number; // 0-100
+  commits: "healthy" | "needs attention" | "poor";
+  reviews: "healthy" | "needs attention" | "poor";
+  testing: "healthy" | "needs attention" | "poor";
+  security: "healthy" | "needs attention" | "poor";
+  documentation: "healthy" | "needs attention" | "poor";
+};
+
+export type HistoricalAnswer = {
+  question: string;
+  answer: string;
+  commit?: string;
+  pr?: string;
+  date?: string;
+  reason?: string;
+};
+
 export type GithubIntelReport = {
   repo: string;
   summary: string; // layman: what this project is + how healthy it looks
@@ -34,6 +101,17 @@ export type GithubIntelReport = {
   patterns: RepoPattern[];
   dependencyNotes: Array<{ name: string; version: string; note: string }>;
   glossary: Array<{ term: string; meaning: string }>;
+  // ---- New Repo Intelligence sections ----
+  commitIntel?: CommitInsight[];
+  prIntel?: PRInsight[];
+  evolution?: EvolutionThread[];
+  regression?: RegressionFinding | null;
+  contributors?: ContributorArea[];
+  branches?: BranchDiff[];
+  releases?: ReleaseInsight[];
+  health?: RepoHealth;
+  historical?: HistoricalAnswer[];
+  memory?: string[]; // durable notes about why the repo looks the way it does
 };
 
 // ---------------- GitHub helpers ----------------

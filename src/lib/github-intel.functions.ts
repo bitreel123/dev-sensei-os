@@ -435,10 +435,13 @@ Rules:
 - For regressions: only set "regression" when evidence supports it; state confidence honestly.
 - Never invent SHAs or PR numbers you did not observe via tools.`;
 
+    const { recallIntel, memoryPromptSuffix } = await import("./intel-memory.server");
+    const memTail = memoryPromptSuffix(await recallIntel(context.userId, "repo", 3));
     const userPrompt =
       `Repository: ${data.repo}` +
       (data.focus ? `\nExtra focus from the user: ${data.focus}` : "") +
-      `\n\nAudit it now.`;
+      `\n\nAudit it now.` +
+      memTail;
 
     const { text: claudeText } = await generateText({
       model: claude,

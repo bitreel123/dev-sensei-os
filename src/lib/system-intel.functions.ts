@@ -60,6 +60,7 @@ async function gh<T>(url: string, token: string): Promise<T> {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github+json",
+          "User-Agent": "jeradin-app",
       "X-GitHub-Api-Version": "2022-11-28",
     },
   });

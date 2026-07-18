@@ -72,16 +72,22 @@ export const Route = createFileRoute("/api/public/github/callback")({
         const accessToken = tokenJson.access_token;
         const scopes = tokenJson.scope ?? "";
 
-        // Fetch user + primary verified email
+        // Fetch user + primary verified email.
+        // GitHub API REQUIRES a User-Agent header — without it, requests are rejected.
+        const ghHeaders = {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "jeradin-app",
+          "X-GitHub-Api-Version": "2022-11-28",
+        };
         const [userRes, emailsRes] = await Promise.all([
-          fetch("https://api.github.com/user", {
-            headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json" },
-          }),
-          fetch("https://api.github.com/user/emails", {
-            headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json" },
-          }),
+          fetch("https://api.github.com/user", { headers: ghHeaders }),
+          fetch("https://api.github.com/user/emails", { headers: ghHeaders }),
         ]);
-        if (!userRes.ok) return htmlError("Could not read GitHub profile.");
+        if (!userRes.ok) {
+          const detail = await userRes.text().catch(() => "");
+          return htmlError(`Could not read GitHub profile (${userRes.status}). ${detail.slice(0, 200)}`);
+        }
         const ghUser = (await userRes.json()) as {
           id: number;
           login: string;

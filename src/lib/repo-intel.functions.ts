@@ -32,6 +32,7 @@ export const listMyGithubRepos = createServerFn({ method: "GET" })
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github+json",
+          "User-Agent": "jeradin-app",
           "X-GitHub-Api-Version": "2022-11-28",
         },
       },

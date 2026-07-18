@@ -146,6 +146,7 @@ const GITHUB_API = "https://api.github.com";
 async function gh<T>(url: string, token?: string): Promise<T> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
+          "User-Agent": "jeradin-app",
     "X-GitHub-Api-Version": "2022-11-28",
   };
   if (token) headers.Authorization = `Bearer ${token}`;

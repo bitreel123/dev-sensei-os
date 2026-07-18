@@ -1,0 +1,1 @@
+UPDATE public.user_credits SET balance = 600, monthly_credits = 600, plan = 'grant', updated_at = now() WHERE user_id IN ('518ca91b-fe1a-4f57-a6e1-e4a49ebf2158','14d29d3f-c494-4477-a5f3-4ce168dc2e05','84b1259f-27ac-40f4-9463-fed5b03cc1f9');

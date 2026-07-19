@@ -412,7 +412,7 @@ function ChatPage() {
     if ((capability === "system" || capability === "repo") && !repo && attachments.length === 0) {
       if (!github) {
         toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
-        startGithubOAuth("connect", "/chat");
+        await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
         return;
       }
       toast.error("Type a repo like owner/name in the chat box, then Send.");
@@ -457,7 +457,7 @@ function ChatPage() {
         }
         if (!github) {
           toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
-          startGithubOAuth("connect", "/chat");
+          await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
           return;
         }
         const res = await runSystem({ data: { source: "github", repo: repo!, projectHint: text } });
@@ -475,7 +475,7 @@ function ChatPage() {
 
       if (!github) {
         toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
-        startGithubOAuth("connect", "/chat");
+        await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
         return;
       }
       const focus = text.replace(repo!, "").trim();
@@ -842,10 +842,10 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
 function formatAnalysisError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error || "Analysis failed");
   const lower = raw.toLowerCase();
-  if (raw.includes("429") || lower.includes("rate limit")) {
-    return "AI is rate limited right now. Please wait a moment and try again, or upgrade/add credits for higher usage.";
+  if (raw.includes("429") || lower.includes("rate limit") || lower.includes("resource_exhausted")) {
+    return "The analysis service is temporarily at capacity. Please wait a moment and try again.";
   }
-  if (raw.includes("402") || lower.includes("credit")) {
+  if (raw.includes("402") || lower.includes("out of credits")) {
     return "AI credits are exhausted. Add credits or upgrade, then run the analysis again.";
   }
   if (raw.includes("403")) {

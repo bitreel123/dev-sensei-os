@@ -25,7 +25,7 @@ export const Route = createFileRoute("/api/public/github/callback")({
           return htmlError("Missing OAuth parameters.");
         }
 
-        let parsed: { state: string; mode: "login" | "connect"; returnTo: string };
+        let parsed: { state: string; mode: "login" | "connect"; returnTo: string; userId?: string | null };
         try {
           parsed = JSON.parse(Buffer.from(raw, "base64url").toString("utf8"));
         } catch {
@@ -111,20 +111,9 @@ export const Route = createFileRoute("/api/public/github/callback")({
         let userId: string | null = null;
 
         if (parsed.mode === "connect") {
-          // Trust the Supabase session cookie / bearer token on the request.
-          const authHeader = request.headers.get("authorization");
-          const accessJwt = authHeader?.startsWith("Bearer ")
-            ? authHeader.slice(7)
-            : cookies["sb-access-token"];
-          if (accessJwt) {
-            const { data } = await supabaseAdmin.auth.getUser(accessJwt);
-            userId = data.user?.id ?? null;
-          }
-          if (!userId) {
-            // Fallback: match by email if it exists in auth.users.
-            const { data: list } = await supabaseAdmin.auth.admin.listUsers();
-            userId = list?.users.find((u) => u.email?.toLowerCase() === primary.email.toLowerCase())?.id ?? null;
-          }
+          // The authenticated POST that started this flow bound the current
+          // Jeradin user to the short-lived, HttpOnly OAuth state cookie.
+          userId = parsed.userId ?? null;
           if (!userId) {
             return htmlError("Please sign in first, then connect GitHub.");
           }
@@ -154,7 +143,7 @@ export const Route = createFileRoute("/api/public/github/callback")({
         }
 
         // Upsert the GitHub connection.
-        await supabaseAdmin.from("github_connections").upsert({
+        const { error: connectionError } = await supabaseAdmin.from("github_connections").upsert({
           user_id: userId,
           github_id: ghUser.id,
           login: ghUser.login,
@@ -163,6 +152,7 @@ export const Route = createFileRoute("/api/public/github/callback")({
           access_token: accessToken,
           updated_at: new Date().toISOString(),
         });
+        if (connectionError) return htmlError(`Could not save GitHub connection: ${connectionError.message}`);
 
         const clearCookie = "gh_oauth=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax";
 

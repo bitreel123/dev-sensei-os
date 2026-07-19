@@ -371,17 +371,17 @@ function PricingPage() {
                 </div>
 
                 <h3
-                  className="mt-2 text-[22px] leading-tight text-white"
+                  className="mt-2 min-h-[56px] text-[22px] leading-tight text-white"
                   style={{ fontFamily: "'Instrument Serif', serif" }}
                 >
                   {t.headline}
                 </h3>
 
-                <p className="mt-1 text-[13px] text-white/55 leading-snug min-h-[36px]">
+                <p className="mt-1 min-h-[54px] text-[13px] text-white/55 leading-snug">
                   {t.tagline}
                 </p>
 
-                <div className="mt-5 flex items-baseline gap-1.5">
+                <div className="mt-5 flex min-h-[56px] items-baseline gap-1.5">
                   <div
                     className="text-[56px] leading-none"
                     style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
@@ -400,7 +400,7 @@ function PricingPage() {
                       : "Billed monthly"}
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-4 min-h-[72px]">
                   <label className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/50">
                     Monthly credits
                   </label>

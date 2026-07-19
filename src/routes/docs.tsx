@@ -21,7 +21,7 @@ const sections: Array<{ h: string; items: Array<[string, React.ReactNode]> }> = 
     h: "Quickstart",
     items: [
       ["Install the extension", <>Download the ZIP from the <Link to="/download" className="underline">download page</Link>, unzip it, then in <code className="font-mono">chrome://extensions</code> enable <b>Developer mode</b> and click <b>Load unpacked</b>.</>],
-      ["Pair your account", <>Sign in at <a href="https://jeradin.com" className="underline">jeradin.com</a>, open the <Link to="/extension" className="underline">extension page</Link>, generate a connection token, and paste it into the extension popup.</>],
+      ["Sign in on jeradin.com", <>Sign in at <a href="https://jeradin.com/login" className="underline">jeradin.com</a>. The extension automatically picks up your session — no tokens to copy or paste.</>],
       ["First capture", <>Open any tab, click the Jeradin icon in the toolbar, then click <b>Capture &amp; Analyze</b>. A structured report appears in ~2–5 seconds.</>],
     ],
   },

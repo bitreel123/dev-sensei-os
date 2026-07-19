@@ -168,7 +168,7 @@ function renderSignedOut() {
   who.textContent = "not signed in";
   main.innerHTML = "";
   const openBtn = h("button", {
-    onclick: () => chrome.tabs.create({ url: `${API_BASE}/auth` }),
+    onclick: () => chrome.tabs.create({ url: `${API_BASE}/login` }),
   }, "Sign in on jeradin.com");
   const refresh = h("button", { class: "secondary", onclick: bootstrap }, "I've signed in — refresh");
   main.appendChild(openBtn);

@@ -122,20 +122,21 @@ function ExtensionPage() {
 
         <section className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
           <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/60 mb-3">
-            <KeyRound className="h-3.5 w-3.5" /> Step 2 · Pair with your account
+            <KeyRound className="h-3.5 w-3.5" /> Step 2 · Sign in on jeradin.com
           </div>
           {loading ? (
             <div className="text-white/50 text-sm">Checking your session…</div>
           ) : !user ? (
             <div className="text-sm text-white/70">
-              <Link to="/login" className="underline">Sign in</Link> to your Jeradin account,
-              then come back to generate a connection token.
+              <Link to="/login" className="underline">Sign in</Link> to your Jeradin account.
+              The extension automatically picks up your session — no tokens to copy or paste.
             </div>
           ) : (
             <div className="space-y-4">
               <p className="text-[13.5px] text-white/70 leading-relaxed">
-                Generate a one-time connection token, then paste it into the extension popup.
-                The token is scoped to your account and can be revoked anytime below.
+                You're signed in. Open the extension popup and it will detect your jeradin.com
+                session automatically. Advanced: generate a legacy connection token below if you
+                need to pair a headless or non-browser client.
               </p>
               <button
                 onClick={generate}

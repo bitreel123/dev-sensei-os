@@ -112,7 +112,7 @@ function WorkflowPage() {
         <div className="mt-8 grid md:grid-cols-3 gap-4">
           {[
             { icon: Chrome, t: "1. Add the extension", b: "Download the Jeradin extension bundle, unzip it, and load it in chrome://extensions with Developer mode on." },
-            { icon: KeyRound, t: "2. Pair your account", b: "Sign in on jeradin.com and generate a connection token. Paste it into the extension popup once — that's it." },
+            { icon: KeyRound, t: "2. Sign in on jeradin.com", b: "Sign in once at jeradin.com. The extension automatically picks up your session — no tokens to copy or paste." },
             { icon: Terminal, t: "3. Capture something", b: "Open any tab you want to debug, click the Jeradin icon, hit Capture. A full report lands in the popup in seconds." },
           ].map((x) => (
             <div key={x.t} className="rounded-2xl border border-black/10 p-6 h-full flex flex-col">

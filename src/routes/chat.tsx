@@ -22,9 +22,10 @@ import { SystemPanel } from "@/components/jeradin/system-panel";
 
 
 export const Route = createFileRoute("/chat")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    id: typeof s.id === "string" ? s.id : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { id?: string } => {
+    const id = typeof s.id === "string" ? s.id : undefined;
+    return id ? { id } : {};
+  },
   head: () => ({
     meta: [
       { title: "New chat · Jeradin" },

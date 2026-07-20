@@ -434,6 +434,7 @@ function ChatPage() {
     }
 
     setAnalyzing(true);
+    setLastRun({ kind: capability, status: "running" });
     try {
       if (capability === "knowledge") {
         const res = await runKnowledge({ data: { question: text, projectContext: "" } });
@@ -447,6 +448,7 @@ function ChatPage() {
         navigate({ to: "/chat", search: { id: entry.id } });
         setPrompt("");
         toast.success("Knowledge report ready");
+        setLastRun({ kind: "knowledge", status: "success", message: "Knowledge report ready" });
         return;
       }
 
@@ -455,6 +457,7 @@ function ChatPage() {
           const files = await attachmentsToFileInputs(attachments);
           if (files.length === 0) {
             toast.error("Attach readable code files, then Send.");
+            setLastRun({ kind: "system", status: "error", message: "No readable code files" });
             return;
           }
           const res = await runSystem({ data: { source: "upload", files, projectHint: text } });
@@ -467,11 +470,13 @@ function ChatPage() {
           navigate({ to: "/chat", search: { id: entry.id } });
           setPrompt("");
           toast.success("System analysis complete");
+          setLastRun({ kind: "system", status: "success", message: `${res.filesAnalyzed} files analyzed` });
           return;
         }
         if (!github) {
           toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
           await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
+          setLastRun({ kind: "system", status: "error", message: "GitHub not connected" });
           return;
         }
         const res = await runSystem({ data: { source: "github", repo: repo!, projectHint: text } });
@@ -484,12 +489,14 @@ function ChatPage() {
         navigate({ to: "/chat", search: { id: entry.id } });
         setPrompt("");
         toast.success("System analysis complete");
+        setLastRun({ kind: "system", status: "success", message: `Scanned ${repo}` });
         return;
       }
 
       if (!github) {
         toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
         await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
+        setLastRun({ kind: "repo", status: "error", message: "GitHub not connected" });
         return;
       }
       const focus = text.replace(repo!, "").trim();
@@ -503,11 +510,13 @@ function ChatPage() {
       navigate({ to: "/chat", search: { id: entry.id } });
       setPrompt("");
       toast.success("Repo audit complete");
+      setLastRun({ kind: "repo", status: "success", message: `Audited ${repo}` });
     } catch (e) {
       console.error("[runPromptCapability] failed:", e);
       const message = formatAnalysisError(e);
       setAnalysisError(message);
       toast.error(message);
+      setLastRun({ kind: capability, status: "error", message });
     } finally {
       setAnalyzing(false);
     }

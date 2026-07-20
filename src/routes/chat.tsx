@@ -390,6 +390,13 @@ function ChatPage() {
       return;
     }
 
+    // Plain text (with or without non-image file attachments) → route to Knowledge Intelligence
+    // so users get a real reply instead of a "attach a screenshot" toast.
+    if (prompt.trim()) {
+      await runPromptCapability("knowledge");
+      return;
+    }
+
     toast.message("Attach a screenshot or start Screen recording, then Send.");
   }
 
@@ -405,7 +412,7 @@ function ChatPage() {
 
     if (capability === "knowledge" && text.length < 5) {
       setKnowledgeEnabled(true);
-      toast.success("Knowledge Intelligence enabled");
+      toast.success("Knowledge enabled — type your question in the chat box and press Send.");
       return;
     }
 
@@ -652,6 +659,18 @@ function ChatPage() {
                   </IntelResultFrame>
                 ) : !analyzing && activeCapability === "system" ? (
                   <div className="w-full">
+                    <div className="mb-4 flex items-center justify-between">
+                      <button
+                        onClick={() => {
+                          setActiveCapability(null);
+                          setOpenedCapabilityPanel(null);
+                        }}
+                        className="inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/80 hover:bg-white/10"
+                      >
+                        ← Back
+                      </button>
+                      <span className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/50">System Intelligence</span>
+                    </div>
                     <SystemPanel />
                   </div>
                 ) : !analyzing ? (
@@ -680,6 +699,8 @@ function ChatPage() {
                       analyzing={analyzing}
                       onSend={send}
                       knowledgeEnabled={knowledgeEnabled}
+                      githubConnected={!!github}
+                      githubLogin={github?.login ?? null}
                       onSelectCapability={(m) => {
                         setActiveCapability((currentMode) => currentMode === m ? null : m);
                         setOpenedCapabilityPanel(null);
@@ -717,6 +738,8 @@ function ChatPage() {
                 analyzing={analyzing}
                 onSend={send}
                 knowledgeEnabled={knowledgeEnabled}
+                githubConnected={!!github}
+                githubLogin={github?.login ?? null}
                 compact
                 onSelectCapability={(m) => {
                   setActiveCapability((currentMode) => currentMode === m ? null : m);
@@ -1143,6 +1166,8 @@ function DesktopPromptBlock({
   analyzing,
   onSend,
   knowledgeEnabled,
+  githubConnected,
+  githubLogin,
   compact = false,
   onSelectCapability,
 }: {
@@ -1160,6 +1185,8 @@ function DesktopPromptBlock({
   analyzing: boolean;
   onSend: () => void;
   knowledgeEnabled: boolean;
+  githubConnected?: boolean;
+  githubLogin?: string | null;
   compact?: boolean;
   onSelectCapability: (m: CapabilityKey) => void;
 }) {
@@ -1250,6 +1277,8 @@ function DesktopPromptBlock({
           onRecord={onRecord}
           onSend={onSend}
           knowledgeEnabled={knowledgeEnabled}
+          githubConnected={githubConnected}
+          githubLogin={githubLogin}
         />
       )}
     </div>
@@ -1286,23 +1315,32 @@ function CapabilityDetails({
   onRecord,
   onSend,
   knowledgeEnabled,
+  githubConnected,
+  githubLogin,
 }: {
   current: CapabilityKey;
   recording: boolean;
   onRecord: () => void;
   onSend: () => void;
   knowledgeEnabled: boolean;
+  githubConnected?: boolean;
+  githubLogin?: string | null;
 }) {
   const capability = CAPABILITIES.find((c) => c.key === current) ?? CAPABILITIES[0];
+  const needsGithub = current === "system" || current === "repo";
   const ctaLabel =
     current === "screen"
       ? (recording ? "Stop recording" : capability.cta)
       : current === "knowledge" && knowledgeEnabled
         ? "Knowledge enabled"
+      : needsGithub && githubConnected
+        ? "GitHub connected"
       : capability.cta;
   const onCta =
     current === "screen"
       ? onRecord
+      : needsGithub && !githubConnected
+        ? () => startGithubOAuth("connect", "/chat").catch((err) => toast.error(err instanceof Error ? err.message : "GitHub connection failed"))
       : onSend;
   const CtaIcon =
     current === "screen"
@@ -1314,15 +1352,30 @@ function CapabilityDetails({
       <div className="flex items-center justify-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/70">
         <capability.Icon className="h-3.5 w-3.5 text-orange-400" />
         {capability.title}
+        {needsGithub && githubConnected && githubLogin && (
+          <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9.5px] text-emerald-300 normal-case tracking-normal">
+            <Check className="h-3 w-3" /> {githubLogin}
+          </span>
+        )}
       </div>
       <p className="mx-auto mt-2 max-w-[560px] text-[12.5px] leading-relaxed text-white/55">
         {capability.desc}
       </p>
+      {current === "knowledge" && knowledgeEnabled && (
+        <p className="mt-2 text-[11.5px] text-emerald-300/80">
+          Type your question in the chat box above and press Send.
+        </p>
+      )}
+      {needsGithub && githubConnected && (
+        <p className="mt-2 text-[11.5px] text-emerald-300/80">
+          Type a repo like <span className="font-mono">owner/name</span> in the chat box and press Send.
+        </p>
+      )}
       <button
         onClick={onCta}
         className="mt-3 inline-flex items-center gap-1.5 bg-white text-black px-4 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] hover:bg-white/90 transition-colors"
       >
-        {current === "knowledge" && knowledgeEnabled ? <Check className="h-3.5 w-3.5" /> : <CtaIcon className="h-3.5 w-3.5" />}
+        {(current === "knowledge" && knowledgeEnabled) || (needsGithub && githubConnected) ? <Check className="h-3.5 w-3.5" /> : <CtaIcon className="h-3.5 w-3.5" />}
         {ctaLabel}
       </button>
     </div>

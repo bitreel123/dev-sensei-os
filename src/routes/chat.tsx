@@ -62,6 +62,11 @@ function ChatPage() {
   const [overlayMessages, setOverlayMessages] = useState<OverlayChatMessage[]>([]);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [knowledgeEnabled, setKnowledgeEnabled] = useState(false);
+  const [lastRun, setLastRun] = useState<{
+    kind: "screen" | "knowledge" | "system" | "repo";
+    status: "running" | "success" | "error";
+    message?: string;
+  } | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);

@@ -18,7 +18,7 @@ export const Route = createFileRoute("/signup")({
       { name: "description", content: "Get 5 free credits. No card required." },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({ next: safeNext(s.next) ?? undefined }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } => { const n = safeNext(s.next); return n ? { next: n } : {}; },
   component: SignupPage,
 });
 

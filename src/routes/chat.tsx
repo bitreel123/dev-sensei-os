@@ -1269,6 +1269,8 @@ function DesktopPromptBlock({
           onRecord={onRecord}
           onSend={onSend}
           knowledgeEnabled={knowledgeEnabled}
+          githubConnected={githubConnected}
+          githubLogin={githubLogin}
         />
       )}
     </div>

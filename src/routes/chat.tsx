@@ -196,7 +196,7 @@ function ChatPage() {
   }
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/login" });
+    if (!loading && !user) navigate({ to: "/login", search: {} });
   }, [loading, user, navigate]);
 
   useEffect(() => () => {
@@ -687,7 +687,7 @@ function ChatPage() {
                         setKnowledgeResult(null);
                         setRepoResult(null);
                         setAnalysisError(null);
-                        navigate({ to: "/chat" });
+                        navigate({ to: "/chat", search: {} });
                       }}
                     />
                   </div>
@@ -725,7 +725,7 @@ function ChatPage() {
                   setKnowledgeResult(null);
                   setRepoResult(null);
                   setAnalysisError(null);
-                  navigate({ to: "/chat" });
+                  navigate({ to: "/chat", search: {} });
                 }}
               />
               <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">

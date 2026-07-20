@@ -135,7 +135,7 @@ function LoginPage() {
 
         <div className="mt-6 text-center text-[12px] text-white/60">
           No account?{" "}
-          <Link to="/signup" className="text-white underline underline-offset-2">
+          <Link to="/signup" search={{}} className="text-white underline underline-offset-2">
             Create one
           </Link>
         </div>

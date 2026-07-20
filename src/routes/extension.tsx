@@ -128,7 +128,7 @@ function ExtensionPage() {
             <div className="text-white/50 text-sm">Checking your session…</div>
           ) : !user ? (
             <div className="text-sm text-white/70">
-              <Link to="/login" className="underline">Sign in</Link> to your Jeradin account.
+              <Link to="/login" search={{}} className="underline">Sign in</Link> to your Jeradin account.
               The extension automatically picks up your session — no tokens to copy or paste.
             </div>
           ) : (

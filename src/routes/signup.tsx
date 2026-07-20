@@ -151,7 +151,7 @@ function SignupPage() {
 
         <div className="mt-6 text-center text-[12px] text-white/60">
           Have an account?{" "}
-          <Link to="/login" className="text-white underline underline-offset-2">
+          <Link to="/login" search={{}} className="text-white underline underline-offset-2">
             Sign in
           </Link>
         </div>

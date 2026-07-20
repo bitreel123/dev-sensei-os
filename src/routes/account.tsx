@@ -33,7 +33,7 @@ function AccountPage() {
 
   // Redirect if signed out.
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/login" });
+    if (!authLoading && !user) navigate({ to: "/login", search: {} });
   }, [authLoading, user, navigate]);
 
   // Opportunistic reconcile on mount (catches expired-canceled subs before cron).

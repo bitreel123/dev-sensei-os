@@ -1162,6 +1162,8 @@ function DesktopPromptBlock({
   analyzing,
   onSend,
   knowledgeEnabled,
+  githubConnected,
+  githubLogin,
   compact = false,
   onSelectCapability,
 }: {
@@ -1179,6 +1181,8 @@ function DesktopPromptBlock({
   analyzing: boolean;
   onSend: () => void;
   knowledgeEnabled: boolean;
+  githubConnected?: boolean;
+  githubLogin?: string | null;
   compact?: boolean;
   onSelectCapability: (m: CapabilityKey) => void;
 }) {

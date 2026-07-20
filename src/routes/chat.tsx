@@ -652,6 +652,18 @@ function ChatPage() {
                   </IntelResultFrame>
                 ) : !analyzing && activeCapability === "system" ? (
                   <div className="w-full">
+                    <div className="mb-4 flex items-center justify-between">
+                      <button
+                        onClick={() => {
+                          setActiveCapability(null);
+                          setOpenedCapabilityPanel(null);
+                        }}
+                        className="inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/80 hover:bg-white/10"
+                      >
+                        ← Back
+                      </button>
+                      <span className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/50">System Intelligence</span>
+                    </div>
                     <SystemPanel />
                   </div>
                 ) : !analyzing ? (

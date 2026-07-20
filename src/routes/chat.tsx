@@ -135,9 +135,8 @@ function ChatPage() {
     setAnalysisError(null);
     setLastScreenshotBase64(base64);
     setLastScreenshotNote(note);
+    setLastRun({ kind: "screen", status: "running" });
     try {
-      // Fast path (Gemini only) — targets 2-5s. Deep Dive button in the
-      // overlay re-runs with mode: "deep" (Claude + GitHub) on demand.
       const result = await runAnalyze({ data: { imageBase64: base64, note, mode: "fast" } });
       setAnalysisResult(result);
       setOverlayMessages([]);
@@ -147,6 +146,7 @@ function ChatPage() {
       setCurrentEntryId(entry.id);
       navigate({ to: "/chat", search: { id: entry.id } });
       toast.success("Analysis complete");
+      setLastRun({ kind: "screen", status: "success", message: "Analysis complete" });
       setPrompt("");
       return result;
     } catch (e) {
@@ -154,6 +154,7 @@ function ChatPage() {
       const message = formatAnalysisError(e);
       setAnalysisError(message);
       toast.error(message);
+      setLastRun({ kind: "screen", status: "error", message });
       return null;
     } finally {
       setAnalyzing(false);

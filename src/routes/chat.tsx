@@ -578,7 +578,9 @@ function ChatPage() {
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-3 px-5 text-[12px] text-white/70 shrink-0">
-          <div />
+          <div className="flex items-center gap-2">
+            <LastRunPill lastRun={lastRun} />
+          </div>
           <div className="flex items-center justify-center gap-3">
             <span className="capitalize">{credits?.plan ?? "free"} plan</span>
             <span className="text-white/25">·</span>

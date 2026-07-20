@@ -62,6 +62,11 @@ function ChatPage() {
   const [overlayMessages, setOverlayMessages] = useState<OverlayChatMessage[]>([]);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [knowledgeEnabled, setKnowledgeEnabled] = useState(false);
+  const [lastRun, setLastRun] = useState<{
+    kind: "screen" | "knowledge" | "system" | "repo";
+    status: "running" | "success" | "error";
+    message?: string;
+  } | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -130,9 +135,8 @@ function ChatPage() {
     setAnalysisError(null);
     setLastScreenshotBase64(base64);
     setLastScreenshotNote(note);
+    setLastRun({ kind: "screen", status: "running" });
     try {
-      // Fast path (Gemini only) — targets 2-5s. Deep Dive button in the
-      // overlay re-runs with mode: "deep" (Claude + GitHub) on demand.
       const result = await runAnalyze({ data: { imageBase64: base64, note, mode: "fast" } });
       setAnalysisResult(result);
       setOverlayMessages([]);
@@ -142,6 +146,7 @@ function ChatPage() {
       setCurrentEntryId(entry.id);
       navigate({ to: "/chat", search: { id: entry.id } });
       toast.success("Analysis complete");
+      setLastRun({ kind: "screen", status: "success", message: "Analysis complete" });
       setPrompt("");
       return result;
     } catch (e) {
@@ -149,6 +154,7 @@ function ChatPage() {
       const message = formatAnalysisError(e);
       setAnalysisError(message);
       toast.error(message);
+      setLastRun({ kind: "screen", status: "error", message });
       return null;
     } finally {
       setAnalyzing(false);
@@ -428,6 +434,7 @@ function ChatPage() {
     }
 
     setAnalyzing(true);
+    setLastRun({ kind: capability, status: "running" });
     try {
       if (capability === "knowledge") {
         const res = await runKnowledge({ data: { question: text, projectContext: "" } });
@@ -441,6 +448,7 @@ function ChatPage() {
         navigate({ to: "/chat", search: { id: entry.id } });
         setPrompt("");
         toast.success("Knowledge report ready");
+        setLastRun({ kind: "knowledge", status: "success", message: "Knowledge report ready" });
         return;
       }
 
@@ -449,6 +457,7 @@ function ChatPage() {
           const files = await attachmentsToFileInputs(attachments);
           if (files.length === 0) {
             toast.error("Attach readable code files, then Send.");
+            setLastRun({ kind: "system", status: "error", message: "No readable code files" });
             return;
           }
           const res = await runSystem({ data: { source: "upload", files, projectHint: text } });
@@ -461,11 +470,13 @@ function ChatPage() {
           navigate({ to: "/chat", search: { id: entry.id } });
           setPrompt("");
           toast.success("System analysis complete");
+          setLastRun({ kind: "system", status: "success", message: `${res.filesAnalyzed} files analyzed` });
           return;
         }
         if (!github) {
           toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
           await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
+          setLastRun({ kind: "system", status: "error", message: "GitHub not connected" });
           return;
         }
         const res = await runSystem({ data: { source: "github", repo: repo!, projectHint: text } });
@@ -478,12 +489,14 @@ function ChatPage() {
         navigate({ to: "/chat", search: { id: entry.id } });
         setPrompt("");
         toast.success("System analysis complete");
+        setLastRun({ kind: "system", status: "success", message: `Scanned ${repo}` });
         return;
       }
 
       if (!github) {
         toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
         await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
+        setLastRun({ kind: "repo", status: "error", message: "GitHub not connected" });
         return;
       }
       const focus = text.replace(repo!, "").trim();
@@ -497,11 +510,13 @@ function ChatPage() {
       navigate({ to: "/chat", search: { id: entry.id } });
       setPrompt("");
       toast.success("Repo audit complete");
+      setLastRun({ kind: "repo", status: "success", message: `Audited ${repo}` });
     } catch (e) {
       console.error("[runPromptCapability] failed:", e);
       const message = formatAnalysisError(e);
       setAnalysisError(message);
       toast.error(message);
+      setLastRun({ kind: capability, status: "error", message });
     } finally {
       setAnalyzing(false);
     }
@@ -563,7 +578,9 @@ function ChatPage() {
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-3 px-5 text-[12px] text-white/70 shrink-0">
-          <div />
+          <div className="flex items-center gap-2">
+            <LastRunPill lastRun={lastRun} />
+          </div>
           <div className="flex items-center justify-center gap-3">
             <span className="capitalize">{credits?.plan ?? "free"} plan</span>
             <span className="text-white/25">·</span>
@@ -1305,6 +1322,45 @@ function CapabilityPills({ current, onSelect }: { current: CapabilityKey | null;
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function LastRunPill({
+  lastRun,
+}: {
+  lastRun: {
+    kind: "screen" | "knowledge" | "system" | "repo";
+    status: "running" | "success" | "error";
+    message?: string;
+  } | null;
+}) {
+  if (!lastRun) return null;
+  const labels = {
+    screen: "Screen Intelligence",
+    knowledge: "Knowledge Intelligence",
+    system: "System Intelligence",
+    repo: "Repo Intelligence",
+  } as const;
+  const tone =
+    lastRun.status === "success"
+      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+      : lastRun.status === "error"
+        ? "border-red-400/30 bg-red-400/10 text-red-300"
+        : "border-white/20 bg-white/5 text-white/70";
+  const dot =
+    lastRun.status === "success" ? "bg-emerald-400" : lastRun.status === "error" ? "bg-red-400" : "bg-white/60 animate-pulse";
+  const statusText =
+    lastRun.status === "success" ? "OK" : lastRun.status === "error" ? "Failed" : "Running…";
+  return (
+    <div
+      title={lastRun.message ?? ""}
+      className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] ${tone}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+      <span>{labels[lastRun.kind]}</span>
+      <span className="text-white/40">·</span>
+      <span>{statusText}</span>
     </div>
   );
 }

@@ -390,6 +390,13 @@ function ChatPage() {
       return;
     }
 
+    // Plain text (with or without non-image file attachments) → route to Knowledge Intelligence
+    // so users get a real reply instead of a "attach a screenshot" toast.
+    if (prompt.trim()) {
+      await runPromptCapability("knowledge");
+      return;
+    }
+
     toast.message("Attach a screenshot or start Screen recording, then Send.");
   }
 

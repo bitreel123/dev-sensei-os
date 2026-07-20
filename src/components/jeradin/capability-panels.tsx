@@ -192,7 +192,7 @@ export function SystemPanel({ entryId, setEntryId }: PanelProps) {
               {result.filesAnalyzed} files analyzed
             </div>
             <button
-              onClick={() => { setResult(null); setEntryId(null); navigate({ to: "/chat" }); }}
+              onClick={() => { setResult(null); setEntryId(null); navigate({ to: "/chat", search: {} }); }}
               className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/50 hover:text-white"
             >
               New analysis
@@ -288,7 +288,7 @@ export function KnowledgePanel({ entryId, setEntryId }: PanelProps) {
         <div className="mt-4 border border-white/10 rounded-lg p-5 bg-white/[0.02]">
           <div className="flex justify-end mb-3">
             <button
-              onClick={() => { setReport(null); setEntryId(null); navigate({ to: "/chat" }); }}
+              onClick={() => { setReport(null); setEntryId(null); navigate({ to: "/chat", search: {} }); }}
               className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/50 hover:text-white"
             >
               New research
@@ -395,7 +395,7 @@ export function RepoPanel({ entryId, setEntryId }: PanelProps) {
         <div className="mt-4 border border-white/10 rounded-lg p-5 bg-white/[0.02]">
           <div className="flex justify-end mb-3">
             <button
-              onClick={() => { setReport(null); setEntryId(null); navigate({ to: "/chat" }); }}
+              onClick={() => { setReport(null); setEntryId(null); navigate({ to: "/chat", search: {} }); }}
               className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/50 hover:text-white"
             >
               New audit

@@ -18,7 +18,7 @@ export const Route = createFileRoute("/signup")({
       { name: "description", content: "Get 5 free credits. No card required." },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({ next: safeNext(s.next) ?? undefined }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } => { const n = safeNext(s.next); return n ? { next: n } : {}; },
   component: SignupPage,
 });
 
@@ -94,6 +94,7 @@ function SignupPage() {
             </p>
             <Link
               to="/login"
+              search={{}}
               className="inline-block mt-2 border border-white/25 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors"
             >
               Go to sign in
@@ -151,7 +152,7 @@ function SignupPage() {
 
         <div className="mt-6 text-center text-[12px] text-white/60">
           Have an account?{" "}
-          <Link to="/login" className="text-white underline underline-offset-2">
+          <Link to="/login" search={{}} className="text-white underline underline-offset-2">
             Sign in
           </Link>
         </div>

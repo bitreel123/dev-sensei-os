@@ -184,9 +184,9 @@ function DownloadPage() {
         <div className="mt-10 text-center">
           <p className="text-[13px] text-black/55">
             Need an account first?{" "}
-            <Link to="/signup" className="text-black underline underline-offset-4">Create one</Link>{" "}
+            <Link to="/signup" search={{}} className="text-black underline underline-offset-4">Create one</Link>{" "}
             or{" "}
-            <Link to="/login" className="text-black underline underline-offset-4">sign in</Link>.
+            <Link to="/login" search={{}} className="text-black underline underline-offset-4">sign in</Link>.
           </p>
         </div>
       </section>

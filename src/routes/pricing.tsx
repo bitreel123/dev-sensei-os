@@ -259,6 +259,7 @@ function PricingPage() {
               <span className="text-white/60">Already have an account?</span>
               <Link
                 to="/login"
+                search={{}}
                 className="border border-white/70 px-3 py-1.5 font-mono text-[11px] tracking-[0.22em] uppercase hover:bg-white hover:text-black transition-colors"
               >
                 Sign in

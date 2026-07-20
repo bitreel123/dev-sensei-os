@@ -38,7 +38,7 @@ export function ChatSidebar() {
     >
       <div className="flex items-center justify-between px-3 h-14 border-b border-white/10">
         {!collapsed && (
-          <Link to="/chat" className="flex items-center gap-2">
+          <Link to="/chat" search={{}} className="flex items-center gap-2">
             <LogoMark className="h-[18px] w-[18px]" />
             <span className="text-[14px] font-semibold tracking-tight">Jeradin</span>
           </Link>

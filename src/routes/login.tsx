@@ -18,7 +18,7 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Sign in to your Jeradin workspace." },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({ next: safeNext(s.next) ?? undefined }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } => { const n = safeNext(s.next); return n ? { next: n } : {}; },
   component: LoginPage,
 });
 
@@ -135,7 +135,7 @@ function LoginPage() {
 
         <div className="mt-6 text-center text-[12px] text-white/60">
           No account?{" "}
-          <Link to="/signup" className="text-white underline underline-offset-2">
+          <Link to="/signup" search={{}} className="text-white underline underline-offset-2">
             Create one
           </Link>
         </div>

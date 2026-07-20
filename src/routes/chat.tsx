@@ -22,9 +22,10 @@ import { SystemPanel } from "@/components/jeradin/system-panel";
 
 
 export const Route = createFileRoute("/chat")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    id: typeof s.id === "string" ? s.id : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { id?: string } => {
+    const id = typeof s.id === "string" ? s.id : undefined;
+    return id ? { id } : {};
+  },
   head: () => ({
     meta: [
       { title: "New chat · Jeradin" },
@@ -196,7 +197,7 @@ function ChatPage() {
   }
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/login" });
+    if (!loading && !user) navigate({ to: "/login", search: {} });
   }, [loading, user, navigate]);
 
   useEffect(() => () => {
@@ -687,7 +688,7 @@ function ChatPage() {
                         setKnowledgeResult(null);
                         setRepoResult(null);
                         setAnalysisError(null);
-                        navigate({ to: "/chat" });
+                        navigate({ to: "/chat", search: {} });
                       }}
                     />
                   </div>
@@ -725,7 +726,7 @@ function ChatPage() {
                   setKnowledgeResult(null);
                   setRepoResult(null);
                   setAnalysisError(null);
-                  navigate({ to: "/chat" });
+                  navigate({ to: "/chat", search: {} });
                 }}
               />
               <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">

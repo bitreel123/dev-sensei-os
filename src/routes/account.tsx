@@ -33,7 +33,7 @@ function AccountPage() {
 
   // Redirect if signed out.
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/login" });
+    if (!authLoading && !user) navigate({ to: "/login", search: {} });
   }, [authLoading, user, navigate]);
 
   // Opportunistic reconcile on mount (catches expired-canceled subs before cron).
@@ -105,6 +105,7 @@ function AccountPage() {
       <div className="pt-24 pb-2 mx-auto max-w-[900px] px-5 flex items-center justify-between">
         <Link
           to="/chat"
+          search={{}}
           className="font-mono text-[11px] tracking-[0.22em] uppercase text-white/60 hover:text-white"
         >
           ← Home

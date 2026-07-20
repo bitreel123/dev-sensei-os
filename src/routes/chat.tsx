@@ -412,7 +412,7 @@ function ChatPage() {
 
     if (capability === "knowledge" && text.length < 5) {
       setKnowledgeEnabled(true);
-      toast.success("Knowledge Intelligence enabled");
+      toast.success("Knowledge enabled — type your question in the chat box and press Send.");
       return;
     }
 

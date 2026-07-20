@@ -738,6 +738,8 @@ function ChatPage() {
                 analyzing={analyzing}
                 onSend={send}
                 knowledgeEnabled={knowledgeEnabled}
+                githubConnected={!!github}
+                githubLogin={github?.login ?? null}
                 compact
                 onSelectCapability={(m) => {
                   setActiveCapability((currentMode) => currentMode === m ? null : m);

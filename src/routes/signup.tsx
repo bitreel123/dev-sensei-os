@@ -94,6 +94,7 @@ function SignupPage() {
             </p>
             <Link
               to="/login"
+              search={{}}
               className="inline-block mt-2 border border-white/25 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-white hover:text-black transition-colors"
             >
               Go to sign in

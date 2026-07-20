@@ -403,6 +403,7 @@ function CTA() {
           </Link>
           <Link
             to="/signup"
+            search={{}}
             className="inline-flex items-center gap-2 rounded-full bg-black/[0.04] px-4 py-2.5 text-[13px] font-medium text-black hover:bg-black/[0.08]"
           >
             Create an account

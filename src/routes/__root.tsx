@@ -78,6 +78,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "google-site-verification", content: "dJX8JMTFlLmn18Jl0KDye9RreuG2z9v7SQGDtZZzTZA" },
       { title: "Jeradin — Read-only debugger for vibecoded apps" },
       { name: "description", content: "Jeradin watches your screen and tells you where vibecoded code breaks — without ever touching it." },
       { name: "author", content: "Jeradin" },

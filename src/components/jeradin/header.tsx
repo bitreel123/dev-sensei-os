@@ -17,7 +17,15 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
         <div className="flex items-center gap-10">
           <LogoLockup />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            to="/pricing"
+            className={`inline-flex items-center px-3 py-1.5 text-[13px] font-medium transition-colors ${
+              isDark ? "text-white/80 hover:text-white" : "text-black/70 hover:text-black"
+            }`}
+          >
+            Pricing
+          </Link>
           <Link
             to={user ? "/chat" : "/signup"}
             className={`inline-flex items-center px-3.5 py-1.5 text-[13px] font-medium border transition-all ${

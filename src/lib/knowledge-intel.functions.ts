@@ -142,6 +142,15 @@ export type KnowledgeReport = {
 
 // ---------------- GitHub helpers ----------------
 const GITHUB_API = "https://api.github.com";
+const SEARCH_TIMEOUT_MS = 3_500;
+
+async function fetchKnowledgeSource(input: string, init?: RequestInit) {
+  return fetch(input, {
+    ...init,
+    signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),
+  });
+}
+
 async function gh<T>(url: string, token?: string): Promise<T> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
@@ -149,7 +158,7 @@ async function gh<T>(url: string, token?: string): Promise<T> {
     "X-GitHub-Api-Version": "2022-11-28",
   };
   if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(url, { headers });
+  const res = await fetchKnowledgeSource(url, { headers });
   if (!res.ok) throw new Error(`GitHub ${res.status}: ${(await res.text()).slice(0, 200)}`);
   return res.json() as Promise<T>;
 }
@@ -169,9 +178,7 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    const geminiKey = process.env.GEMINI_API_KEY;
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-    if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
 
     // Grab user's GitHub token if available (higher rate limit + private search)
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -189,9 +196,10 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
           "Search public GitHub for repositories matching a query. Use for finding reference projects, libraries, and frameworks.",
         inputSchema: z.object({
           query: z.string().describe("Search query e.g. 'react realtime chat websocket'"),
-          limit: z.number().min(1).max(10).default(5),
+          limit: z.number().default(5),
         }),
         execute: async ({ query, limit }) => {
+          const safeLimit = Math.max(1, Math.min(5, Math.round(limit)));
           const j = await gh<{
             items: Array<{
               full_name: string;
@@ -202,7 +210,7 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
               topics?: string[];
             }>;
           }>(
-            `${GITHUB_API}/search/repositories?q=${encodeURIComponent(query)}&per_page=${limit}&sort=stars`,
+            `${GITHUB_API}/search/repositories?q=${encodeURIComponent(query)}&per_page=${safeLimit}&sort=stars`,
             ghToken,
           );
           return j.items.map((r) => ({
@@ -220,9 +228,10 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
           "Search actual code snippets across public GitHub. Use for finding real-world usage of an API or pattern.",
         inputSchema: z.object({
           query: z.string(),
-          limit: z.number().min(1).max(10).default(5),
+          limit: z.number().default(5),
         }),
         execute: async ({ query, limit }) => {
+          const safeLimit = Math.max(1, Math.min(5, Math.round(limit)));
           const j = await gh<{
             items: Array<{
               path: string;
@@ -230,7 +239,7 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
               repository: { full_name: string; html_url: string };
             }>;
           }>(
-            `${GITHUB_API}/search/code?q=${encodeURIComponent(query)}&per_page=${limit}`,
+            `${GITHUB_API}/search/code?q=${encodeURIComponent(query)}&per_page=${safeLimit}`,
             ghToken,
           );
           return j.items.map((r) => ({
@@ -245,11 +254,12 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
           "Search the npm registry for JavaScript/TypeScript packages, libraries, and SDKs.",
         inputSchema: z.object({
           query: z.string(),
-          limit: z.number().min(1).max(10).default(5),
+          limit: z.number().default(5),
         }),
         execute: async ({ query, limit }) => {
-          const res = await fetch(
-            `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(query)}&size=${limit}`,
+          const safeLimit = Math.max(1, Math.min(5, Math.round(limit)));
+          const res = await fetchKnowledgeSource(
+            `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(query)}&size=${safeLimit}`,
           );
           if (!res.ok) throw new Error(`npm ${res.status}`);
           const j = (await res.json()) as {
@@ -274,11 +284,12 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
         inputSchema: z.object({
           query: z.string(),
           type: z.enum(["models", "datasets"]).default("models"),
-          limit: z.number().min(1).max(10).default(5),
+          limit: z.number().default(5),
         }),
         execute: async ({ query, type, limit }) => {
-          const res = await fetch(
-            `https://huggingface.co/api/${type}?search=${encodeURIComponent(query)}&limit=${limit}`,
+          const safeLimit = Math.max(1, Math.min(5, Math.round(limit)));
+          const res = await fetchKnowledgeSource(
+            `https://huggingface.co/api/${type}?search=${encodeURIComponent(query)}&limit=${safeLimit}`,
           );
           if (!res.ok) throw new Error(`HF ${res.status}`);
           const j = (await res.json()) as Array<{ id: string; downloads?: number; likes?: number }>;
@@ -386,7 +397,10 @@ Rules:
 - laymanSummary: 2-3 short paragraphs in friendly plain English for developers who may not be highly technical. Define any abbreviation the first time you use it.
 - PLAIN ENGLISH. Assume the reader may not be highly technical. Define abbreviations in "glossary".
 - Every "why" is ONE short sentence explaining benefit for THIS project.
-- 6-12 resources across different kinds.
+- Keep the complete report concise enough to finish reliably: no section may exceed 4 list items, except resources (maximum 6) and graph nodes (maximum 12).
+- Include every section relevant to the question, but omit irrelevant sections rather than filling them with generic text.
+- Keep each list item to one or two sentences. Keep Mermaid diagrams small.
+- Use up to 6 resources across different kinds.
 - Prefer maintained, popular options (higher stars, recent activity).
 - For Mermaid, no code fences and keep node labels short.
 - Build the knowledge graph so the answer feels connected (Domain → Market → Competitors → Frameworks → Architecture → Security → Database → Backend → Deployment → Pricing → Growth). 8-16 nodes is a good size.`;
@@ -403,24 +417,30 @@ Rules:
       system: systemPrompt,
       prompt: userPrompt,
       tools,
-      maxOutputTokens: 6000,
+      maxOutputTokens: 5200,
       stopWhen: stepCountIs(2),
     });
 
-    const jsonMatch = claudeText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Knowledge model returned no JSON payload.");
+    const jsonStart = claudeText.indexOf("{");
+    const jsonEnd = claudeText.lastIndexOf("}");
+    const jsonPayload = jsonStart >= 0
+      ? claudeText.slice(jsonStart, jsonEnd > jsonStart ? jsonEnd + 1 : undefined)
+      : "";
+    if (!jsonPayload) throw new Error("Knowledge analysis returned an incomplete response. Please retry.");
     let partial: Omit<KnowledgeReport, "question">;
     try {
-      partial = JSON.parse(jsonMatch[0]) as Omit<KnowledgeReport, "question">;
+      partial = JSON.parse(jsonPayload) as Omit<KnowledgeReport, "question">;
     } catch {
       const { jsonrepair } = await import("jsonrepair");
       try {
-        partial = JSON.parse(jsonrepair(jsonMatch[0])) as Omit<KnowledgeReport, "question">;
-      } catch (e) {
-        throw new Error(
-          `Knowledge model returned malformed JSON. ${(e as Error).message}`,
-        );
+        partial = JSON.parse(jsonrepair(jsonPayload)) as Omit<KnowledgeReport, "question">;
+      } catch {
+        throw new Error("Knowledge analysis returned an incomplete response. Please retry.");
       }
+    }
+
+    if (!partial || typeof partial !== "object" || Array.isArray(partial)) {
+      throw new Error("Knowledge analysis returned an invalid response. Please retry.");
     }
 
     

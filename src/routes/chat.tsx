@@ -1262,6 +1262,10 @@ function DesktopPromptBlock({
   knowledgeEnabled,
   githubConnected,
   githubLogin,
+  githubRepos,
+  selectedRepo,
+  reposLoading,
+  onSelectRepo,
   compact = false,
   onSelectCapability,
 }: {
@@ -1281,6 +1285,10 @@ function DesktopPromptBlock({
   knowledgeEnabled: boolean;
   githubConnected?: boolean;
   githubLogin?: string | null;
+  githubRepos: GithubRepo[];
+  selectedRepo: string;
+  reposLoading: boolean;
+  onSelectRepo: (repo: string) => void;
   compact?: boolean;
   onSelectCapability: (m: CapabilityKey) => void;
 }) {
@@ -1291,6 +1299,16 @@ function DesktopPromptBlock({
 
   return (
     <div className={`${compact ? "mt-0" : "mt-16"} w-full`}>
+      {(selected === "system" || selected === "repo") && (
+        <RepoSelector
+          connected={!!githubConnected}
+          login={githubLogin}
+          repos={githubRepos}
+          value={selectedRepo}
+          loading={reposLoading}
+          onChange={onSelectRepo}
+        />
+      )}
       {attachments.length > 0 && (
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {attachments.map((a, i) => (
@@ -1501,7 +1519,7 @@ function CapabilityDetails({
       )}
       {needsGithub && githubConnected && (
         <p className="mt-2 text-[11.5px] text-emerald-300/80">
-          Type a repo like <span className="font-mono">owner/name</span> in the chat box and press Send.
+          Choose a repository above, type what you want analyzed, and press Send.
         </p>
       )}
       <button
@@ -1511,6 +1529,69 @@ function CapabilityDetails({
         {(current === "knowledge" && knowledgeEnabled) || (needsGithub && githubConnected) ? <Check className="h-3.5 w-3.5" /> : <CtaIcon className="h-3.5 w-3.5" />}
         {ctaLabel}
       </button>
+    </div>
+  );
+}
+
+function RepoSelector({
+  connected,
+  login,
+  repos,
+  value,
+  loading,
+  onChange,
+}: {
+  connected: boolean;
+  login?: string | null;
+  repos: GithubRepo[];
+  value: string;
+  loading: boolean;
+  onChange: (repo: string) => void;
+}) {
+  if (!connected) {
+    return (
+      <button
+        onClick={() => startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"))}
+        className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-3 py-2.5 text-[12px] text-white/80 hover:border-white/30"
+      >
+        <Github className="h-4 w-4" /> Connect GitHub codebase
+      </button>
+    );
+  }
+  return (
+    <div className="mb-3 flex items-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-3 py-2">
+      <Github className="h-4 w-4 shrink-0 text-emerald-300" />
+      <span className="hidden text-[11px] text-white/45 sm:inline">{login ? `@${login}` : "GitHub"}</span>
+      <div className="relative min-w-0 flex-1">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          disabled={loading || repos.length === 0}
+          aria-label="Choose GitHub repository"
+          className="w-full appearance-none bg-transparent pr-7 text-[12.5px] text-white outline-none disabled:text-white/40"
+        >
+          <option value="" className="bg-neutral-950">{loading ? "Loading codebases…" : "Choose a codebase"}</option>
+          {repos.map((repo) => (
+            <option key={repo.full_name} value={repo.full_name} className="bg-neutral-950">
+              {repo.full_name}{repo.private ? " · private" : ""}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/45" />
+      </div>
+    </div>
+  );
+}
+
+function ChatRunProgress({ capability, prompt, repo }: { capability: CapabilityKey; prompt: string; repo: string }) {
+  const label = capability === "system" ? "Scanning codebase" : capability === "repo" ? "Reading GitHub history" : capability === "screen" ? "Analyzing screen" : "Researching answer";
+  return (
+    <div className="mt-5 w-full max-w-[640px] border-l border-white/15 pl-4 text-left">
+      {prompt && <p className="mb-3 text-[13px] leading-relaxed text-white/55">{prompt}</p>}
+      <div className="flex items-center gap-2 text-[12.5px]">
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-orange-400" />
+        <Shimmer className="font-mono uppercase tracking-[0.16em]">{repo && (capability === "system" || capability === "repo") ? `${label} · ${repo}` : label}</Shimmer>
+      </div>
     </div>
   );
 }
@@ -1602,6 +1683,13 @@ function MobileChat({
   onCloseCapabilityPanels,
   currentEntryId,
   setCurrentEntryId,
+  githubConnected,
+  githubLogin,
+  githubRepos,
+  selectedRepo,
+  reposLoading,
+  onSelectRepo,
+  pendingPrompt,
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;
@@ -1628,6 +1716,13 @@ function MobileChat({
   onCloseCapabilityPanels: () => void;
   currentEntryId: string | null;
   setCurrentEntryId: (id: string | null) => void;
+  githubConnected: boolean;
+  githubLogin: string | null;
+  githubRepos: GithubRepo[];
+  selectedRepo: string;
+  reposLoading: boolean;
+  onSelectRepo: (repo: string) => void;
+  pendingPrompt: string;
 }) {
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1723,11 +1818,22 @@ function MobileChat({
           <p className="mt-2 text-[12px] text-white/40">
             {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
           </p>
+          {analyzing && <ChatRunProgress capability={selected} prompt={pendingPrompt} repo={selectedRepo} />}
         </div>
       )}
 
       {/* Composer */}
       <div className="p-3 shrink-0">
+        {(selected === "system" || selected === "repo") && (
+          <RepoSelector
+            connected={githubConnected}
+            login={githubLogin}
+            repos={githubRepos}
+            value={selectedRepo}
+            loading={reposLoading}
+            onChange={onSelectRepo}
+          />
+        )}
         {attachments.length > 0 && (
           <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
             {attachments.map((a, i) => (

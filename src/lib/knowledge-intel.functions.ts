@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { generateText, tool, stepCountIs } from "ai";
-import { z } from "zod";
+import { generateText } from "ai";
 
 // ---------------- Types ----------------
 export type KnowledgeResource = {
@@ -179,137 +178,57 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
+    const { assertCreditsAvailable, INTEL_COST } = await import("./intel-memory.server");
+    await assertCreditsAvailable(context.userId, INTEL_COST.knowledge);
 
-    // Grab user's GitHub token if available (higher rate limit + private search)
+    const startedAt = Date.now();
+
+    // These reads are independent, so do them together instead of adding two
+    // sequential database round trips before generation starts.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: conn } = await supabaseAdmin
-      .from("github_connections")
-      .select("access_token")
-      .eq("user_id", context.userId)
-      .maybeSingle();
+    const { recallIntel, memoryPromptSuffix } = await import("./intel-memory.server");
+    const [connectionResult, memories] = await Promise.all([
+      supabaseAdmin
+        .from("github_connections")
+        .select("access_token")
+        .eq("user_id", context.userId)
+        .maybeSingle(),
+      recallIntel(context.userId, "knowledge", 5),
+    ]);
+    const conn = connectionResult.data;
     const ghToken = (conn as { access_token?: string } | null)?.access_token;
 
-    // ---------- Tools (agentic) ----------
-    const tools = {
-      search_github_repos: tool({
-        description:
-          "Search public GitHub for repositories matching a query. Use for finding reference projects, libraries, and frameworks.",
-        inputSchema: z.object({
-          query: z.string().describe("Search query e.g. 'react realtime chat websocket'"),
-          limit: z.number().default(5),
-        }),
-        execute: async ({ query, limit }) => {
-          const safeLimit = Math.max(1, Math.min(5, Math.round(limit)));
-          const j = await gh<{
-            items: Array<{
-              full_name: string;
-              html_url: string;
-              description: string | null;
-              stargazers_count: number;
-              language: string | null;
-              topics?: string[];
-            }>;
-          }>(
-            `${GITHUB_API}/search/repositories?q=${encodeURIComponent(query)}&per_page=${safeLimit}&sort=stars`,
-            ghToken,
-          );
-          return j.items.map((r) => ({
-            name: r.full_name,
-            url: r.html_url,
-            stars: r.stargazers_count,
-            language: r.language,
-            description: r.description,
-            topics: r.topics ?? [],
-          }));
-        },
-      }),
-      search_github_code: tool({
-        description:
-          "Search actual code snippets across public GitHub. Use for finding real-world usage of an API or pattern.",
-        inputSchema: z.object({
-          query: z.string(),
-          limit: z.number().default(5),
-        }),
-        execute: async ({ query, limit }) => {
-          const safeLimit = Math.max(1, Math.min(5, Math.round(limit)));
-          const j = await gh<{
-            items: Array<{
-              path: string;
-              html_url: string;
-              repository: { full_name: string; html_url: string };
-            }>;
-          }>(
-            `${GITHUB_API}/search/code?q=${encodeURIComponent(query)}&per_page=${safeLimit}`,
-            ghToken,
-          );
-          return j.items.map((r) => ({
-            repo: r.repository.full_name,
-            path: r.path,
-            url: r.html_url,
-          }));
-        },
-      }),
-      search_npm: tool({
-        description:
-          "Search the npm registry for JavaScript/TypeScript packages, libraries, and SDKs.",
-        inputSchema: z.object({
-          query: z.string(),
-          limit: z.number().default(5),
-        }),
-        execute: async ({ query, limit }) => {
-          const safeLimit = Math.max(1, Math.min(5, Math.round(limit)));
-          const res = await fetchKnowledgeSource(
-            `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(query)}&size=${safeLimit}`,
-          );
+    // Fetch one small evidence batch only for questions that explicitly need
+    // current market/options context. Tool loops were the main source of empty
+    // final responses because a tool step could consume the whole turn budget.
+    const needsLiveEvidence = /\b(current|latest|market|trend|competitor|startup|idea|package|library|model|dataset)\b/i.test(data.question);
+    let evidence = "";
+    if (needsLiveEvidence) {
+      const query = data.question.slice(0, 180);
+      const [reposResult, npmResult] = await Promise.allSettled([
+        gh<{ items: Array<{ full_name: string; html_url: string; description: string | null; stargazers_count: number }> }>(
+          `${GITHUB_API}/search/repositories?q=${encodeURIComponent(query)}&per_page=3&sort=stars`,
+          ghToken,
+        ),
+        fetchKnowledgeSource(`https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(query)}&size=3`).then(async (res) => {
           if (!res.ok) throw new Error(`npm ${res.status}`);
-          const j = (await res.json()) as {
-            objects: Array<{
-              package: { name: string; description?: string; links: { npm: string; homepage?: string }; keywords?: string[] };
-              score: { final: number };
-            }>;
-          };
-          return j.objects.map((o) => ({
-            name: o.package.name,
-            description: o.package.description,
-            url: o.package.links.homepage ?? o.package.links.npm,
-            npm: o.package.links.npm,
-            keywords: o.package.keywords ?? [],
-            score: Math.round(o.score.final * 100) / 100,
-          }));
-        },
-      }),
-      search_huggingface: tool({
-        description:
-          "Search Hugging Face for public AI models and datasets. Use when the user needs ML models, embeddings, or open datasets.",
-        inputSchema: z.object({
-          query: z.string(),
-          type: z.enum(["models", "datasets"]).default("models"),
-          limit: z.number().default(5),
+          return res.json() as Promise<{ objects: Array<{ package: { name: string; description?: string; links: { npm: string } } }> }>;
         }),
-        execute: async ({ query, type, limit }) => {
-          const safeLimit = Math.max(1, Math.min(5, Math.round(limit)));
-          const res = await fetchKnowledgeSource(
-            `https://huggingface.co/api/${type}?search=${encodeURIComponent(query)}&limit=${safeLimit}`,
-          );
-          if (!res.ok) throw new Error(`HF ${res.status}`);
-          const j = (await res.json()) as Array<{ id: string; downloads?: number; likes?: number }>;
-          return j.map((r) => ({
-            id: r.id,
-            url: `https://huggingface.co/${type === "datasets" ? "datasets/" : ""}${r.id}`,
-            downloads: r.downloads ?? null,
-            likes: r.likes ?? null,
-          }));
-        },
-      }),
-    };
+      ]);
+      const sources: unknown[] = [];
+      if (reposResult.status === "fulfilled") sources.push(...reposResult.value.items.map((item) => ({
+        kind: "repo", title: item.full_name, url: item.html_url, description: item.description, stars: item.stargazers_count,
+      })));
+      if (npmResult.status === "fulfilled") sources.push(...npmResult.value.objects.map((item) => ({
+        kind: "package", title: item.package.name, url: item.package.links.npm, description: item.package.description,
+      })));
+      if (sources.length) evidence = `\n\nLive evidence (use only when relevant):\n${JSON.stringify(sources).slice(0, 5000)}`;
+    }
 
-    // ---------- Claude Sonnet agent loop ----------
     const anthropic = createAnthropic({ apiKey: anthropicKey });
     const claude = anthropic("claude-sonnet-4-5");
 
     const systemPrompt = `You are Knowledge Intelligence — a senior product engineer + market analyst + software architect combined. You transform an idea or question into a production-ready plan grounded in a structured knowledge graph.
-
-You have search tools for GitHub (repos + code), npm, and Hugging Face. Use at most one parallel search batch only when live external evidence materially improves the answer, then immediately produce the report. For direct explanations and ordinary questions, answer without tools. Never perform searches in repeated rounds.
 
 Return STRICT JSON only (no markdown fences, no prose outside JSON). Any field may be omitted when clearly not relevant to the user's question, but prefer to include as many as possible. Shape:
 
@@ -397,7 +316,7 @@ Rules:
 - laymanSummary: 2-3 short paragraphs in friendly plain English for developers who may not be highly technical. Define any abbreviation the first time you use it.
 - PLAIN ENGLISH. Assume the reader may not be highly technical. Define abbreviations in "glossary".
 - Every "why" is ONE short sentence explaining benefit for THIS project.
-- Keep the complete report concise enough to finish reliably: no section may exceed 4 list items, except resources (maximum 6) and graph nodes (maximum 12).
+- Keep the complete report concise enough to finish reliably: no section may exceed 3 list items, except resources (maximum 5) and graph nodes (maximum 10).
 - Include every section relevant to the question, but omit irrelevant sections rather than filling them with generic text.
 - Keep each list item to one or two sentences. Keep Mermaid diagrams small.
 - Use up to 6 resources across different kinds.
@@ -405,41 +324,54 @@ Rules:
 - For Mermaid, no code fences and keep node labels short.
 - Build the knowledge graph so the answer feels connected (Domain → Market → Competitors → Frameworks → Architecture → Security → Database → Backend → Deployment → Pricing → Growth). 8-16 nodes is a good size.`;
 
-    const { recallIntel, memoryPromptSuffix } = await import("./intel-memory.server");
-    const memTail = memoryPromptSuffix(await recallIntel(context.userId, "knowledge", 5));
+    const memTail = memoryPromptSuffix(memories);
     const userPrompt =
       `Question: ${data.question}` +
       (data.projectContext ? `\n\nProject context:\n${data.projectContext}` : "") +
-      memTail;
+      memTail + evidence;
 
-    const { text: claudeText } = await generateText({
+    const parseReport = async (text: string): Promise<Partial<Omit<KnowledgeReport, "question">> | null> => {
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      if (start < 0) return null;
+      const candidate = text.slice(start, end > start ? end + 1 : undefined);
+      try {
+        return JSON.parse(candidate) as Partial<Omit<KnowledgeReport, "question">>;
+      } catch {
+        const { jsonrepair } = await import("jsonrepair");
+        try {
+          return JSON.parse(jsonrepair(candidate)) as Partial<Omit<KnowledgeReport, "question">>;
+        } catch {
+          return null;
+        }
+      }
+    };
+
+    const generateReport = () => generateText({
       model: claude,
       system: systemPrompt,
       prompt: userPrompt,
-      tools,
-      maxOutputTokens: 5200,
-      stopWhen: stepCountIs(2),
+      maxOutputTokens: 4800,
     });
 
-    const jsonStart = claudeText.indexOf("{");
-    const jsonEnd = claudeText.lastIndexOf("}");
-    const jsonPayload = jsonStart >= 0
-      ? claudeText.slice(jsonStart, jsonEnd > jsonStart ? jsonEnd + 1 : undefined)
-      : "";
-    if (!jsonPayload) throw new Error("Knowledge analysis returned an incomplete response. Please retry.");
-    let partial: Omit<KnowledgeReport, "question">;
-    try {
-      partial = JSON.parse(jsonPayload) as Omit<KnowledgeReport, "question">;
-    } catch {
-      const { jsonrepair } = await import("jsonrepair");
-      try {
-        partial = JSON.parse(jsonrepair(jsonPayload)) as Omit<KnowledgeReport, "question">;
-      } catch {
-        throw new Error("Knowledge analysis returned an incomplete response. Please retry.");
-      }
+    let recovered = false;
+    let generation = await generateReport();
+    let partial = await parseReport(generation.text);
+    // One bounded recovery attempt is used only when the provider returned no
+    // usable object. Normal successful requests still make exactly one call.
+    if (!partial) {
+      recovered = true;
+      generation = await generateText({
+        model: claude,
+        system: `${systemPrompt}\nThe previous response was cut off. Return a shorter complete JSON object. Prioritize laymanSummary, productDiscovery, marketIntelligence, competitors, recommendedStack, nextSteps, and graph.`,
+        prompt: userPrompt,
+        maxOutputTokens: 3200,
+      });
+      partial = await parseReport(generation.text);
     }
+    if (!partial) throw new Error("Knowledge analysis could not produce a complete report. Please retry.");
 
-    if (!partial || typeof partial !== "object" || Array.isArray(partial)) {
+    if (typeof partial !== "object" || Array.isArray(partial)) {
       throw new Error("Knowledge analysis returned an invalid response. Please retry.");
     }
 
@@ -465,7 +397,7 @@ Rules:
       graph: partial.graph,
     };
 
-    const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
+    const { chargeAndRemember } = await import("./intel-memory.server");
     await chargeAndRemember(context.userId, "knowledge", INTEL_COST.knowledge, {
       title: data.question.slice(0, 200),
       summary: partial.laymanSummary?.slice(0, 800) ?? null,
@@ -475,6 +407,12 @@ Rules:
         stack: (partial.recommendedStack ?? []).slice(0, 8),
       },
       tags: (partial.recommendedStack ?? []).slice(0, 5),
+    });
+
+    console.info("[knowledge-intel] complete", {
+      durationMs: Date.now() - startedAt,
+      usedLiveEvidence: needsLiveEvidence,
+      recovered,
     });
 
     return { report };

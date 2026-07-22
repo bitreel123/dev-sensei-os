@@ -67,6 +67,7 @@ function ChatPage() {
   const [selectedRepo, setSelectedRepo] = useState("");
   const [reposLoading, setReposLoading] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState("");
+  const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState("");
   const [lastRun, setLastRun] = useState<{
     kind: "screen" | "knowledge" | "system" | "repo";
     status: "running" | "success" | "error";
@@ -181,6 +182,8 @@ function ChatPage() {
   async function analyzeImageBase64(base64: string, note: string, title: string) {
     setAnalyzing(true);
     setAnalysisError(null);
+    setLastSubmittedPrompt(note.trim() || title);
+    setPendingPrompt(note.trim() || title);
     setLastScreenshotBase64(base64);
     setLastScreenshotNote(note);
     setLastRun({ kind: "screen", status: "running" });
@@ -206,6 +209,7 @@ function ChatPage() {
       return null;
     } finally {
       setAnalyzing(false);
+      setPendingPrompt("");
     }
   }
 
@@ -266,6 +270,13 @@ function ChatPage() {
   }
 
   async function startRecording() {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      const message = "Screen recording is not supported by this mobile browser. Attach a screenshot instead.";
+      setAnalysisError(message);
+      toast.error(message);
+      imageInputRef.current?.click();
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: 30 },
@@ -520,6 +531,7 @@ function ChatPage() {
 
     setAnalyzing(true);
     setPendingPrompt(text);
+    setLastSubmittedPrompt(text || (capability === "system" ? "Scan my codebase" : "Run my GitHub code"));
     setLastRun({ kind: capability, status: "running" });
     try {
       if (capability === "knowledge") {
@@ -663,6 +675,7 @@ function ChatPage() {
         reposLoading={reposLoading}
         onSelectRepo={chooseRepo}
         pendingPrompt={pendingPrompt}
+        lastSubmittedPrompt={lastSubmittedPrompt}
       />
 
 
@@ -716,11 +729,16 @@ function ChatPage() {
 
             {(
               <>
-                {analysisError && !analysisResult && (
+                {lastSubmittedPrompt && (analyzing || analysisResult || systemResult || knowledgeResult || repoResult || analysisError) && (
+                  <div className="ml-auto max-w-[78%] rounded-lg bg-white/[0.08] px-4 py-3 text-[13px] leading-relaxed text-white/90">
+                    {lastSubmittedPrompt}
+                  </div>
+                )}
+                {analysisError && (
                   <AnalysisError message={analysisError} />
                 )}
 
-                {analysisResult ? (
+                {!analysisError && analysisResult ? (
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-white/90">
@@ -744,18 +762,18 @@ function ChatPage() {
                       sending={analyzing && overlayMessages.length > 0}
                     />
                   </div>
-                ) : systemResult ? (
+                ) : !analysisError && systemResult ? (
                   <IntelResultFrame title="System Intelligence" icon={<Network className="h-4 w-4 text-orange-400" />}>
                     <div className="mb-4 font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/50">
                       {systemResult.filesAnalyzed} files analyzed
                     </div>
                     <SystemReportBody analysis={systemResult.analysis} />
                   </IntelResultFrame>
-                ) : knowledgeResult ? (
+                ) : !analysisError && knowledgeResult ? (
                   <IntelResultFrame title="Knowledge Intelligence" icon={<BookOpen className="h-4 w-4 text-orange-400" />}>
                     <KnowledgeReportBody report={knowledgeResult} />
                   </IntelResultFrame>
-                ) : repoResult ? (
+                ) : !analysisError && repoResult ? (
                   <IntelResultFrame title="GitHub Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
                     <RepoReportBody report={repoResult} />
                   </IntelResultFrame>
@@ -1714,6 +1732,7 @@ function MobileChat({
   reposLoading,
   onSelectRepo,
   pendingPrompt,
+  lastSubmittedPrompt,
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;
@@ -1747,6 +1766,7 @@ function MobileChat({
   reposLoading: boolean;
   onSelectRepo: (repo: string) => void;
   pendingPrompt: string;
+  lastSubmittedPrompt: string;
 }) {
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1789,7 +1809,16 @@ function MobileChat({
       </div>
 
       {/* Content area: result or empty state */}
-      {analysisResult ? (
+      {analysisError ? (
+        <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
+          {lastSubmittedPrompt && (
+            <div className="ml-auto mb-4 mt-4 max-w-[85%] rounded-2xl bg-white/[0.08] px-4 py-3 text-[14px] leading-relaxed text-white/90">
+              {lastSubmittedPrompt}
+            </div>
+          )}
+          <AnalysisError message={analysisError} />
+        </div>
+      ) : analysisResult ? (
         <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
           <div className="pt-4">
             <ScreenAnalysisConversation
@@ -1820,10 +1849,6 @@ function MobileChat({
             <RepoReportBody report={repoResult} />
           </IntelResultFrame>
         </div>
-      ) : analysisError ? (
-        <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
-          <AnalysisError message={analysisError} />
-        </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
           <div className="mb-4">
@@ -1842,6 +1867,11 @@ function MobileChat({
           <p className="mt-2 text-[12px] text-white/40">
             {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
           </p>
+          {lastSubmittedPrompt && analyzing && (
+            <div className="mt-4 max-w-[90%] rounded-2xl bg-white/[0.08] px-4 py-3 text-left text-[14px] leading-relaxed text-white/90">
+              {lastSubmittedPrompt}
+            </div>
+          )}
           {analyzing && <ChatRunProgress capability={selected} prompt={pendingPrompt} repo={selectedRepo} />}
         </div>
       )}

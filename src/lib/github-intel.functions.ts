@@ -147,6 +147,8 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
     return { repo: input.repo, focus: (input.focus ?? "").slice(0, 1000) };
   })
   .handler(async ({ data, context }) => {
+    const { assertCreditsAvailable, INTEL_COST } = await import("./intel-memory.server");
+    await assertCreditsAvailable(context.userId, INTEL_COST.repo);
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
@@ -450,15 +452,27 @@ Rules:
       stopWhen: stepCountIs(2),
     });
 
-    const jsonMatch = claudeText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Claude returned no JSON payload.");
-    const parsed = JSON.parse(jsonMatch[0]) as Omit<GithubIntelReport, "repo">;
+    const jsonStart = claudeText.indexOf("{");
+    const jsonEnd = claudeText.lastIndexOf("}");
+    if (jsonStart < 0) throw new Error("GitHub analysis returned no report.");
+    const payload = claudeText.slice(jsonStart, jsonEnd > jsonStart ? jsonEnd + 1 : undefined);
+    let parsed: Omit<GithubIntelReport, "repo">;
+    try {
+      parsed = JSON.parse(payload) as Omit<GithubIntelReport, "repo">;
+    } catch {
+      const { jsonrepair } = await import("jsonrepair");
+      try {
+        parsed = JSON.parse(jsonrepair(payload)) as Omit<GithubIntelReport, "repo">;
+      } catch {
+        throw new Error("GitHub analysis returned an incomplete report. Please retry.");
+      }
+    }
 
     
 
     const report: GithubIntelReport = { repo: data.repo, ...parsed, summary: parsed.summary };
 
-    const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
+    const { chargeAndRemember } = await import("./intel-memory.server");
     await chargeAndRemember(context.userId, "repo", INTEL_COST.repo, {
       title: `${data.repo}${data.focus ? ` — ${data.focus.slice(0, 80)}` : ""}`,
       summary: parsed.summary?.slice(0, 800) ?? null,

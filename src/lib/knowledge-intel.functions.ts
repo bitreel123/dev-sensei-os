@@ -409,18 +409,13 @@ Rules:
 
     const jsonMatch = claudeText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Knowledge model returned no JSON payload.");
-    const partial = JSON.parse(jsonMatch[0]) as Omit<KnowledgeReport, "question" | "laymanSummary">;
+    const partial = JSON.parse(jsonMatch[0]) as Omit<KnowledgeReport, "question">;
 
-    // ---------- Step 2: Plain-English overview ----------
-    const summary = await callGeminiText(
-      geminiKey,
-      "You write friendly, plain-English summaries for developers who may not be highly technical. 2-3 short paragraphs. Define any abbreviation the first time you use it, e.g. 'API (Application Programming Interface)'.",
-      `Question: ${data.question}\n\nStructured findings (JSON):\n${JSON.stringify(partial).slice(0, 12000)}\n\nWrite a plain-English overview tying the discovery, market, competitors, architecture and next steps together.`,
-    );
+    
 
     const report: KnowledgeReport = {
       question: data.question,
-      laymanSummary: summary,
+      laymanSummary: partial.laymanSummary ?? "",
       recommendedStack: partial.recommendedStack ?? [],
       resources: partial.resources ?? [],
       nextSteps: partial.nextSteps ?? [],
@@ -441,7 +436,7 @@ Rules:
     const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
     await chargeAndRemember(context.userId, "knowledge", INTEL_COST.knowledge, {
       title: data.question.slice(0, 200),
-      summary: summary?.slice(0, 800) ?? null,
+      summary: partial.laymanSummary?.slice(0, 800) ?? null,
       payload: {
         vision: partial.productDiscovery?.vision ?? null,
         competitors: (partial.competitors ?? []).map((c) => c.name).slice(0, 6),

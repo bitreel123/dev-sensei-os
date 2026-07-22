@@ -247,10 +247,10 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
           const branch = meta.default_branch;
           const files = ["package.json", "requirements.txt", "Cargo.toml", "go.mod", "pyproject.toml"];
           const results: Record<string, string> = {};
-          for (const f of files) {
+          await Promise.all(files.map(async (f) => {
             const t = await ghRaw(owner, repoName, branch, f, ghToken);
             if (t) results[f] = t.slice(0, 6000);
-          }
+          }));
           return results;
         },
       }),
@@ -364,7 +364,7 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
 
     const systemPrompt = `You are a senior engineer performing REPO INTELLIGENCE on a GitHub repository. Your job is to understand how the software has evolved over time — commits, PRs, branches, releases, contributors, regressions — and explain it in plain English.
 
-Use the available tools aggressively. Recommended sequence (5-15 tool calls):
+Use the available tools aggressively. Use tools efficiently, batching when possible (aim for 3-6 turns, 5-15 total calls):
 1. get_repo_meta
 2. get_dependencies
 3. list_commits, list_pull_requests, list_issues
@@ -456,19 +456,14 @@ Rules:
     if (!jsonMatch) throw new Error("Claude returned no JSON payload.");
     const parsed = JSON.parse(jsonMatch[0]) as Omit<GithubIntelReport, "repo">;
 
-    // Optional: Gemini re-writes summary in even simpler language
-    const laymanSummary = await callGeminiText(
-      geminiKey,
-      "Rewrite technical summaries in friendly plain English for a non-technical reader. Define every abbreviation the first time, e.g. 'PR (Pull Request — a proposed code change)'.",
-      `Original summary of ${data.repo}:\n${parsed.summary}\n\nRewrite in 2-3 short sentences.`,
-    );
+    
 
-    const report: GithubIntelReport = { repo: data.repo, ...parsed, summary: laymanSummary };
+    const report: GithubIntelReport = { repo: data.repo, ...parsed, summary: parsed.summary };
 
     const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
     await chargeAndRemember(context.userId, "repo", INTEL_COST.repo, {
       title: `${data.repo}${data.focus ? ` — ${data.focus.slice(0, 80)}` : ""}`,
-      summary: laymanSummary?.slice(0, 800) ?? null,
+      summary: parsed.summary?.slice(0, 800) ?? null,
       payload: {
         repo: data.repo,
         risks: (parsed.risks ?? []).slice(0, 5).map((r) => r.title),

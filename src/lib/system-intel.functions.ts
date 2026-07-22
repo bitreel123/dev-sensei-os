@@ -52,8 +52,8 @@ const IGNORED_DIRS = new Set([
   ".cache",
 ]);
 const CODE_EXT = /\.(ts|tsx|js|jsx|py|go|rs|java|kt|rb|php|css|scss|json|toml|yml|yaml|md|sql|sh)$/i;
-const MAX_FILES = 28;
-const MAX_FILE_BYTES = 24_000;
+const MAX_FILES = 18;
+const MAX_FILE_BYTES = 12_000;
 
 async function gh<T>(url: string, token: string): Promise<T> {
   const res = await fetch(url, {
@@ -93,8 +93,8 @@ async function fetchRepoFiles(
     .slice(0, MAX_FILES);
 
   const files: FileInput[] = [];
-  // Sequential to avoid rate limits; batch of 6 is fine
-  const conc = 25;
+  // Fetch the bounded analysis set concurrently so repository reads do not dominate latency.
+  const conc = MAX_FILES;
   for (let i = 0; i < candidates.length; i += conc) {
     const batch = candidates.slice(i, i + conc);
     const results = await Promise.all(

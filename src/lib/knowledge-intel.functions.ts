@@ -292,13 +292,13 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
       }),
     };
 
-    // ---------- Step 1: Claude Sonnet agent loop ----------
+    // ---------- Claude Sonnet agent loop ----------
     const anthropic = createAnthropic({ apiKey: anthropicKey });
     const claude = anthropic("claude-sonnet-4-5");
 
     const systemPrompt = `You are Knowledge Intelligence — a senior product engineer + market analyst + software architect combined. You transform an idea or question into a production-ready plan grounded in a structured knowledge graph.
 
-You have search tools for GitHub (repos + code), npm, and Hugging Face. Use them 3-8 times, mixing tools, to ground your answer in real projects and libraries. Then reason across product discovery, market, competitors, architecture, technology tradeoffs, security, system design, plan, and launch.
+You have search tools for GitHub (repos + code), npm, and Hugging Face. Make one parallel batch of only the 2-4 searches that materially improve this answer, then immediately produce the report. Do not perform searches in repeated rounds. Then reason across product discovery, market, competitors, architecture, technology tradeoffs, security, system design, plan, and launch.
 
 Return STRICT JSON only (no markdown fences, no prose outside JSON). Any field may be omitted when clearly not relevant to the user's question, but prefer to include as many as possible. Shape:
 

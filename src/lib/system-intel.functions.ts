@@ -52,7 +52,7 @@ const IGNORED_DIRS = new Set([
   ".cache",
 ]);
 const CODE_EXT = /\.(ts|tsx|js|jsx|py|go|rs|java|kt|rb|php|css|scss|json|toml|yml|yaml|md|sql|sh)$/i;
-const MAX_FILES = 60;
+const MAX_FILES = 40;
 const MAX_FILE_BYTES = 40_000;
 
 async function gh<T>(url: string, token: string): Promise<T> {
@@ -85,6 +85,11 @@ async function fetchRepoFiles(
     .filter((n) => !n.path.split("/").some((seg) => IGNORED_DIRS.has(seg)))
     .filter((n) => CODE_EXT.test(n.path))
     .filter((n) => n.size < MAX_FILE_BYTES)
+    .sort((a, b) => {
+      const priority = (path: string) =>
+        /(^|\/)(package\.json|README\.md|vite\.config\.[jt]s|src\/routes\/|src\/lib\/|src\/components\/)/i.test(path) ? 0 : 1;
+      return priority(a.path) - priority(b.path) || a.path.localeCompare(b.path);
+    })
     .slice(0, MAX_FILES);
 
   const files: FileInput[] = [];
@@ -212,7 +217,7 @@ async function callClaudeWithTools(
   const filesBlock = files
     .map((f) => `--- FILE: ${f.path} ---\n${f.content}`)
     .join("\n\n")
-    .slice(0, 180_000); // ~180KB safety cap
+    .slice(0, 120_000); // bound model input so first-token latency stays predictable
 
   const userText =
     (projectHint ? `Developer note: ${projectHint}\n\n` : "") +
@@ -223,8 +228,8 @@ async function callClaudeWithTools(
     { role: "user", content: userText },
   ];
 
-  // Tool loop, max 4 turns
-  for (let turn = 0; turn < 4; turn++) {
+  // One parallel tool batch plus one final response keeps latency bounded.
+  for (let turn = 0; turn < 2; turn++) {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {

@@ -148,9 +148,7 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    const geminiKey = process.env.GEMINI_API_KEY;
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-    if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin
@@ -162,24 +160,24 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
     if (!ghToken) throw new Error("Connect GitHub first to analyze a repo.");
 
     const [owner, repoName] = data.repo.split("/");
+    const repoMetaPromise = gh<{
+      default_branch: string;
+      stargazers_count: number;
+      forks_count: number;
+      open_issues_count: number;
+      pushed_at: string;
+      size: number;
+      language: string | null;
+      description: string | null;
+      license: { spdx_id: string } | null;
+    }>(`/repos/${owner}/${repoName}`, ghToken);
 
     // ---------- Agentic tools ----------
     const tools = {
       get_repo_meta: tool({
         description: "Get repo metadata: default branch, stars, forks, open issues, last push date, size, language.",
         inputSchema: z.object({}),
-        execute: async () =>
-          gh<{
-            default_branch: string;
-            stargazers_count: number;
-            forks_count: number;
-            open_issues_count: number;
-            pushed_at: string;
-            size: number;
-            language: string | null;
-            description: string | null;
-            license: { spdx_id: string } | null;
-          }>(`/repos/${owner}/${repoName}`, ghToken),
+        execute: async () => repoMetaPromise,
       }),
       list_pull_requests: tool({
         description: "List recent pull requests. state: open|closed|all",
@@ -242,7 +240,7 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
           "Reads package.json (JS/TS), requirements.txt (Python), Cargo.toml (Rust), or go.mod (Go) if present and returns declared dependencies.",
         inputSchema: z.object({}),
         execute: async () => {
-          const meta = await gh<{ default_branch: string }>(`/repos/${owner}/${repoName}`, ghToken);
+          const meta = await repoMetaPromise;
           const branch = meta.default_branch;
           const files = ["package.json", "requirements.txt", "Cargo.toml", "go.mod", "pyproject.toml"];
           const results: Record<string, string> = {};
@@ -257,7 +255,7 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
         description: "Read a file from the repo (max 20KB). Use to spot-check patterns Claude wants to verify.",
         inputSchema: z.object({ path: z.string() }),
         execute: async ({ path }) => {
-          const meta = await gh<{ default_branch: string }>(`/repos/${owner}/${repoName}`, ghToken);
+          const meta = await repoMetaPromise;
           const t = await ghRaw(owner, repoName, meta.default_branch, path, ghToken);
           if (!t) return { error: "file not found" };
           return { path, content: t.slice(0, 20_000) };
@@ -363,7 +361,7 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
 
     const systemPrompt = `You are a senior engineer performing REPO INTELLIGENCE on a GitHub repository. Your job is to understand how the software has evolved over time — commits, PRs, branches, releases, contributors, regressions — and explain it in plain English.
 
-Use the available tools aggressively. Use tools efficiently, batching when possible (aim for 3-6 turns, 5-15 total calls):
+Use the available tools efficiently. Begin with one parallel batch containing metadata, dependencies, commits, pull requests, issues, branches, releases, and contributors. Make at most one additional parallel batch for specific file, commit, PR, or branch details only when the user's focus requires it. Never repeat list calls.
 1. get_repo_meta
 2. get_dependencies
 3. list_commits, list_pull_requests, list_issues

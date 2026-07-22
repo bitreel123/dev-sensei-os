@@ -3,7 +3,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
-import { callGeminiText } from "./intel-shared";
 
 // ---------------- Types ----------------
 export type KnowledgeResource = {
@@ -293,13 +292,13 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
       }),
     };
 
-    // ---------- Step 1: Claude Sonnet agent loop ----------
+    // ---------- Claude Sonnet agent loop ----------
     const anthropic = createAnthropic({ apiKey: anthropicKey });
     const claude = anthropic("claude-sonnet-4-5");
 
     const systemPrompt = `You are Knowledge Intelligence — a senior product engineer + market analyst + software architect combined. You transform an idea or question into a production-ready plan grounded in a structured knowledge graph.
 
-You have search tools for GitHub (repos + code), npm, and Hugging Face. Use them 3-8 times, mixing tools, to ground your answer in real projects and libraries. Then reason across product discovery, market, competitors, architecture, technology tradeoffs, security, system design, plan, and launch.
+You have search tools for GitHub (repos + code), npm, and Hugging Face. Make one parallel batch of only the 2-4 searches that materially improve this answer, then immediately produce the report. Do not perform searches in repeated rounds. Then reason across product discovery, market, competitors, architecture, technology tradeoffs, security, system design, plan, and launch.
 
 Return STRICT JSON only (no markdown fences, no prose outside JSON). Any field may be omitted when clearly not relevant to the user's question, but prefer to include as many as possible. Shape:
 
@@ -376,7 +375,7 @@ Return STRICT JSON only (no markdown fences, no prose outside JSON). Any field m
     "betaStrategy": string, "growthExperiments": string[], "checklist": string[]
   },
 
-  "graph": {
+  "laymanSummary": string, "graph": {
     "nodes": [{ "id": string, "label": string,
                 "category":"domain"|"market"|"competitor"|"framework"|"architecture"|"security"|"database"|"backend"|"deployment"|"pricing"|"growth" }],
     "edges": [{ "from": string, "to": string, "relation": string }]
@@ -384,6 +383,7 @@ Return STRICT JSON only (no markdown fences, no prose outside JSON). Any field m
 }
 
 Rules:
+- laymanSummary: 2-3 short paragraphs in friendly plain English for developers who may not be highly technical. Define any abbreviation the first time you use it.
 - PLAIN ENGLISH. Assume the reader may not be highly technical. Define abbreviations in "glossary".
 - Every "why" is ONE short sentence explaining benefit for THIS project.
 - 6-12 resources across different kinds.
@@ -408,18 +408,13 @@ Rules:
 
     const jsonMatch = claudeText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Knowledge model returned no JSON payload.");
-    const partial = JSON.parse(jsonMatch[0]) as Omit<KnowledgeReport, "question" | "laymanSummary">;
+    const partial = JSON.parse(jsonMatch[0]) as Omit<KnowledgeReport, "question">;
 
-    // ---------- Step 2: Plain-English overview ----------
-    const summary = await callGeminiText(
-      geminiKey,
-      "You write friendly, plain-English summaries for developers who may not be highly technical. 2-3 short paragraphs. Define any abbreviation the first time you use it, e.g. 'API (Application Programming Interface)'.",
-      `Question: ${data.question}\n\nStructured findings (JSON):\n${JSON.stringify(partial).slice(0, 12000)}\n\nWrite a plain-English overview tying the discovery, market, competitors, architecture and next steps together.`,
-    );
+    
 
     const report: KnowledgeReport = {
       question: data.question,
-      laymanSummary: summary,
+      laymanSummary: partial.laymanSummary ?? "",
       recommendedStack: partial.recommendedStack ?? [],
       resources: partial.resources ?? [],
       nextSteps: partial.nextSteps ?? [],
@@ -440,7 +435,7 @@ Rules:
     const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
     await chargeAndRemember(context.userId, "knowledge", INTEL_COST.knowledge, {
       title: data.question.slice(0, 200),
-      summary: summary?.slice(0, 800) ?? null,
+      summary: partial.laymanSummary?.slice(0, 800) ?? null,
       payload: {
         vision: partial.productDiscovery?.vision ?? null,
         competitors: (partial.competitors ?? []).map((c) => c.name).slice(0, 6),

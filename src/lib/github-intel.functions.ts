@@ -3,7 +3,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
-import { callGeminiText } from "./intel-shared";
 
 // ---------------- Types ----------------
 export type RepoRisk = {
@@ -149,9 +148,7 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    const geminiKey = process.env.GEMINI_API_KEY;
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-    if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin
@@ -163,24 +160,24 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
     if (!ghToken) throw new Error("Connect GitHub first to analyze a repo.");
 
     const [owner, repoName] = data.repo.split("/");
+    const repoMetaPromise = gh<{
+      default_branch: string;
+      stargazers_count: number;
+      forks_count: number;
+      open_issues_count: number;
+      pushed_at: string;
+      size: number;
+      language: string | null;
+      description: string | null;
+      license: { spdx_id: string } | null;
+    }>(`/repos/${owner}/${repoName}`, ghToken);
 
     // ---------- Agentic tools ----------
     const tools = {
       get_repo_meta: tool({
         description: "Get repo metadata: default branch, stars, forks, open issues, last push date, size, language.",
         inputSchema: z.object({}),
-        execute: async () =>
-          gh<{
-            default_branch: string;
-            stargazers_count: number;
-            forks_count: number;
-            open_issues_count: number;
-            pushed_at: string;
-            size: number;
-            language: string | null;
-            description: string | null;
-            license: { spdx_id: string } | null;
-          }>(`/repos/${owner}/${repoName}`, ghToken),
+        execute: async () => repoMetaPromise,
       }),
       list_pull_requests: tool({
         description: "List recent pull requests. state: open|closed|all",
@@ -243,14 +240,14 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
           "Reads package.json (JS/TS), requirements.txt (Python), Cargo.toml (Rust), or go.mod (Go) if present and returns declared dependencies.",
         inputSchema: z.object({}),
         execute: async () => {
-          const meta = await gh<{ default_branch: string }>(`/repos/${owner}/${repoName}`, ghToken);
+          const meta = await repoMetaPromise;
           const branch = meta.default_branch;
           const files = ["package.json", "requirements.txt", "Cargo.toml", "go.mod", "pyproject.toml"];
           const results: Record<string, string> = {};
-          for (const f of files) {
+          await Promise.all(files.map(async (f) => {
             const t = await ghRaw(owner, repoName, branch, f, ghToken);
             if (t) results[f] = t.slice(0, 6000);
-          }
+          }));
           return results;
         },
       }),
@@ -258,7 +255,7 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
         description: "Read a file from the repo (max 20KB). Use to spot-check patterns Claude wants to verify.",
         inputSchema: z.object({ path: z.string() }),
         execute: async ({ path }) => {
-          const meta = await gh<{ default_branch: string }>(`/repos/${owner}/${repoName}`, ghToken);
+          const meta = await repoMetaPromise;
           const t = await ghRaw(owner, repoName, meta.default_branch, path, ghToken);
           if (!t) return { error: "file not found" };
           return { path, content: t.slice(0, 20_000) };
@@ -364,7 +361,7 @@ export const runGithubIntelligence = createServerFn({ method: "POST" })
 
     const systemPrompt = `You are a senior engineer performing REPO INTELLIGENCE on a GitHub repository. Your job is to understand how the software has evolved over time — commits, PRs, branches, releases, contributors, regressions — and explain it in plain English.
 
-Use the available tools aggressively. Recommended sequence (5-15 tool calls):
+Use the available tools efficiently. Begin with one parallel batch containing metadata, dependencies, commits, pull requests, issues, branches, releases, and contributors. Make at most one additional parallel batch for specific file, commit, PR, or branch details only when the user's focus requires it. Never repeat list calls.
 1. get_repo_meta
 2. get_dependencies
 3. list_commits, list_pull_requests, list_issues
@@ -456,19 +453,14 @@ Rules:
     if (!jsonMatch) throw new Error("Claude returned no JSON payload.");
     const parsed = JSON.parse(jsonMatch[0]) as Omit<GithubIntelReport, "repo">;
 
-    // Optional: Gemini re-writes summary in even simpler language
-    const laymanSummary = await callGeminiText(
-      geminiKey,
-      "Rewrite technical summaries in friendly plain English for a non-technical reader. Define every abbreviation the first time, e.g. 'PR (Pull Request — a proposed code change)'.",
-      `Original summary of ${data.repo}:\n${parsed.summary}\n\nRewrite in 2-3 short sentences.`,
-    );
+    
 
-    const report: GithubIntelReport = { repo: data.repo, ...parsed, summary: laymanSummary };
+    const report: GithubIntelReport = { repo: data.repo, ...parsed, summary: parsed.summary };
 
     const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
     await chargeAndRemember(context.userId, "repo", INTEL_COST.repo, {
       title: `${data.repo}${data.focus ? ` — ${data.focus.slice(0, 80)}` : ""}`,
-      summary: laymanSummary?.slice(0, 800) ?? null,
+      summary: parsed.summary?.slice(0, 800) ?? null,
       payload: {
         repo: data.repo,
         risks: (parsed.risks ?? []).slice(0, 5).map((r) => r.title),

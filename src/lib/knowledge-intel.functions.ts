@@ -403,13 +403,25 @@ Rules:
       system: systemPrompt,
       prompt: userPrompt,
       tools,
-      maxOutputTokens: 3200,
+      maxOutputTokens: 6000,
       stopWhen: stepCountIs(2),
     });
 
     const jsonMatch = claudeText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Knowledge model returned no JSON payload.");
-    const partial = JSON.parse(jsonMatch[0]) as Omit<KnowledgeReport, "question">;
+    let partial: Omit<KnowledgeReport, "question">;
+    try {
+      partial = JSON.parse(jsonMatch[0]) as Omit<KnowledgeReport, "question">;
+    } catch {
+      const { jsonrepair } = await import("jsonrepair");
+      try {
+        partial = JSON.parse(jsonrepair(jsonMatch[0])) as Omit<KnowledgeReport, "question">;
+      } catch (e) {
+        throw new Error(
+          `Knowledge model returned malformed JSON. ${(e as Error).message}`,
+        );
+      }
+    }
 
     
 

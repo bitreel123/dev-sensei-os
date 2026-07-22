@@ -3,7 +3,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
-import { callGeminiText } from "./intel-shared";
 
 // ---------------- Types ----------------
 export type KnowledgeResource = {

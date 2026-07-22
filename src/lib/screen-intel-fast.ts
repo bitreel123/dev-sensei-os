@@ -16,8 +16,8 @@
 import { TAXONOMY_PROMPT, type Diagnosis, type FixPlan } from "./intel-shared";
 
 const INSTANT_MODEL = "gemini-3.5-flash";        // fast triage + attempt
-const SMART_MODEL = "gemini-3-pro-preview";      // deep reasoning
-const ESCALATE_CONFIDENCE_THRESHOLD = 65;
+const SMART_MODEL = "gemini-3-pro-preview";      // deep reasoning (opt-in only)
+
 
 const FAST_SYSTEM_PROMPT = `You are Jeradin's rapid debugging engineer. You look at a single screenshot of a developer's IDE, editor, browser devtools, or terminal, and in ONE response produce a dense, structured debugging report.
 

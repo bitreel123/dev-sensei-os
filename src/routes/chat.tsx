@@ -661,15 +661,6 @@ function ChatPage() {
 
             {(
               <>
-                {analyzing && !analysisResult && (
-                  <div className="flex items-center justify-center gap-3 py-10 text-white/70">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
-                      Analyzing…
-                    </span>
-                  </div>
-                )}
-
                 {analysisError && !analysisResult && (
                   <AnalysisError message={analysisError} />
                 )}
@@ -713,7 +704,7 @@ function ChatPage() {
                   <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
                     <RepoReportBody report={repoResult} />
                   </IntelResultFrame>
-                ) : !analyzing && activeCapability === "system" ? (
+                ) : activeCapability === "system" ? (
                   <div className="w-full">
                     <div className="mb-4 flex items-center justify-between">
                       <button
@@ -729,17 +720,27 @@ function ChatPage() {
                     </div>
                     <SystemPanel />
                   </div>
-                ) : !analyzing ? (
+                ) : (
                   <div className="flex flex-col items-center justify-center">
                     <h1
                       className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
                       style={{ fontFamily: "'Instrument Serif', serif" }}
                     >
-                      What are we doing today?
+                      {analyzing ? "Analyzing your screen…" : "What are we doing today?"}
                     </h1>
                     <p className="mt-2 text-center text-[13px] text-white/55">
-                      Describe the issue, let Jeradin solve it for you.
+                      {analyzing
+                        ? "Jeradin is looking at what you shared. You can keep typing — send another prompt when you're ready."
+                        : "Describe the issue, let Jeradin solve it for you."}
                     </p>
+                    {analyzing && (
+                      <div className="mt-4 flex items-center gap-2 text-white/70">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">
+                          Analyzing…
+                        </span>
+                      </div>
+                    )}
                     <DesktopPromptBlock
                       prompt={prompt}
                       setPrompt={setPrompt}
@@ -769,9 +770,10 @@ function ChatPage() {
                       }}
                     />
                   </div>
-                ) : null}
+                )}
               </>
             )}
+
           </div>
         </div>
 

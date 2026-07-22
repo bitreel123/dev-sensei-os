@@ -246,11 +246,12 @@ function ChatPage() {
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" });
         const url = URL.createObjectURL(blob);
         setAttachments((prev) => [...prev, { kind: "recording", url, blob }]);
+        const preCaptured = pendingFrameRef.current;
+        pendingFrameRef.current = null;
         stopStream();
         setRecording(false);
-        // Auto-analyze immediately so the user doesn't have to click Send
         try {
-          const base64 = await videoBlobToFrameBase64(blob);
+          const base64 = preCaptured ?? (await videoBlobToFrameBase64(blob));
           await analyzeImageBase64(
             base64,
             prompt.trim(),
@@ -264,6 +265,7 @@ function ChatPage() {
           setAnalyzing(false);
         }
       };
+
       stream.getVideoTracks()[0].addEventListener("ended", () => rec.state !== "inactive" && rec.stop());
       recorderRef.current = rec;
       rec.start();

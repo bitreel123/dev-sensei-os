@@ -245,49 +245,20 @@ export async function runAutoScreenIntel(
     return { analysis, fix, tier: "smart", modelId: SMART_MODEL, latencyMs: Date.now() - started, escalated: false };
   }
 
-  // Instant pass.
+  // Default path: run Flash only. Fastest response (~1–3s). Escalation to
+  // Pro is opt-in via `forceTier: "smart"` (e.g. the overlay's Deep Dive
+  // button) so normal analyses stay snappy.
   const flashRaw = await callGeminiIntel(geminiKey, INSTANT_MODEL, imageBase64, note);
   const flash = normalizeIntel(flashRaw);
+  return {
+    analysis: flash.analysis,
+    fix: flash.fix,
+    tier: "instant",
+    modelId: INSTANT_MODEL,
+    latencyMs: Date.now() - started,
+    escalated: false,
+  };
 
-  const flashConfidence = flash.fix.confidence ?? 0;
-  const shouldEscalate =
-    forceTier !== "instant" &&
-    (flash.complexity === "complex" || flashConfidence < ESCALATE_CONFIDENCE_THRESHOLD);
-
-  if (!shouldEscalate) {
-    return {
-      analysis: flash.analysis,
-      fix: flash.fix,
-      tier: "instant",
-      modelId: INSTANT_MODEL,
-      latencyMs: Date.now() - started,
-      escalated: false,
-    };
-  }
-
-  // Escalate: run Pro. If Pro fails for any reason, fall back to the
-  // Flash result so the user still sees something.
-  try {
-    const proRaw = await callGeminiIntel(geminiKey, SMART_MODEL, imageBase64, note);
-    const pro = normalizeIntel(proRaw);
-    return {
-      analysis: pro.analysis,
-      fix: pro.fix,
-      tier: "smart",
-      modelId: SMART_MODEL,
-      latencyMs: Date.now() - started,
-      escalated: true,
-    };
-  } catch {
-    return {
-      analysis: flash.analysis,
-      fix: flash.fix,
-      tier: "instant",
-      modelId: INSTANT_MODEL,
-      latencyMs: Date.now() - started,
-      escalated: false,
-    };
-  }
 }
 
 /** Backwards-compat alias so existing callers keep working. */

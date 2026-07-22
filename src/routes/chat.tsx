@@ -5,7 +5,7 @@ import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
@@ -17,7 +17,8 @@ import { runKnowledgeIntelligence, type KnowledgeReport } from "@/lib/knowledge-
 import { runGithubIntelligence, type GithubIntelReport } from "@/lib/github-intel.functions";
 import { SystemReportBody, KnowledgeReportBody, RepoReportBody } from "@/components/jeradin/intel-reports";
 import { NotificationsBell } from "@/components/jeradin/notifications-bell";
-import { SystemPanel } from "@/components/jeradin/system-panel";
+import { listMyGithubRepos, setActiveRepo, type GithubRepo } from "@/lib/repo-intel.functions";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 
 
 
@@ -62,6 +63,10 @@ function ChatPage() {
   const [overlayMessages, setOverlayMessages] = useState<OverlayChatMessage[]>([]);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [knowledgeEnabled, setKnowledgeEnabled] = useState(false);
+  const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState("");
+  const [reposLoading, setReposLoading] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState("");
   const [lastRun, setLastRun] = useState<{
     kind: "screen" | "knowledge" | "system" | "repo";
     status: "running" | "success" | "error";
@@ -78,6 +83,8 @@ function ChatPage() {
   const runSystem = useServerFn(analyzeSystem);
   const runKnowledge = useServerFn(runKnowledgeIntelligence);
   const runRepo = useServerFn(runGithubIntelligence);
+  const loadGithubRepos = useServerFn(listMyGithubRepos);
+  const saveActiveRepo = useServerFn(setActiveRepo);
   const askScreenFollowUp = useServerFn(chatAboutAnalysis);
 
   useEffect(() => {
@@ -123,6 +130,39 @@ function ChatPage() {
       setCurrentEntryId(entry.id);
     }
   }, [search.id]);
+
+  useEffect(() => {
+    if (!user || !github) {
+      setGithubRepos([]);
+      setSelectedRepo("");
+      return;
+    }
+    let cancelled = false;
+    setReposLoading(true);
+    loadGithubRepos()
+      .then(({ repos }) => {
+        if (cancelled) return;
+        setGithubRepos(repos);
+        setSelectedRepo((current) => current || repos[0]?.full_name || "");
+      })
+      .catch((error) => {
+        if (!cancelled) toast.error(error instanceof Error ? error.message : "Could not load GitHub repositories");
+      })
+      .finally(() => {
+        if (!cancelled) setReposLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [user, github, loadGithubRepos]);
+
+  async function chooseRepo(repo: string) {
+    setSelectedRepo(repo);
+    if (!repo) return;
+    try {
+      await saveActiveRepo({ data: { repo } });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not select repository");
+    }
+  }
 
   // Persist overlay chat messages to the current history entry
   useEffect(() => {
@@ -461,18 +501,19 @@ function ChatPage() {
       return;
     }
 
-    const repo = extractRepoName(text);
+    const repo = extractRepoName(text) ?? selectedRepo;
     if ((capability === "system" || capability === "repo") && !repo && attachments.length === 0) {
       if (!github) {
         toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
         await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
         return;
       }
-      toast.error("Type a repo like owner/name in the chat box, then Send.");
+      toast.error("Choose a repository above the chat box, then Send.");
       return;
     }
 
     setAnalyzing(true);
+    setPendingPrompt(text);
     setLastRun({ kind: capability, status: "running" });
     try {
       if (capability === "knowledge") {
@@ -558,6 +599,7 @@ function ChatPage() {
       setLastRun({ kind: capability, status: "error", message });
     } finally {
       setAnalyzing(false);
+      setPendingPrompt("");
     }
   }
 
@@ -608,6 +650,13 @@ function ChatPage() {
         onCloseCapabilityPanels={() => setOpenedCapabilityPanel(null)}
         currentEntryId={currentEntryId}
         setCurrentEntryId={setCurrentEntryId}
+        githubConnected={!!github}
+        githubLogin={github?.login ?? null}
+        githubRepos={githubRepos}
+        selectedRepo={selectedRepo}
+        reposLoading={reposLoading}
+        onSelectRepo={chooseRepo}
+        pendingPrompt={pendingPrompt}
       />
 
 
@@ -704,22 +753,6 @@ function ChatPage() {
                   <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
                     <RepoReportBody report={repoResult} />
                   </IntelResultFrame>
-                ) : activeCapability === "system" ? (
-                  <div className="w-full">
-                    <div className="mb-4 flex items-center justify-between">
-                      <button
-                        onClick={() => {
-                          setActiveCapability(null);
-                          setOpenedCapabilityPanel(null);
-                        }}
-                        className="inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/80 hover:bg-white/10"
-                      >
-                        ← Back
-                      </button>
-                      <span className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/50">System Intelligence</span>
-                    </div>
-                    <SystemPanel />
-                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center">
                     <h1
@@ -734,12 +767,7 @@ function ChatPage() {
                         : "Describe the issue, let Jeradin solve it for you."}
                     </p>
                     {analyzing && (
-                      <div className="mt-4 flex items-center gap-2 text-white/70">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">
-                          Analyzing…
-                        </span>
-                      </div>
+                      <ChatRunProgress capability={activeCapability ?? "knowledge"} prompt={pendingPrompt} repo={selectedRepo} />
                     )}
                     <DesktopPromptBlock
                       prompt={prompt}
@@ -758,6 +786,10 @@ function ChatPage() {
                       knowledgeEnabled={knowledgeEnabled}
                       githubConnected={!!github}
                       githubLogin={github?.login ?? null}
+                      githubRepos={githubRepos}
+                      selectedRepo={selectedRepo}
+                      reposLoading={reposLoading}
+                      onSelectRepo={chooseRepo}
                       onSelectCapability={(m) => {
                         setActiveCapability((currentMode) => currentMode === m ? null : m);
                         setOpenedCapabilityPanel(null);
@@ -798,6 +830,10 @@ function ChatPage() {
                 knowledgeEnabled={knowledgeEnabled}
                 githubConnected={!!github}
                 githubLogin={github?.login ?? null}
+                githubRepos={githubRepos}
+                selectedRepo={selectedRepo}
+                reposLoading={reposLoading}
+                onSelectRepo={chooseRepo}
                 compact
                 onSelectCapability={(m) => {
                   setActiveCapability((currentMode) => currentMode === m ? null : m);

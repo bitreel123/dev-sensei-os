@@ -143,7 +143,13 @@ function ChatPage() {
       .then(({ repos }) => {
         if (cancelled) return;
         setGithubRepos(repos);
-        setSelectedRepo((current) => current || repos[0]?.full_name || "");
+        setSelectedRepo((current) => {
+          const next = current || repos[0]?.full_name || "";
+          if (!current && next) {
+            void saveActiveRepo({ data: { repo: next } }).catch(() => undefined);
+          }
+          return next;
+        });
       })
       .catch((error) => {
         if (!cancelled) toast.error(error instanceof Error ? error.message : "Could not load GitHub repositories");
@@ -759,7 +765,15 @@ function ChatPage() {
                       className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
                       style={{ fontFamily: "'Instrument Serif', serif" }}
                     >
-                      {analyzing ? "Analyzing your screen…" : "What are we doing today?"}
+                      {analyzing
+                        ? activeCapability === "system"
+                          ? "Scanning your codebase…"
+                          : activeCapability === "repo"
+                            ? "Reading your repository…"
+                            : activeCapability === "knowledge"
+                              ? "Researching your answer…"
+                              : "Analyzing your screen…"
+                        : "What are we doing today?"}
                     </h1>
                     <p className="mt-2 text-center text-[13px] text-white/55">
                       {analyzing
@@ -1295,7 +1309,11 @@ function DesktopPromptBlock({
   const selected = current ?? "screen";
   const placeholder = selected === "screen"
     ? "Paste an error, describe the bug, or start a screen recording…"
-    : `Describe what you need from ${CAPABILITIES.find((c) => c.key === selected)?.title ?? "this capability"}…`;
+    : selected === "system"
+      ? "Ask Jeradin to scan or explain the selected codebase…"
+      : selected === "repo"
+        ? "Ask about commits, pull requests, releases, or regressions…"
+        : "Ask a question or describe what you want to research…";
 
   return (
     <div className={`${compact ? "mt-0" : "mt-16"} w-full`}>

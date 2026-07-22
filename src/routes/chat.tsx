@@ -70,7 +70,9 @@ function ChatPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const pendingFrameRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
   const runSystem = useServerFn(analyzeSystem);
@@ -244,11 +246,12 @@ function ChatPage() {
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" });
         const url = URL.createObjectURL(blob);
         setAttachments((prev) => [...prev, { kind: "recording", url, blob }]);
+        const preCaptured = pendingFrameRef.current;
+        pendingFrameRef.current = null;
         stopStream();
         setRecording(false);
-        // Auto-analyze immediately so the user doesn't have to click Send
         try {
-          const base64 = await videoBlobToFrameBase64(blob);
+          const base64 = preCaptured ?? (await videoBlobToFrameBase64(blob));
           await analyzeImageBase64(
             base64,
             prompt.trim(),
@@ -262,6 +265,7 @@ function ChatPage() {
           setAnalyzing(false);
         }
       };
+
       stream.getVideoTracks()[0].addEventListener("ended", () => rec.state !== "inactive" && rec.stop());
       recorderRef.current = rec;
       rec.start();
@@ -273,9 +277,44 @@ function ChatPage() {
     }
   }
 
-  function stopRecording() {
+  async function stopRecording() {
+    // Grab a frame straight off the live MediaStream BEFORE tearing it
+    // down. Decoding freshly-recorded WebM blobs is unreliable across
+    // browsers ("Could not load recording"); a live-stream capture always
+    // works and is dramatically faster.
+    try {
+      const stream = streamRef.current;
+      if (stream) {
+        const video = document.createElement("video");
+        video.srcObject = stream;
+        video.muted = true;
+        video.playsInline = true;
+        await video.play().catch(() => undefined);
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+        const maxW = 1280;
+        const vw = video.videoWidth || maxW;
+        const vh = video.videoHeight || 720;
+        const scale = Math.min(1, maxW / vw);
+        const w = Math.floor(vw * scale);
+        const h = Math.floor(vh * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, w, h);
+          pendingFrameRef.current = canvas
+            .toDataURL("image/png")
+            .replace(/^data:image\/png;base64,/, "");
+        }
+        video.pause();
+      }
+    } catch (e) {
+      console.warn("[stopRecording] live frame capture failed, will fall back to blob decode", e);
+    }
     recorderRef.current?.stop();
   }
+
 
   function addFiles(files: FileList | null) {
     if (!files) return;
@@ -622,15 +661,6 @@ function ChatPage() {
 
             {(
               <>
-                {analyzing && !analysisResult && (
-                  <div className="flex items-center justify-center gap-3 py-10 text-white/70">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
-                      Analyzing…
-                    </span>
-                  </div>
-                )}
-
                 {analysisError && !analysisResult && (
                   <AnalysisError message={analysisError} />
                 )}
@@ -674,7 +704,7 @@ function ChatPage() {
                   <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
                     <RepoReportBody report={repoResult} />
                   </IntelResultFrame>
-                ) : !analyzing && activeCapability === "system" ? (
+                ) : activeCapability === "system" ? (
                   <div className="w-full">
                     <div className="mb-4 flex items-center justify-between">
                       <button
@@ -690,17 +720,27 @@ function ChatPage() {
                     </div>
                     <SystemPanel />
                   </div>
-                ) : !analyzing ? (
+                ) : (
                   <div className="flex flex-col items-center justify-center">
                     <h1
                       className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
                       style={{ fontFamily: "'Instrument Serif', serif" }}
                     >
-                      What are we doing today?
+                      {analyzing ? "Analyzing your screen…" : "What are we doing today?"}
                     </h1>
                     <p className="mt-2 text-center text-[13px] text-white/55">
-                      Describe the issue, let Jeradin solve it for you.
+                      {analyzing
+                        ? "Jeradin is looking at what you shared. You can keep typing — send another prompt when you're ready."
+                        : "Describe the issue, let Jeradin solve it for you."}
                     </p>
+                    {analyzing && (
+                      <div className="mt-4 flex items-center gap-2 text-white/70">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">
+                          Analyzing…
+                        </span>
+                      </div>
+                    )}
                     <DesktopPromptBlock
                       prompt={prompt}
                       setPrompt={setPrompt}
@@ -730,9 +770,10 @@ function ChatPage() {
                       }}
                     />
                   </div>
-                ) : null}
+                )}
               </>
             )}
+
           </div>
         </div>
 

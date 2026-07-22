@@ -376,7 +376,7 @@ Return STRICT JSON only (no markdown fences, no prose outside JSON). Any field m
     "betaStrategy": string, "growthExperiments": string[], "checklist": string[]
   },
 
-  "graph": {
+  "laymanSummary": string, "graph": {
     "nodes": [{ "id": string, "label": string,
                 "category":"domain"|"market"|"competitor"|"framework"|"architecture"|"security"|"database"|"backend"|"deployment"|"pricing"|"growth" }],
     "edges": [{ "from": string, "to": string, "relation": string }]
@@ -384,6 +384,7 @@ Return STRICT JSON only (no markdown fences, no prose outside JSON). Any field m
 }
 
 Rules:
+- laymanSummary: 2-3 short paragraphs in friendly plain English for developers who may not be highly technical. Define any abbreviation the first time you use it.
 - PLAIN ENGLISH. Assume the reader may not be highly technical. Define abbreviations in "glossary".
 - Every "why" is ONE short sentence explaining benefit for THIS project.
 - 6-12 resources across different kinds.

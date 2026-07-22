@@ -89,7 +89,7 @@ async function fetchRepoFiles(
 
   const files: FileInput[] = [];
   // Sequential to avoid rate limits; batch of 6 is fine
-  const conc = 6;
+  const conc = 25;
   for (let i = 0; i < candidates.length; i += conc) {
     const batch = candidates.slice(i, i + conc);
     const results = await Promise.all(

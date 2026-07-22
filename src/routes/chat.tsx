@@ -507,10 +507,10 @@ function ChatPage() {
       return;
     }
 
-    const repo = extractRepoName(text) ?? selectedRepo;
+    const repo = selectedRepo || extractRepoName(text);
     if ((capability === "system" || capability === "repo") && !repo && attachments.length === 0) {
       if (!github) {
-        toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
+        toast.message("Connect GitHub, choose a codebase, then ask Jeradin to analyze it.");
         await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
         return;
       }
@@ -560,7 +560,7 @@ function ChatPage() {
           return;
         }
         if (!github) {
-          toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
+          toast.message("Connect GitHub, choose a codebase, then ask Jeradin to analyze it.");
           await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
           setLastRun({ kind: "system", status: "error", message: "GitHub not connected" });
           return;
@@ -580,12 +580,12 @@ function ChatPage() {
       }
 
       if (!github) {
-        toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
+        toast.message("Connect GitHub, choose a codebase, then ask Jeradin to analyze it.");
         await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
         setLastRun({ kind: "repo", status: "error", message: "GitHub not connected" });
         return;
       }
-      const focus = text.replace(repo!, "").trim();
+      const focus = text || "Run my GitHub code and explain its health, risks, and recent changes.";
       const res = await runRepo({ data: { repo: repo!, focus } });
       setRepoResult(res.report);
       const entry = addHistoryEntry(`Repo · ${repo}`, {
@@ -756,7 +756,7 @@ function ChatPage() {
                     <KnowledgeReportBody report={knowledgeResult} />
                   </IntelResultFrame>
                 ) : repoResult ? (
-                  <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
+                  <IntelResultFrame title="GitHub Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
                     <RepoReportBody report={repoResult} />
                   </IntelResultFrame>
                 ) : (
@@ -1356,6 +1356,12 @@ function DesktopPromptBlock({
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              if (!analyzing) onSend();
+            }
+          }}
           placeholder={placeholder}
           rows={2}
           className="w-full bg-transparent p-4 text-[14px] resize-none focus:outline-none placeholder:text-white/35"
@@ -1453,7 +1459,7 @@ function LastRunPill({
     screen: "Screen Intelligence",
     knowledge: "Knowledge Intelligence",
     system: "System Intelligence",
-    repo: "Repo Intelligence",
+    repo: "GitHub Intelligence",
   } as const;
   const tone =
     lastRun.status === "success"
@@ -1537,7 +1543,7 @@ function CapabilityDetails({
       )}
       {needsGithub && githubConnected && (
         <p className="mt-2 text-[11.5px] text-emerald-300/80">
-          Choose a repository above, type what you want analyzed, and press Send.
+          Choose a codebase above, type “Run my GitHub code,” and press Send.
         </p>
       )}
       <button
@@ -1588,7 +1594,7 @@ function RepoSelector({
           aria-label="Choose GitHub repository"
           className="w-full appearance-none bg-transparent pr-7 text-[12.5px] text-white outline-none disabled:text-white/40"
         >
-          <option value="" className="bg-neutral-950">{loading ? "Loading codebases…" : "Choose a codebase"}</option>
+          <option value="" className="bg-neutral-950">{loading ? "Loading your codebases…" : repos.length ? "Choose a codebase" : "No codebases found"}</option>
           {repos.map((repo) => (
             <option key={repo.full_name} value={repo.full_name} className="bg-neutral-950">
               {repo.full_name}{repo.private ? " · private" : ""}
@@ -1602,7 +1608,7 @@ function RepoSelector({
 }
 
 function ChatRunProgress({ capability, prompt, repo }: { capability: CapabilityKey; prompt: string; repo: string }) {
-  const label = capability === "system" ? "Scanning codebase" : capability === "repo" ? "Reading GitHub history" : capability === "screen" ? "Analyzing screen" : "Researching answer";
+  const label = capability === "system" ? "Scanning codebase" : capability === "repo" ? "Analyzing GitHub codebase" : capability === "screen" ? "Analyzing screen" : "Researching answer";
   return (
     <div className="mt-5 w-full max-w-[640px] border-l border-white/15 pl-4 text-left">
       {prompt && <p className="mb-3 text-[13px] leading-relaxed text-white/55">{prompt}</p>}
@@ -1666,8 +1672,8 @@ const CAPABILITIES: Array<{
   },
   {
     key: "repo",
-    title: "Repo Intelligence",
-    desc: "Connect your GitHub repository and Jeradin understands how your software evolves over time. It analyzes commits, pull requests, branches, releases, and code history to trace regressions, explain architectural changes, and identify breaking updates.",
+    title: "GitHub Intelligence",
+    desc: "Choose any connected GitHub codebase, then ask Jeradin to run or review it. Jeradin analyzes the code, commits, pull requests, releases, and recent changes for you.",
     mobileDesc: "Analyze commits and PRs",
     cta: "Connect GitHub",
     Icon: Github,
@@ -1810,7 +1816,7 @@ function MobileChat({
         </div>
       ) : repoResult ? (
         <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
-          <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
+          <IntelResultFrame title="GitHub Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
             <RepoReportBody report={repoResult} />
           </IntelResultFrame>
         </div>
@@ -1880,6 +1886,12 @@ function MobileChat({
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                if (!analyzing) handleMobileSend();
+              }
+            }}
             placeholder="Chat with Jeradin…"
             rows={2}
             className="w-full bg-transparent px-2 py-1 text-[15px] resize-none focus:outline-none placeholder:text-white/40 text-white"

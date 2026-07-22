@@ -403,7 +403,7 @@ Rules:
       system: systemPrompt,
       prompt: userPrompt,
       tools,
-      maxOutputTokens: 5000,
+      maxOutputTokens: 3200,
       stopWhen: stepCountIs(2),
     });
 

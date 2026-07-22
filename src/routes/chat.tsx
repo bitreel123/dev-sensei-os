@@ -756,7 +756,7 @@ function ChatPage() {
                     <KnowledgeReportBody report={knowledgeResult} />
                   </IntelResultFrame>
                 ) : repoResult ? (
-                  <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
+                  <IntelResultFrame title="GitHub Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
                     <RepoReportBody report={repoResult} />
                   </IntelResultFrame>
                 ) : (
@@ -1816,7 +1816,7 @@ function MobileChat({
         </div>
       ) : repoResult ? (
         <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
-          <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
+          <IntelResultFrame title="GitHub Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
             <RepoReportBody report={repoResult} />
           </IntelResultFrame>
         </div>

@@ -50,8 +50,18 @@ export const analyzeScreenAndSuggestFix = createServerFn({ method: "POST" })
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
 
-    const { chargeAndRemember, recallIntel, memoryPromptSuffix, INTEL_COST } =
+    const {
+      assertCreditsAvailable,
+      chargeAndRemember,
+      recallIntel,
+      memoryPromptSuffix,
+      INTEL_COST,
+    } =
       await import("./intel-memory.server");
+    await assertCreditsAvailable(
+      context.userId,
+      data.mode === "fast" ? INTEL_COST.screen : INTEL_COST.screen_deep,
+    );
     const memoryTail = memoryPromptSuffix(await recallIntel(context.userId, "screen", 3));
 
     // -------- FAST PATH (default): single Gemini call, 2-5s --------

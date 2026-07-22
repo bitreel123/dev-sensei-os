@@ -119,3 +119,27 @@ export async function chargeAndRemember(
   await rememberIntel(userId, mode, entry);
   return charge;
 }
+
+/** Verify that a user can afford an intelligence run before paid work starts. */
+export async function assertCreditsAvailable(
+  userId: string,
+  cost: number,
+  env: "live" | "sandbox" = "live",
+) {
+  const { data, error } = await supabaseAdmin
+    .from("user_credits")
+    .select("balance")
+    .eq("user_id", userId)
+    .eq("environment", env)
+    .maybeSingle();
+  if (error) {
+    console.warn("[intel-memory] credit preflight failed:", error.message);
+    return;
+  }
+  const balance = Number((data as { balance?: number } | null)?.balance ?? 0);
+  if (balance < cost) {
+    throw new Error(
+      `Out of credits. You have ${balance} credits left; this action costs ${cost}. Upgrade at /pricing to continue.`,
+    );
+  }
+}

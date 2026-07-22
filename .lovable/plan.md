@@ -1,97 +1,66 @@
-# System Intelligence — Phases 1 + 2 + 3
+## What is happening now
 
-Turn the current one-shot summarizer into a **living digital twin** of the codebase: a persistent graph in Postgres, kept in sync with GitHub, queried by 10 specialized reasoning modes.
+- **Knowledge Intelligence is using Claude Sonnet 4.5.** System Intelligence and GitHub Intelligence also use Claude Sonnet 4.5. Screen Intelligence uses Gemini Flash for its normal fast pass and only uses the deeper screen model when explicitly requested.
+- The Knowledge request asks Claude to generate one very large, deeply nested JSON report containing product discovery, market research, competitors, architecture, security, system diagrams, development plan, launch strategy, resources, and the knowledge graph.
+- The reported error is caused by that large JSON response ending incomplete or containing no complete JSON object. `jsonrepair` can correct small syntax mistakes, but it cannot reliably recreate a response that was cut off.
+- Knowledge may also perform external GitHub, npm, or Hugging Face searches before producing the answer. Combined with two database reads, a large prompt, and a long buffered response, this makes the screen appear idle for too long.
+- System and GitHub Intelligence first download and inspect repository data before asking the model to produce a large report. That is fundamentally slower than ordinary chat.
+- The current server functions buffer the whole result. Users see nothing until every search, model generation, JSON parse, credit operation, and memory operation has completed.
+- The mobile Send handler is wired, but the shared request can still end in the same backend error. The UI also prioritizes previous result state over the current error, which can make a new failed request look as though nothing happened.
+- The existing Knowledge report renderer still supports the full feature set: startup/product discovery, current market intelligence, competitors, architecture, technology choices, security, system design, roadmap, learning, launch, resources, glossary, and knowledge graph.
 
-I'll ship all three phases in one continuous build. Phase 1 lays the foundation; Phase 2 makes it durable and incremental; Phase 3 exposes it as the 10 modes you described.
+## Fix plan
 
----
+### 1. Make every Send action produce an immediate visible conversation entry
+- Insert the user's prompt into the result conversation as soon as Send is pressed.
+- Clear stale results and stale errors before the new run.
+- Keep the composer, intelligence buttons, repository selector, and Send control visible on desktop and mobile throughout analysis.
+- Show a capability-specific live status such as researching, reading repository, analyzing, and preparing result.
+- Ensure the newest error or result cannot be hidden behind an older intelligence result.
 
-## Phase 1 — Real ingestion & graph storage
+### 2. Remove Knowledge Intelligence’s incomplete-JSON failure mode
+- Replace the fragile “find the first `{` and last `}`” contract with schema-backed structured generation and a guarded fallback.
+- Validate and normalize every returned section before rendering so a malformed optional section cannot crash the complete report.
+- If the model returns only a partial report, display all valid completed sections instead of discarding the entire answer.
+- Add one bounded retry that requests only missing sections, rather than regenerating the full report.
+- Preserve all existing Knowledge Intelligence sections and the current Claude Sonnet model.
 
-**Goal:** replace the 60-file cap + text dump with a real parsed graph, stored in your database.
+### 3. Make Knowledge Intelligence fast enough to feel like chat
+- Run the independent GitHub-connection lookup and memory lookup in parallel.
+- Do not invoke repository/package/model searches for ordinary explanatory questions unless live evidence is needed.
+- For research questions such as fintech startup ideas, perform one bounded parallel evidence pass, then generate the report once.
+- Return a concise useful overview first, then populate the deeper report sections without blocking the first readable answer.
+- Add hard time budgets to external searches and degrade gracefully when a source is slow.
 
-**New database tables** (per user + per repo, RLS scoped to `auth.uid()`):
-- `code_repos` — one row per connected repo (`owner/name`, default branch, last synced SHA, last full-scan time).
-- `code_files` — every ingested file (path, language, size, SHA, summary, embedding).
-- `code_symbols` — functions / classes / exports / routes / tables extracted via AST (name, kind, file_id, line range, signature, docstring, embedding).
-- `code_edges` — typed relationships between symbols/files: `imports`, `calls`, `renders`, `reads_table`, `writes_table`, `defines_route`, `depends_on_package`.
-- `code_chunks` — semantic chunks of file content (for RAG retrieval), pgvector-embedded.
+### 4. Repair System and GitHub Intelligence delivery
+- Confirm a selected connected repository before starting and provide a plain-language prompt when none is selected.
+- Bound repository downloads by file relevance, size, count, and timeout.
+- Analyze the most relevant files first instead of waiting for every selected file.
+- Return a first project/repository summary quickly, followed by deeper findings.
+- Preserve the selected repository and keep users on the main dashboard on mobile and desktop.
 
-All tables get RLS: users can only see their own rows. `pgvector` enabled; HNSW index on embeddings.
+### 5. Harden Screen Intelligence
+- Verify recording capture from the live media stream on supported desktop browsers.
+- On mobile browsers where screen capture is unavailable, show an immediate supported alternative: attach a screenshot or image.
+- Add request timeouts and a clear retry state so recording failures never remain stuck on “Analyzing.”
+- Keep the current fast/deep screen model routing unchanged.
 
-**Ingestion pipeline** (new `src/lib/code-graph/*.server.ts`):
-1. Walk the full repo tree via GitHub API — no 60-file cap. Skip `node_modules`, build output, lockfiles, binaries.
-2. For each source file: parse with a lightweight regex/AST pass (TS/JS/Python/Go first, then Java/Ruby/PHP) to extract imports, exports, function/class definitions, JSX components, DB table references, route definitions.
-3. Chunk file content (~1000 chars, 100 overlap) and embed via `google/gemini-embedding-001`.
-4. Insert `code_files` → `code_symbols` → `code_edges` → `code_chunks` in a single transaction per file.
-5. Store `last_scanned_sha` on `code_repos` when done.
+### 6. Make credit and memory operations unable to discard a completed answer
+- Check available credits before expensive analysis begins.
+- Once a valid result exists, return it to the user even if non-critical memory persistence fails.
+- Deduct credits exactly once for a successful intelligence result, including retries and partial-result recovery.
+- Log request timing by phase: authentication, repository/source loading, model generation, parsing, credit deduction, and memory persistence.
 
-**Trigger:** the existing "Analyze system" button now enqueues a background scan (server function returns immediately with a `scan_id`); UI polls a small `scan_status` row for progress.
+### 7. Verify the complete experience
+- Test Knowledge with the exact prompt: “I need fintech startup ideas. What should I build and what are the current things I need to know?”
+- Test System and GitHub Intelligence with a connected repository and a normal-language prompt.
+- Test Screen Intelligence with recording, screenshot attachment, and an unsupported mobile capture path.
+- Verify Send by button and Enter on desktop and mobile.
+- Confirm first visible feedback appears immediately, a readable answer appears as quickly as possible, the full result completes without an incomplete-response error, and credits are charged once.
 
----
+## Performance target
 
-## Phase 2 — Persistent memory & incremental sync
-
-**Goal:** the graph survives across sessions and stays fresh without re-scanning everything.
-
-- **Cache-first reads:** every mode reads from the stored graph, not GitHub, unless the graph is stale.
-- **Incremental updates:** a `POST /api/public/github/webhook` route receives `push` events. For each changed file in the diff:
-  - Delete its old symbols/edges/chunks.
-  - Re-parse and re-embed only that file.
-  - Update `code_repos.last_scanned_sha`.
-- **Manual "Re-sync" button** on the System panel for repos without webhook access — diffs `last_scanned_sha…HEAD` and updates changed files only.
-- **Snapshot history:** a lightweight `code_snapshots` table (repo_id, sha, taken_at, node_count, edge_count) so we can later diff snapshots for change intelligence.
-
-Result: after the first scan, every subsequent question is answered in <2s from local Postgres + a targeted LLM call over retrieved context — no more full re-reads.
-
----
-
-## Phase 3 — The 10 intelligence modes
-
-A single mode-router server function: `runIntelMode({ repo, mode, question, focusPath? })`.
-
-Each mode is a small strategy: it queries the graph in a mode-specific way, retrieves the top-K relevant chunks/symbols via embedding + graph traversal, and calls the LLM with a mode-specific system prompt returning structured JSON.
-
-| # | Mode | What it queries | What it returns |
-|---|------|-----------------|-----------------|
-| 1 | **Architecture** | files + edges grouped by folder/layer | Mermaid graph + layer summary |
-| 2 | **Dependency** | `depends_on_package` edges + `imports` chains | Dep tree, unused deps, version risks |
-| 3 | **Impact** | reverse-BFS on `calls`/`imports` from `focusPath` | "If you change X, these Y files/tests break" |
-| 4 | **Data Flow** | `reads_table`/`writes_table` edges | Which endpoints touch which tables, w/ Mermaid |
-| 5 | **Business Logic** | symbols tagged as route/handler + their call trees | Plain-English feature map |
-| 6 | **Knowledge** | free-form RAG over `code_chunks` | ChatGPT-style Q&A grounded in the repo |
-| 7 | **Security** | routes + auth middleware presence + secret refs | Findings list (severity, file, line, fix) |
-| 8 | **Performance** | N+1 patterns, missing indexes, large bundles | Hotspot list |
-| 9 | **Technical Debt** | TODO/FIXME, dead exports, cyclomatic complexity | Debt score + top offenders |
-| 10 | **Refactoring** | duplicate symbol signatures, oversized files | Concrete refactor suggestions |
-
-Modes 1-6 ship fully; 7-10 ship with the graph queries wired and a v1 prompt (they'll get sharper as we tune them).
-
-**UI (System panel in the dashboard):**
-- Repo picker (existing) → "Scan repo" button → progress bar.
-- After scan: 10 mode chips. Selecting one shows a mode-specific input (question, or a file picker for Impact).
-- Results render in the same ChatGPT-style block already used for Screen Intelligence, with Mermaid diagrams inline where applicable.
-
----
-
-## Technical notes (for reference)
-
-- **Parsing:** start with regex-based extractors per language (fast, Worker-safe). Tree-sitter WASM is a later upgrade — its Worker bundling is fragile and not needed for v1 signal quality.
-- **Embeddings:** `google/gemini-embedding-001` (3072-dim, halfvec-indexed).
-- **LLM:** Claude Sonnet 4.5 for mode reasoning (already wired via `ANTHROPIC_API_KEY`); Gemini stays reserved for Screen Intelligence.
-- **Background scans:** implemented as a server function that streams progress into a `scan_status` row; no separate queue infrastructure needed for v1.
-- **Webhook security:** HMAC-verify GitHub's `X-Hub-Signature-256` before any DB write. New `GITHUB_WEBHOOK_SECRET` will be requested via `add_secret`.
-- **No client leakage:** all graph queries and LLM calls happen in `*.functions.ts` / `*.server.ts`; `supabaseAdmin` loaded inside handlers only.
-
----
-
-## Order of execution
-
-1. Migration: `pgvector` + all 6 new tables + RLS + GRANTs.
-2. Ingestion pipeline + scan server function + progress polling.
-3. Webhook route + incremental updater + manual re-sync.
-4. Mode router + 10 mode implementations.
-5. Rewire the System panel UI to the new flow.
-6. End-to-end test on a real repo.
-
-Ready to start on the migration when you approve.
+- **Immediate UI acknowledgment:** under 0.5 seconds.
+- **First readable answer/status:** approximately 2–7 seconds when the model and external sources respond normally.
+- **Full Knowledge/System/GitHub deep report:** may take longer than 7 seconds because it includes live research or repository inspection, but users will no longer face a blank waiting screen.
+- No model changes are included in this plan.

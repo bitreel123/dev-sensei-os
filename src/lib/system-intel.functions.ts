@@ -54,9 +54,12 @@ const IGNORED_DIRS = new Set([
 const CODE_EXT = /\.(ts|tsx|js|jsx|py|go|rs|java|kt|rb|php|css|scss|json|toml|yml|yaml|md|sql|sh)$/i;
 const MAX_FILES = 18;
 const MAX_FILE_BYTES = 12_000;
+const GITHUB_TIMEOUT_MS = 5_000;
+const MODEL_TIMEOUT_MS = 45_000;
 
 async function gh<T>(url: string, token: string): Promise<T> {
   const res = await fetch(url, {
+    signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github+json",
@@ -102,7 +105,7 @@ async function fetchRepoFiles(
         try {
           const raw = await fetch(
             `https://raw.githubusercontent.com/${owner}/${repo}/${meta.default_branch}/${n.path}`,
-            { headers: { Authorization: `Bearer ${token}` } },
+             { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS) },
           );
           if (!raw.ok) return null;
           const content = await raw.text();
@@ -222,7 +225,7 @@ async function callClaudeWithTools(
   const userText =
     (projectHint ? `Developer note: ${projectHint}\n\n` : "") +
     `Here are ${files.length} files from the codebase:\n\n${filesBlock}\n\n` +
-    `Analyze the entire project. Use the search tools to find reference material. Return the JSON only.`;
+    `Analyze the project now. Use search tools only if the developer explicitly requested external references. Return the JSON only.`;
 
   const messages: Array<{ role: "user" | "assistant"; content: unknown }> = [
     { role: "user", content: userText },
@@ -232,6 +235,7 @@ async function callClaudeWithTools(
   for (let turn = 0; turn < 2; turn++) {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
+      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
       headers: {
         "Content-Type": "application/json",
         "x-api-key": anthropicKey,
@@ -263,9 +267,20 @@ async function callClaudeWithTools(
 
     if (toolUses.length === 0 || json.stop_reason === "end_turn") {
       const text = (content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined)?.text ?? "";
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("Claude returned no JSON");
-      return JSON.parse(jsonMatch[0]) as SystemAnalysis;
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      if (start < 0) throw new Error("System analysis returned no report.");
+      const payload = text.slice(start, end > start ? end + 1 : undefined);
+      try {
+        return JSON.parse(payload) as SystemAnalysis;
+      } catch {
+        const { jsonrepair } = await import("jsonrepair");
+        try {
+          return JSON.parse(jsonrepair(payload)) as SystemAnalysis;
+        } catch {
+          throw new Error("System analysis returned an incomplete report. Please retry.");
+        }
+      }
     }
 
     const toolResults = await Promise.all(
@@ -317,6 +332,8 @@ export const analyzeSystem = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
+    const { assertCreditsAvailable, INTEL_COST } = await import("./intel-memory.server");
+    await assertCreditsAvailable(context.userId, INTEL_COST.system);
 
     // Get GitHub token (needed for both sources — upload source still uses tools)
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -349,7 +366,7 @@ export const analyzeSystem = createServerFn({ method: "POST" })
       data.projectHint ?? "",
     );
 
-    const { chargeAndRemember, INTEL_COST } = await import("./intel-memory.server");
+    const { chargeAndRemember } = await import("./intel-memory.server");
     await chargeAndRemember(context.userId, "system", INTEL_COST.system, {
       title: analysis.projectSummary?.slice(0, 200) || "System analysis",
       summary: analysis.laymanOverview?.slice(0, 800) ?? null,

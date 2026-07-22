@@ -446,7 +446,8 @@ Rules:
       system: systemPrompt,
       prompt: userPrompt,
       tools,
-      stopWhen: stepCountIs(50),
+      maxOutputTokens: 5000,
+      stopWhen: stepCountIs(3),
     });
 
     const jsonMatch = claudeText.match(/\{[\s\S]*\}/);

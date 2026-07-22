@@ -5,7 +5,7 @@ import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
@@ -17,7 +17,8 @@ import { runKnowledgeIntelligence, type KnowledgeReport } from "@/lib/knowledge-
 import { runGithubIntelligence, type GithubIntelReport } from "@/lib/github-intel.functions";
 import { SystemReportBody, KnowledgeReportBody, RepoReportBody } from "@/components/jeradin/intel-reports";
 import { NotificationsBell } from "@/components/jeradin/notifications-bell";
-import { SystemPanel } from "@/components/jeradin/system-panel";
+import { listMyGithubRepos, setActiveRepo, type GithubRepo } from "@/lib/repo-intel.functions";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 
 
 
@@ -62,6 +63,10 @@ function ChatPage() {
   const [overlayMessages, setOverlayMessages] = useState<OverlayChatMessage[]>([]);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [knowledgeEnabled, setKnowledgeEnabled] = useState(false);
+  const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState("");
+  const [reposLoading, setReposLoading] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState("");
   const [lastRun, setLastRun] = useState<{
     kind: "screen" | "knowledge" | "system" | "repo";
     status: "running" | "success" | "error";
@@ -78,6 +83,8 @@ function ChatPage() {
   const runSystem = useServerFn(analyzeSystem);
   const runKnowledge = useServerFn(runKnowledgeIntelligence);
   const runRepo = useServerFn(runGithubIntelligence);
+  const loadGithubRepos = useServerFn(listMyGithubRepos);
+  const saveActiveRepo = useServerFn(setActiveRepo);
   const askScreenFollowUp = useServerFn(chatAboutAnalysis);
 
   useEffect(() => {
@@ -123,6 +130,45 @@ function ChatPage() {
       setCurrentEntryId(entry.id);
     }
   }, [search.id]);
+
+  useEffect(() => {
+    if (!user || !github) {
+      setGithubRepos([]);
+      setSelectedRepo("");
+      return;
+    }
+    let cancelled = false;
+    setReposLoading(true);
+    loadGithubRepos()
+      .then(({ repos }) => {
+        if (cancelled) return;
+        setGithubRepos(repos);
+        setSelectedRepo((current) => {
+          const next = current || repos[0]?.full_name || "";
+          if (!current && next) {
+            void saveActiveRepo({ data: { repo: next } }).catch(() => undefined);
+          }
+          return next;
+        });
+      })
+      .catch((error) => {
+        if (!cancelled) toast.error(error instanceof Error ? error.message : "Could not load GitHub repositories");
+      })
+      .finally(() => {
+        if (!cancelled) setReposLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [user, github, loadGithubRepos]);
+
+  async function chooseRepo(repo: string) {
+    setSelectedRepo(repo);
+    if (!repo) return;
+    try {
+      await saveActiveRepo({ data: { repo } });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not select repository");
+    }
+  }
 
   // Persist overlay chat messages to the current history entry
   useEffect(() => {
@@ -461,18 +507,19 @@ function ChatPage() {
       return;
     }
 
-    const repo = extractRepoName(text);
+    const repo = extractRepoName(text) ?? selectedRepo;
     if ((capability === "system" || capability === "repo") && !repo && attachments.length === 0) {
       if (!github) {
         toast.message("Connect GitHub, then choose or type the repo you want Jeradin to analyze.");
         await startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"));
         return;
       }
-      toast.error("Type a repo like owner/name in the chat box, then Send.");
+      toast.error("Choose a repository above the chat box, then Send.");
       return;
     }
 
     setAnalyzing(true);
+    setPendingPrompt(text);
     setLastRun({ kind: capability, status: "running" });
     try {
       if (capability === "knowledge") {
@@ -558,6 +605,7 @@ function ChatPage() {
       setLastRun({ kind: capability, status: "error", message });
     } finally {
       setAnalyzing(false);
+      setPendingPrompt("");
     }
   }
 
@@ -608,6 +656,13 @@ function ChatPage() {
         onCloseCapabilityPanels={() => setOpenedCapabilityPanel(null)}
         currentEntryId={currentEntryId}
         setCurrentEntryId={setCurrentEntryId}
+        githubConnected={!!github}
+        githubLogin={github?.login ?? null}
+        githubRepos={githubRepos}
+        selectedRepo={selectedRepo}
+        reposLoading={reposLoading}
+        onSelectRepo={chooseRepo}
+        pendingPrompt={pendingPrompt}
       />
 
 
@@ -704,29 +759,21 @@ function ChatPage() {
                   <IntelResultFrame title="Repo Intelligence" icon={<Github className="h-4 w-4 text-orange-400" />}>
                     <RepoReportBody report={repoResult} />
                   </IntelResultFrame>
-                ) : activeCapability === "system" ? (
-                  <div className="w-full">
-                    <div className="mb-4 flex items-center justify-between">
-                      <button
-                        onClick={() => {
-                          setActiveCapability(null);
-                          setOpenedCapabilityPanel(null);
-                        }}
-                        className="inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 rounded font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/80 hover:bg-white/10"
-                      >
-                        ← Back
-                      </button>
-                      <span className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/50">System Intelligence</span>
-                    </div>
-                    <SystemPanel />
-                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center">
                     <h1
                       className="text-center text-[44px] leading-[1.05] tracking-[-0.02em]"
                       style={{ fontFamily: "'Instrument Serif', serif" }}
                     >
-                      {analyzing ? "Analyzing your screen…" : "What are we doing today?"}
+                      {analyzing
+                        ? activeCapability === "system"
+                          ? "Scanning your codebase…"
+                          : activeCapability === "repo"
+                            ? "Reading your repository…"
+                            : activeCapability === "knowledge"
+                              ? "Researching your answer…"
+                              : "Analyzing your screen…"
+                        : "What are we doing today?"}
                     </h1>
                     <p className="mt-2 text-center text-[13px] text-white/55">
                       {analyzing
@@ -734,12 +781,7 @@ function ChatPage() {
                         : "Describe the issue, let Jeradin solve it for you."}
                     </p>
                     {analyzing && (
-                      <div className="mt-4 flex items-center gap-2 text-white/70">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">
-                          Analyzing…
-                        </span>
-                      </div>
+                      <ChatRunProgress capability={activeCapability ?? "knowledge"} prompt={pendingPrompt} repo={selectedRepo} />
                     )}
                     <DesktopPromptBlock
                       prompt={prompt}
@@ -758,6 +800,10 @@ function ChatPage() {
                       knowledgeEnabled={knowledgeEnabled}
                       githubConnected={!!github}
                       githubLogin={github?.login ?? null}
+                      githubRepos={githubRepos}
+                      selectedRepo={selectedRepo}
+                      reposLoading={reposLoading}
+                      onSelectRepo={chooseRepo}
                       onSelectCapability={(m) => {
                         setActiveCapability((currentMode) => currentMode === m ? null : m);
                         setOpenedCapabilityPanel(null);
@@ -798,6 +844,10 @@ function ChatPage() {
                 knowledgeEnabled={knowledgeEnabled}
                 githubConnected={!!github}
                 githubLogin={github?.login ?? null}
+                githubRepos={githubRepos}
+                selectedRepo={selectedRepo}
+                reposLoading={reposLoading}
+                onSelectRepo={chooseRepo}
                 compact
                 onSelectCapability={(m) => {
                   setActiveCapability((currentMode) => currentMode === m ? null : m);
@@ -1226,6 +1276,10 @@ function DesktopPromptBlock({
   knowledgeEnabled,
   githubConnected,
   githubLogin,
+  githubRepos,
+  selectedRepo,
+  reposLoading,
+  onSelectRepo,
   compact = false,
   onSelectCapability,
 }: {
@@ -1245,16 +1299,34 @@ function DesktopPromptBlock({
   knowledgeEnabled: boolean;
   githubConnected?: boolean;
   githubLogin?: string | null;
+  githubRepos: GithubRepo[];
+  selectedRepo: string;
+  reposLoading: boolean;
+  onSelectRepo: (repo: string) => void;
   compact?: boolean;
   onSelectCapability: (m: CapabilityKey) => void;
 }) {
   const selected = current ?? "screen";
   const placeholder = selected === "screen"
     ? "Paste an error, describe the bug, or start a screen recording…"
-    : `Describe what you need from ${CAPABILITIES.find((c) => c.key === selected)?.title ?? "this capability"}…`;
+    : selected === "system"
+      ? "Ask Jeradin to scan or explain the selected codebase…"
+      : selected === "repo"
+        ? "Ask about commits, pull requests, releases, or regressions…"
+        : "Ask a question or describe what you want to research…";
 
   return (
     <div className={`${compact ? "mt-0" : "mt-16"} w-full`}>
+      {(selected === "system" || selected === "repo") && (
+        <RepoSelector
+          connected={!!githubConnected}
+          login={githubLogin}
+          repos={githubRepos}
+          value={selectedRepo}
+          loading={reposLoading}
+          onChange={onSelectRepo}
+        />
+      )}
       {attachments.length > 0 && (
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {attachments.map((a, i) => (
@@ -1465,7 +1537,7 @@ function CapabilityDetails({
       )}
       {needsGithub && githubConnected && (
         <p className="mt-2 text-[11.5px] text-emerald-300/80">
-          Type a repo like <span className="font-mono">owner/name</span> in the chat box and press Send.
+          Choose a repository above, type what you want analyzed, and press Send.
         </p>
       )}
       <button
@@ -1475,6 +1547,69 @@ function CapabilityDetails({
         {(current === "knowledge" && knowledgeEnabled) || (needsGithub && githubConnected) ? <Check className="h-3.5 w-3.5" /> : <CtaIcon className="h-3.5 w-3.5" />}
         {ctaLabel}
       </button>
+    </div>
+  );
+}
+
+function RepoSelector({
+  connected,
+  login,
+  repos,
+  value,
+  loading,
+  onChange,
+}: {
+  connected: boolean;
+  login?: string | null;
+  repos: GithubRepo[];
+  value: string;
+  loading: boolean;
+  onChange: (repo: string) => void;
+}) {
+  if (!connected) {
+    return (
+      <button
+        onClick={() => startGithubOAuth("connect", "/chat").catch((error) => toast.error(error instanceof Error ? error.message : "GitHub connection failed"))}
+        className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-3 py-2.5 text-[12px] text-white/80 hover:border-white/30"
+      >
+        <Github className="h-4 w-4" /> Connect GitHub codebase
+      </button>
+    );
+  }
+  return (
+    <div className="mb-3 flex items-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-3 py-2">
+      <Github className="h-4 w-4 shrink-0 text-emerald-300" />
+      <span className="hidden text-[11px] text-white/45 sm:inline">{login ? `@${login}` : "GitHub"}</span>
+      <div className="relative min-w-0 flex-1">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          disabled={loading || repos.length === 0}
+          aria-label="Choose GitHub repository"
+          className="w-full appearance-none bg-transparent pr-7 text-[12.5px] text-white outline-none disabled:text-white/40"
+        >
+          <option value="" className="bg-neutral-950">{loading ? "Loading codebases…" : "Choose a codebase"}</option>
+          {repos.map((repo) => (
+            <option key={repo.full_name} value={repo.full_name} className="bg-neutral-950">
+              {repo.full_name}{repo.private ? " · private" : ""}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/45" />
+      </div>
+    </div>
+  );
+}
+
+function ChatRunProgress({ capability, prompt, repo }: { capability: CapabilityKey; prompt: string; repo: string }) {
+  const label = capability === "system" ? "Scanning codebase" : capability === "repo" ? "Reading GitHub history" : capability === "screen" ? "Analyzing screen" : "Researching answer";
+  return (
+    <div className="mt-5 w-full max-w-[640px] border-l border-white/15 pl-4 text-left">
+      {prompt && <p className="mb-3 text-[13px] leading-relaxed text-white/55">{prompt}</p>}
+      <div className="flex items-center gap-2 text-[12.5px]">
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-orange-400" />
+        <Shimmer className="font-mono uppercase tracking-[0.16em]">{repo && (capability === "system" || capability === "repo") ? `${label} · ${repo}` : label}</Shimmer>
+      </div>
     </div>
   );
 }
@@ -1566,6 +1701,13 @@ function MobileChat({
   onCloseCapabilityPanels,
   currentEntryId,
   setCurrentEntryId,
+  githubConnected,
+  githubLogin,
+  githubRepos,
+  selectedRepo,
+  reposLoading,
+  onSelectRepo,
+  pendingPrompt,
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;
@@ -1592,6 +1734,13 @@ function MobileChat({
   onCloseCapabilityPanels: () => void;
   currentEntryId: string | null;
   setCurrentEntryId: (id: string | null) => void;
+  githubConnected: boolean;
+  githubLogin: string | null;
+  githubRepos: GithubRepo[];
+  selectedRepo: string;
+  reposLoading: boolean;
+  onSelectRepo: (repo: string) => void;
+  pendingPrompt: string;
 }) {
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1687,11 +1836,22 @@ function MobileChat({
           <p className="mt-2 text-[12px] text-white/40">
             {credits?.balance ?? 0} credits · {credits?.plan ?? "free"} plan
           </p>
+          {analyzing && <ChatRunProgress capability={selected} prompt={pendingPrompt} repo={selectedRepo} />}
         </div>
       )}
 
       {/* Composer */}
       <div className="p-3 shrink-0">
+        {(selected === "system" || selected === "repo") && (
+          <RepoSelector
+            connected={githubConnected}
+            login={githubLogin}
+            repos={githubRepos}
+            value={selectedRepo}
+            loading={reposLoading}
+            onChange={onSelectRepo}
+          />
+        )}
         {attachments.length > 0 && (
           <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
             {attachments.map((a, i) => (

@@ -298,7 +298,7 @@ export const runKnowledgeIntelligence = createServerFn({ method: "POST" })
 
     const systemPrompt = `You are Knowledge Intelligence — a senior product engineer + market analyst + software architect combined. You transform an idea or question into a production-ready plan grounded in a structured knowledge graph.
 
-You have search tools for GitHub (repos + code), npm, and Hugging Face. Make one parallel batch of only the 2-4 searches that materially improve this answer, then immediately produce the report. Do not perform searches in repeated rounds. Then reason across product discovery, market, competitors, architecture, technology tradeoffs, security, system design, plan, and launch.
+You have search tools for GitHub (repos + code), npm, and Hugging Face. Use at most one parallel search batch only when live external evidence materially improves the answer, then immediately produce the report. For direct explanations and ordinary questions, answer without tools. Never perform searches in repeated rounds.
 
 Return STRICT JSON only (no markdown fences, no prose outside JSON). Any field may be omitted when clearly not relevant to the user's question, but prefer to include as many as possible. Shape:
 
@@ -403,7 +403,8 @@ Rules:
       system: systemPrompt,
       prompt: userPrompt,
       tools,
-      stopWhen: stepCountIs(50),
+      maxOutputTokens: 5000,
+      stopWhen: stepCountIs(2),
     });
 
     const jsonMatch = claudeText.match(/\{[\s\S]*\}/);

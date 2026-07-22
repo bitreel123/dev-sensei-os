@@ -52,8 +52,8 @@ const IGNORED_DIRS = new Set([
   ".cache",
 ]);
 const CODE_EXT = /\.(ts|tsx|js|jsx|py|go|rs|java|kt|rb|php|css|scss|json|toml|yml|yaml|md|sql|sh)$/i;
-const MAX_FILES = 40;
-const MAX_FILE_BYTES = 40_000;
+const MAX_FILES = 28;
+const MAX_FILE_BYTES = 24_000;
 
 async function gh<T>(url: string, token: string): Promise<T> {
   const res = await fetch(url, {
@@ -192,7 +192,7 @@ const SYSTEM_PROMPT = `You are a senior staff engineer analyzing an entire codeb
 2. Produce a semantic map as a Mermaid \`graph TD\` diagram showing modules and how they depend on each other. Keep node labels short. No emojis. No custom colors. Max ~15 nodes.
 3. List key modules with a one-line role in plain English, what they export, and what they depend on.
 4. Give per-file SUGGESTIONS — one by one. DO NOT rewrite code. Only describe the change in prose: which file, roughly which line/area, what to change, and WHY. The developer will apply the change themselves.
-5. Use the search_github_repos and search_github_code tools to find relevant reference repos, APIs, and real-world examples the developer can use. Call them 1-3 times if useful.
+5. Use the search tools only when the developer explicitly asks for external references or examples. Repository analysis itself should finish in one model pass.
 6. Return references with a 1-line layman "why this helps".
 
 Return STRICT JSON matching this schema (no markdown fences, no prose outside JSON):
@@ -228,7 +228,7 @@ async function callClaudeWithTools(
     { role: "user", content: userText },
   ];
 
-  // One parallel tool batch plus one final response keeps latency bounded.
+  // Most analyses finish in one pass; an optional external-reference search gets one follow-up.
   for (let turn = 0; turn < 2; turn++) {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -239,7 +239,7 @@ async function callClaudeWithTools(
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 8000,
+        max_tokens: 5000,
         system: SYSTEM_PROMPT,
         tools: CLAUDE_TOOLS,
         messages,

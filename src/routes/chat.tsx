@@ -277,9 +277,44 @@ function ChatPage() {
     }
   }
 
-  function stopRecording() {
+  async function stopRecording() {
+    // Grab a frame straight off the live MediaStream BEFORE tearing it
+    // down. Decoding freshly-recorded WebM blobs is unreliable across
+    // browsers ("Could not load recording"); a live-stream capture always
+    // works and is dramatically faster.
+    try {
+      const stream = streamRef.current;
+      if (stream) {
+        const video = document.createElement("video");
+        video.srcObject = stream;
+        video.muted = true;
+        video.playsInline = true;
+        await video.play().catch(() => undefined);
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+        const maxW = 1280;
+        const vw = video.videoWidth || maxW;
+        const vh = video.videoHeight || 720;
+        const scale = Math.min(1, maxW / vw);
+        const w = Math.floor(vw * scale);
+        const h = Math.floor(vh * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, w, h);
+          pendingFrameRef.current = canvas
+            .toDataURL("image/png")
+            .replace(/^data:image\/png;base64,/, "");
+        }
+        video.pause();
+      }
+    } catch (e) {
+      console.warn("[stopRecording] live frame capture failed, will fall back to blob decode", e);
+    }
     recorderRef.current?.stop();
   }
+
 
   function addFiles(files: FileList | null) {
     if (!files) return;

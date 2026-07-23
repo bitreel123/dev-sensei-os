@@ -13,12 +13,13 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, CodeBlock } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
 import { analyzeSystem, type FileInput, type SystemAnalysis } from "@/lib/system-intel.functions";
-import { runKnowledgeIntelligence, type KnowledgeReport } from "@/lib/knowledge-intel.functions";
+import { type KnowledgeReport } from "@/lib/knowledge-intel.functions";
 import { runGithubIntelligence, type GithubIntelReport } from "@/lib/github-intel.functions";
 import { SystemReportBody, KnowledgeReportBody, RepoReportBody } from "@/components/jeradin/intel-reports";
 import { NotificationsBell } from "@/components/jeradin/notifications-bell";
 import { listMyGithubRepos, setActiveRepo, type GithubRepo } from "@/lib/repo-intel.functions";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { streamIntel, type IntelStreamEvent } from "@/lib/intel-stream";
 
 
 
@@ -73,6 +74,7 @@ function ChatPage() {
     status: "running" | "success" | "error";
     message?: string;
   } | null>(null);
+  const [sectionStages, setSectionStages] = useState<Array<{ id: string; label: string; status: "running" | "done" | "error"; message?: string }>>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -82,7 +84,7 @@ function ChatPage() {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
   const runSystem = useServerFn(analyzeSystem);
-  const runKnowledge = useServerFn(runKnowledgeIntelligence);
+  // runKnowledgeIntelligence is invoked via the streaming route /api/intel/knowledge/stream
   const runRepo = useServerFn(runGithubIntelligence);
   const loadGithubRepos = useServerFn(listMyGithubRepos);
   const saveActiveRepo = useServerFn(setActiveRepo);
@@ -533,20 +535,55 @@ function ChatPage() {
     setPendingPrompt(text);
     setLastSubmittedPrompt(text || (capability === "system" ? "Scan my codebase" : "Run my GitHub code"));
     setLastRun({ kind: capability, status: "running" });
+    setSectionStages([]);
     try {
       if (capability === "knowledge") {
-        const res = await runKnowledge({ data: { question: text, projectContext: "" } });
-        setKnowledgeResult(res.report);
+        // Stream sections one-by-one so the UI paints as soon as each Claude call resolves.
+        const accumulated: KnowledgeReport = {
+          question: text,
+          laymanSummary: "",
+          recommendedStack: [],
+          resources: [],
+          nextSteps: [],
+          glossary: [],
+        };
+        let sectionCount = 0;
+        const handleEvent = (event: IntelStreamEvent) => {
+          if (event.type === "stage") {
+            setSectionStages((prev) => {
+              const idx = prev.findIndex((s) => s.id === event.id);
+              const next = { id: event.id, label: event.label, status: event.status, message: event.message };
+              if (idx >= 0) {
+                const copy = prev.slice();
+                copy[idx] = next;
+                return copy;
+              }
+              return [...prev, next];
+            });
+          } else if (event.type === "section") {
+            const partial = event.data as Partial<KnowledgeReport>;
+            Object.assign(accumulated, partial);
+            sectionCount += 1;
+            // Show the report card as soon as the first section lands.
+            setKnowledgeResult({ ...accumulated });
+          } else if (event.type === "section-error") {
+            console.warn("[knowledge stream] section failed:", event.id, event.message);
+          } else if (event.type === "error") {
+            throw new Error(event.message);
+          }
+        };
+        await streamIntel("/api/intel/knowledge/stream", { question: text, projectContext: "" }, handleEvent);
+        if (sectionCount === 0) throw new Error("Knowledge analysis returned no sections. Please retry.");
         setKnowledgeEnabled(true);
         const entry = addHistoryEntry(`Knowledge · ${text.slice(0, 60)}`, {
           mode: "knowledge",
-          knowledge: { report: res.report, input: { question: text, projectContext: "" } },
+          knowledge: { report: accumulated, input: { question: text, projectContext: "" } },
         });
         setCurrentEntryId(entry.id);
         navigate({ to: "/chat", search: { id: entry.id } });
         setPrompt("");
         toast.success("Knowledge report ready");
-        setLastRun({ kind: "knowledge", status: "success", message: "Knowledge report ready" });
+        setLastRun({ kind: "knowledge", status: "success", message: `${sectionCount} sections ready` });
         return;
       }
 
@@ -799,7 +836,7 @@ function ChatPage() {
                         : "Describe the issue, let Jeradin solve it for you."}
                     </p>
                     {analyzing && (
-                      <ChatRunProgress capability={activeCapability ?? "knowledge"} prompt={pendingPrompt} repo={selectedRepo} />
+                      <ChatRunProgress capability={activeCapability ?? "knowledge"} prompt={pendingPrompt} repo={selectedRepo} stages={sectionStages} />
                     )}
                     <DesktopPromptBlock
                       prompt={prompt}
@@ -1625,8 +1662,9 @@ function RepoSelector({
   );
 }
 
-function ChatRunProgress({ capability, prompt, repo }: { capability: CapabilityKey; prompt: string; repo: string }) {
+function ChatRunProgress({ capability, prompt, repo, stages }: { capability: CapabilityKey; prompt: string; repo: string; stages?: Array<{ id: string; label: string; status: "running" | "done" | "error"; message?: string }> }) {
   const label = capability === "system" ? "Scanning codebase" : capability === "repo" ? "Analyzing GitHub codebase" : capability === "screen" ? "Analyzing screen" : "Researching answer";
+  const hasStages = stages && stages.length > 0;
   return (
     <div className="mt-5 w-full max-w-[640px] border-l border-white/15 pl-4 text-left">
       {prompt && <p className="mb-3 text-[13px] leading-relaxed text-white/55">{prompt}</p>}
@@ -1634,6 +1672,23 @@ function ChatRunProgress({ capability, prompt, repo }: { capability: CapabilityK
         <Loader2 className="h-3.5 w-3.5 animate-spin text-orange-400" />
         <Shimmer className="font-mono uppercase tracking-[0.16em]">{repo && (capability === "system" || capability === "repo") ? `${label} · ${repo}` : label}</Shimmer>
       </div>
+      {hasStages && (
+        <ul className="mt-3 space-y-1 text-[12.5px]">
+          {stages!.map((s) => (
+            <li key={s.id} className="flex items-center gap-2">
+              {s.status === "done" ? (
+                <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+              ) : s.status === "error" ? (
+                <X className="h-3.5 w-3.5 text-red-400 shrink-0" />
+              ) : (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-white/50 shrink-0" />
+              )}
+              <span className={s.status === "done" ? "text-white/85" : s.status === "error" ? "text-red-300" : "text-white/60"}>{s.label}</span>
+              {s.status === "error" && s.message && <span className="text-white/40 text-[11px] truncate">— {s.message}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

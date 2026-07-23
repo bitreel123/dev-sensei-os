@@ -476,6 +476,94 @@ export const SYSTEM_SECTIONS: SystemSectionSpec[] = [
     }),
     extract: (p) => ({ references: p.references ?? [] }),
   },
+  {
+    id: "codeHealth",
+    label: "Code Health Score",
+    build: ({ filesBlock, hint }) => ({
+      system: `You are a staff engineer scoring project health. ${SYSTEM_BASE}
+Return: { "codeHealth": { "architecture": number(0-10), "security": number(0-10), "performance": number(0-10), "scalability": number(0-10), "maintainability": number(0-10), "technicalDebt": number(0-10, lower=worse debt), "developerDx": number(0-10), "documentation": number(0-10), "overall": number(0-10, one decimal ok) } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 400,
+    }),
+    extract: (p) => ({ codeHealth: p.codeHealth ?? null }),
+  },
+  {
+    id: "technicalDebt",
+    label: "Technical Debt",
+    build: ({ filesBlock, hint }) => ({
+      system: `You audit technical debt. ${SYSTEM_BASE}
+Return: { "technicalDebt": { "level": "high"|"medium"|"low", "items": string[] (5-8 concrete debts — e.g. "duplicated auth logic","17 unused components","dead APIs","circular dependency","large component"), "estimatedCleanup": string (e.g. "3 days") } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 700,
+    }),
+    extract: (p) => ({ technicalDebt: p.technicalDebt ?? null }),
+  },
+  {
+    id: "complexity",
+    label: "Complexity Heatmap",
+    build: ({ filesBlock, hint }) => ({
+      system: `You map complexity per area and per file. ${SYSTEM_BASE}
+Return: { "complexity": { "files": [{"path": string, "lines": number, "complexity": number (0-100), "needsRefactor": boolean, "note": string}] (5-8 most complex files), "heatmap": [{"area": string (short — Auth, API, Dashboard, Utils, etc.), "score": number (0-10)}] (5-8 areas) } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 900,
+    }),
+    extract: (p) => ({ complexity: p.complexity ?? null }),
+  },
+  {
+    id: "onboarding",
+    label: "New Developer Guide",
+    build: ({ filesBlock, hint }) => ({
+      system: `You write onboarding docs. "If I join this company today, what do I read first?" ${SYSTEM_BASE}
+Return: { "onboarding": { "filesToRead": [{"path": string, "why": string (one short sentence)}] (4-6 entries — ordered), "estimatedMinutes": number, "tips": string[] (2-4) } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 600,
+    }),
+    extract: (p) => ({ onboarding: p.onboarding ?? null }),
+  },
+  {
+    id: "businessLogic",
+    label: "Business Logic Graph",
+    build: ({ filesBlock, hint }) => ({
+      system: `You describe what the application actually DOES as a user-flow chain. ${SYSTEM_BASE}
+Return: { "businessLogic": { "steps": string[] (6-12 ordered short steps — e.g. "User", "Connect Wallet", "Verify Ownership", "Register Agent", "Save on Sui") } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 500,
+    }),
+    extract: (p) => ({ businessLogic: p.businessLogic ?? null }),
+  },
+  {
+    id: "refactorPlan",
+    label: "Refactor Plan",
+    build: ({ filesBlock, hint }) => ({
+      system: `You are an engineering lead. Give an actionable refactor plan. ${SYSTEM_BASE}
+Return: { "refactorPlan": { "steps": [{"title": string (short — e.g. "Lazy load ThreeScene"), "impact": "very high"|"high"|"medium"|"low", "time": string (e.g. "10 mins")}] (4-7 steps) } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 600,
+    }),
+    extract: (p) => ({ refactorPlan: p.refactorPlan ?? null }),
+  },
+  {
+    id: "followUps",
+    label: "Ask Follow-up",
+    build: ({ hint }) => ({
+      system: `Suggest 6-10 one-click follow-up questions a developer would ask about this project. ${SYSTEM_BASE}
+Return: { "followUps": { "suggestions": string[] (6-10 short prompts — e.g. "Explain Dashboard","Find security issues","Show data flow","Generate tests","Explain like I'm 12") } }`,
+      user: `${hint ? `Note: ${hint}` : "General project"}`,
+      maxTokens: 400,
+    }),
+    extract: (p) => ({ followUps: p.followUps ?? null }),
+  },
+  {
+    id: "riskAnalysis",
+    label: "Risk Analysis",
+    build: ({ filesBlock, hint }) => ({
+      system: `You are a senior staff engineer thinking like a production reviewer. ${SYSTEM_BASE}
+Return: { "riskAnalysis": { "deploymentRisks": [{"area": string, "level":"high"|"medium"|"low", "note": string}] (3-5), "productionReadiness": number (0-100), "whatBreaksFirst": string (1 sentence), "wontScale": string (1 sentence), "bottlenecks": string[] (2-4), "overengineered": string[] (0-3), "missingBeforeProd": string[] (2-5) } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 900,
+    }),
+    extract: (p) => ({ riskAnalysis: p.riskAnalysis ?? null }),
+  },
 ];
 
 // ---------------- GitHub / Repo Intelligence section prompts ----------------

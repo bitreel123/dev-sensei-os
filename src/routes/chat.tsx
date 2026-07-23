@@ -7,7 +7,7 @@ import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
 import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
+import { addHistoryEntry, updateHistoryEntry, getHistoryEntry, upsertHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, CodeBlock } from "@/components/jeradin/screen-intel-overlay";

@@ -28,14 +28,73 @@ export type Reference = {
   why: string; // 1 line, layman
 };
 
+export type SystemCodeHealth = {
+  architecture: number;         // 0-10
+  security: number;
+  performance: number;
+  scalability: number;
+  maintainability: number;
+  technicalDebt: number;        // lower is worse
+  developerDx: number;
+  documentation: number;
+  overall: number;              // 0-10
+};
+
+export type SystemTechnicalDebt = {
+  level: "high" | "medium" | "low";
+  items: string[];
+  estimatedCleanup: string;     // "3 days"
+};
+
+export type SystemComplexity = {
+  files: Array<{ path: string; lines: number; complexity: number; needsRefactor: boolean; note?: string }>;
+  heatmap: Array<{ area: string; score: number }>; // 0-10
+};
+
+export type SystemOnboarding = {
+  filesToRead: Array<{ path: string; why: string }>;
+  estimatedMinutes: number;
+  tips?: string[];
+};
+
+export type SystemBusinessLogic = {
+  steps: string[];              // ordered: "User → Connect wallet → Verify..."
+};
+
+export type SystemRefactorPlan = {
+  steps: Array<{ title: string; impact: "very high" | "high" | "medium" | "low"; time: string }>;
+};
+
+export type SystemFollowUps = {
+  suggestions: string[];        // one-click questions
+};
+
+export type SystemRiskAnalysis = {
+  deploymentRisks: Array<{ area: string; level: "high" | "medium" | "low"; note?: string }>;
+  productionReadiness: number;  // 0-100
+  whatBreaksFirst?: string;
+  wontScale?: string;
+  bottlenecks?: string[];
+  overengineered?: string[];
+  missingBeforeProd?: string[];
+};
+
 export type SystemAnalysis = {
-  projectSummary: string; // layman: "This is a chat app that…"
+  projectSummary: string;
   stack: string[];
-  laymanOverview: string; // 1-2 paragraphs
-  mermaid: string; // graph TD ...
+  laymanOverview: string;
+  mermaid: string;
   modules: ModuleCard[];
   suggestions: Suggestion[];
   references: Reference[];
+  codeHealth?: SystemCodeHealth;
+  technicalDebt?: SystemTechnicalDebt;
+  complexity?: SystemComplexity;
+  onboarding?: SystemOnboarding;
+  businessLogic?: SystemBusinessLogic;
+  refactorPlan?: SystemRefactorPlan;
+  followUps?: SystemFollowUps;
+  riskAnalysis?: SystemRiskAnalysis;
 };
 
 // ---------------- GitHub helpers ----------------

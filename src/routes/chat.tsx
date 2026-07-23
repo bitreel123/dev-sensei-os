@@ -20,8 +20,7 @@ import { NotificationsBell } from "@/components/jeradin/notifications-bell";
 import { listMyGithubRepos, setActiveRepo, type GithubRepo } from "@/lib/repo-intel.functions";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { streamIntel, type IntelStreamEvent } from "@/lib/intel-stream";
-import { getIntelMemory } from "@/lib/intel-memory.functions";
-import type { MemoryEntry } from "@/lib/intel-memory.server";
+import { getIntelMemory, type MemoryEntry } from "@/lib/intel-memory.functions";
 
 
 

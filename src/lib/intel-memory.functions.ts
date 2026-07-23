@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { IntelMode, MemoryEntry } from "./intel-memory.server";
 
+export type { MemoryEntry } from "./intel-memory.server";
+
 const MODES: ReadonlyArray<IntelMode> = ["screen", "system", "knowledge", "repo"];
 
 export const listIntelMemory = createServerFn({ method: "GET" })

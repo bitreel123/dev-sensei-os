@@ -84,7 +84,7 @@ function ChatPage() {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
   const runSystem = useServerFn(analyzeSystem);
-  const runKnowledge = useServerFn(runKnowledgeIntelligence);
+  // runKnowledgeIntelligence is invoked via the streaming route /api/intel/knowledge/stream
   const runRepo = useServerFn(runGithubIntelligence);
   const loadGithubRepos = useServerFn(listMyGithubRepos);
   const saveActiveRepo = useServerFn(setActiveRepo);

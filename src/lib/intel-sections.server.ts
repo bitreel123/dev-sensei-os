@@ -115,11 +115,32 @@ const BASE_RULES = `Return STRICT JSON only. No markdown fences. No prose outsid
 
 export const KNOWLEDGE_SECTIONS: KnowledgeSectionSpec[] = [
   {
+    id: "recommendation",
+    label: "Top Recommendation",
+    key: "recommendation",
+    build: ({ question, projectContext, memory, evidence }) => ({
+      system: `You are a senior YC-partner-style advisor. Do NOT list many ideas. PICK ONE.
+${BASE_RULES}
+Even when the user asks for a list (e.g. "give me 10 fintech startup ideas"), CHOOSE the single best one to build right now based on market demand, competition, capital needs, and speed to MVP. Runners-up go in "alternatives" with a one-sentence reason we did not pick each. Be opinionated. Sound like a founder-coach, not an encyclopedia.
+Return: { "recommendation": {
+  "headline": string (format "Build: <product> for <who>"),
+  "opinion": string (2-3 sentences, opinionated advisor tone — starts with "I recommend..." or "Build this because..."),
+  "whyNow": string[] (3-5 short bullets — trends, funding, demand, gaps),
+  "timeToMvp": string (e.g. "4-6 weeks"),
+  "revenuePotential": string (e.g. "$$$ — $10-50k MRR in 6 months if X"),
+  "scores": { "marketScore": number(0-10), "competitionScore": number(0-10, higher=more crowded), "difficulty": number(0-10), "capitalNeeded": number(0-10), "aiPotential": number(0-10), "speedToMvp": number(0-10, higher=faster), "pmfChance": number(0-10) },
+  "alternatives": [{"name": string, "reasonToPass": string}] (2-4 other ideas we considered and passed on)
+} }`,
+      user: `Question: ${question}${projectContext ? `\n\nContext: ${projectContext}` : ""}${evidence}${memory}`,
+      maxTokens: 900,
+    }),
+  },
+  {
     id: "intro",
     label: "Understanding your idea",
     key: "intro",
     build: ({ question, projectContext, memory }) => ({
-      system: `You are Knowledge Intelligence. ${BASE_RULES}\nReturn: { "laymanSummary": string (2 short paragraphs, plain English), "recommendedStack": string[] (max 8), "glossary": [{"term":string,"meaning":string}] (max 5), "nextSteps": string[] (max 5) }`,
+      system: `You are Knowledge Intelligence. ${BASE_RULES}\nReturn: { "laymanSummary": string (2 short paragraphs, plain English, references the top recommendation naturally), "recommendedStack": string[] (max 8), "glossary": [{"term":string,"meaning":string}] (max 5), "nextSteps": string[] (max 5) }`,
       user: `Question: ${question}${projectContext ? `\n\nProject context: ${projectContext}` : ""}${memory}`,
       maxTokens: 900,
     }),

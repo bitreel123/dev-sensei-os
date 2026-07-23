@@ -13,7 +13,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, CodeBlock } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
 import { analyzeSystem, type FileInput, type SystemAnalysis } from "@/lib/system-intel.functions";
-import { runKnowledgeIntelligence, type KnowledgeReport } from "@/lib/knowledge-intel.functions";
+import { type KnowledgeReport } from "@/lib/knowledge-intel.functions";
 import { runGithubIntelligence, type GithubIntelReport } from "@/lib/github-intel.functions";
 import { SystemReportBody, KnowledgeReportBody, RepoReportBody } from "@/components/jeradin/intel-reports";
 import { NotificationsBell } from "@/components/jeradin/notifications-bell";

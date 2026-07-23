@@ -253,6 +253,49 @@ export function KnowledgeReportBody({ report }: { report: KnowledgeReport }) {
         </div>
       )}
 
+      {report.aiMoat && (
+        <div className="border border-purple-400/25 bg-purple-500/[0.05] rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-purple-300">🛡️ AI Moat</div>
+            <div className="text-amber-300 text-[13px]" aria-label={`${report.aiMoat.rating} of 5`}>
+              {"★".repeat(Math.max(0, Math.min(5, report.aiMoat.rating)))}
+              <span className="text-white/20">{"★".repeat(5 - Math.max(0, Math.min(5, report.aiMoat.rating)))}</span>
+            </div>
+          </div>
+          {report.aiMoat.headline && <div className="text-[13px] text-white">{report.aiMoat.headline}</div>}
+          {report.aiMoat.reasons?.length > 0 && (
+            <ul className="space-y-0.5 text-[12.5px] text-white/80">
+              {report.aiMoat.reasons.map((r, i) => (
+                <li key={i} className="pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-purple-300/70">{r}</li>
+              ))}
+            </ul>
+          )}
+          {report.aiMoat.dataFlywheel && (
+            <div className="text-[11.5px] text-white/55 border-t border-white/10 pt-2">
+              <span className="text-white/40">Data flywheel:</span> {report.aiMoat.dataFlywheel}
+            </div>
+          )}
+        </div>
+      )}
+
+      {report.marketValidation && report.marketValidation.signals?.length > 0 && (
+        <div className="border border-emerald-400/25 bg-emerald-500/[0.05] rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-emerald-300">📊 Market Signals</div>
+            <div className="text-[11px] font-mono text-emerald-200">Evidence {report.marketValidation.evidenceScore}/100</div>
+          </div>
+          <ul className="space-y-1 text-[12.5px] text-white/85">
+            {report.marketValidation.signals.map((s, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="text-emerald-300 shrink-0">✓</span>
+                <span><span className="text-white">{s.label}</span>{s.detail ? <span className="text-white/55"> — {s.detail}</span> : null}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+
       {report.laymanSummary && (
         <div>
           <SectionLabel>Overview</SectionLabel>

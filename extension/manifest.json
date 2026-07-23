@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Jeradin — Screen Intelligence",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Capture any tab and get an instant AI-powered debugging report from your Jeradin workspace.",
   "permissions": ["activeTab", "storage", "tabs", "scripting"],
   "host_permissions": [

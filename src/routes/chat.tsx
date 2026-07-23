@@ -110,7 +110,17 @@ function ChatPage() {
 
   // Restore a saved chat when ?id=... is in the URL
   useEffect(() => {
-    if (!search.id) return;
+    if (!search.id) {
+      // "New chat" clears the id from the URL — reset the on-screen result.
+      setAnalysisResult(null);
+      setSystemResult(null);
+      setKnowledgeResult(null);
+      setRepoResult(null);
+      setAnalysisError(null);
+      setCurrentEntryId(null);
+      return;
+    }
+
     const entry = getHistoryEntry(search.id);
     if (entry?.payload) {
       restoreHistoryPayload(entry.id, entry.payload);
@@ -851,11 +861,13 @@ function ChatPage() {
                     setAnalysisError(null);
                     setCurrentEntryId(null);
                     setPrompt("");
+                    navigate({ to: "/chat", search: {} });
                   }}
                   className="underline underline-offset-2 hover:text-white"
                 >
                   New chat
                 </button>
+
               </>
             )}
           </div>

@@ -149,6 +149,7 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
           if (successCount >= Math.max(1, Math.floor(sectionsToRun.length / 3)) && !only) {
             try {
               await chargeAndRemember(userId, "knowledge", INTEL_COST.knowledge, {
+                sessionId,
                 title: `Knowledge · ${question.slice(0, 180)}`,
                 summary: typeof results.laymanSummary === "string" ? results.laymanSummary.slice(0, 800) : null,
                 payload: {

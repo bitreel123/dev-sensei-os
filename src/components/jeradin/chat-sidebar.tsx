@@ -36,7 +36,14 @@ export function ChatSidebar() {
           if (cancelled) return;
           const localIds = new Set(local.map((item) => item.id));
           const cloud = items
-            .filter((item) => !localIds.has(item.id))
+            .filter((item) => {
+              if (localIds.has(item.id)) return false;
+              const cloudTitle = normalizeHistoryTitle(item.title);
+              const cloudTime = +new Date(item.created_at);
+              return !local.some((entry) =>
+                normalizeHistoryTitle(entry.title) === cloudTitle && Math.abs(entry.createdAt - cloudTime) < 120_000,
+              );
+            })
             .map((item) => ({ id: item.id, title: item.title, createdAt: +new Date(item.created_at), payload: null }));
           setHistory([...local, ...cloud].sort((a, b) => b.createdAt - a.createdAt));
         })
@@ -144,6 +151,10 @@ export function ChatSidebar() {
       </div>
     </aside>
   );
+}
+
+function normalizeHistoryTitle(title: string) {
+  return title.replace(/^(Knowledge|System|Repo)\s*·\s*/i, "").trim().toLowerCase();
 }
 
 function SideItem({

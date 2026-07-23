@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { JsonValue } from "@/lib/intel-memory.server";
 
 const GITHUB_API = "https://api.github.com";
 const SEARCH_TIMEOUT_MS = 3_500;
@@ -147,10 +148,10 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
           if (successCount >= Math.max(1, Math.floor(sectionsToRun.length / 3)) && !only) {
             try {
               await chargeAndRemember(userId, "knowledge", INTEL_COST.knowledge, {
-                title: question.slice(0, 200),
+                title: `Knowledge · ${question.slice(0, 180)}`,
                 summary: typeof results.laymanSummary === "string" ? results.laymanSummary.slice(0, 800) : null,
                 payload: {
-                  report: results,
+                  report: results as unknown as JsonValue,
                   input: { question, projectContext },
                   stack: Array.isArray(results.recommendedStack) ? (results.recommendedStack as string[]).slice(0, 8) : [],
                   competitors: Array.isArray(results.competitors)

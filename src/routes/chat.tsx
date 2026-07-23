@@ -734,7 +734,7 @@ function ChatPage() {
         } else if (event.type === "section") {
           const partial = event.data as Partial<GithubIntelReport>;
           Object.assign(accRepo, partial);
-          repoSectionCount += 1;
+          if (event.id !== "repoId") repoSectionCount += 1;
           setRepoResult({ ...accRepo });
         } else if (event.type === "error") {
           throw new Error(event.message);

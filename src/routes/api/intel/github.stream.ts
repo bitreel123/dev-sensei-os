@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { JsonValue } from "@/lib/intel-memory.server";
 
 export const Route = createFileRoute("/api/intel/github/stream")({
   server: {
@@ -71,8 +72,9 @@ export const Route = createFileRoute("/api/intel/github/stream")({
           const results: Record<string, unknown> = { repo };
           let successCount = 0;
 
-          await Promise.all(
-            GITHUB_SECTIONS.map(async (section) => {
+          for (let i = 0; i < GITHUB_SECTIONS.length; i += 2) {
+            await Promise.all(
+              GITHUB_SECTIONS.slice(i, i + 2).map(async (section) => {
               const spec = section.build(evidence!, memory);
               try {
                 const parsed = await callClaudeJson<Record<string, unknown>>({
@@ -92,16 +94,17 @@ export const Route = createFileRoute("/api/intel/github/stream")({
                 emit({ type: "section-error", id: section.id, label: section.label, message });
                 emit({ type: "stage", id: section.id, label: section.label, status: "error", message });
               }
-            }),
-          );
+              }),
+            );
+          }
 
           if (successCount >= 1) {
             try {
               await chargeAndRemember(userId, "repo", INTEL_COST.repo, {
-                title: `${repo}${focus ? ` — ${focus.slice(0, 80)}` : ""}`,
+                title: `Repo · ${repo}${focus ? ` — ${focus.slice(0, 70)}` : ""}`,
                 summary: typeof results.summary === "string" ? (results.summary as string).slice(0, 800) : null,
                 payload: {
-                  report: results,
+                  report: results as unknown as JsonValue,
                   input: { repo, focus },
                   repo,
                   risks: Array.isArray(results.risks) ? (results.risks as Array<{ title?: string }>).slice(0, 5).map((r) => r.title ?? "") : [],

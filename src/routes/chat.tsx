@@ -851,11 +851,13 @@ function ChatPage() {
                     setAnalysisError(null);
                     setCurrentEntryId(null);
                     setPrompt("");
+                    navigate({ to: "/chat", search: {} });
                   }}
                   className="underline underline-offset-2 hover:text-white"
                 >
                   New chat
                 </button>
+
               </>
             )}
           </div>

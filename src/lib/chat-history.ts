@@ -47,16 +47,27 @@ export function saveHistory(items: ChatHistoryEntry[]) {
   window.dispatchEvent(new Event(EVENT));
 }
 
-export function addHistoryEntry(title: string, payload?: ChatHistoryPayload | null): ChatHistoryEntry {
+export function addHistoryEntry(title: string, payload?: ChatHistoryPayload | null, id?: string): ChatHistoryEntry {
   const entry: ChatHistoryEntry = {
-    id: crypto.randomUUID(),
+    id: id ?? crypto.randomUUID(),
     title: title.trim().slice(0, 80) || "Untitled chat",
     createdAt: Date.now(),
     payload: payload ?? null,
   };
-  const next = [entry, ...loadHistory()];
+  const next = [entry, ...loadHistory().filter((e) => e.id !== entry.id)];
   saveHistory(next);
   return entry;
+}
+
+/** Update if present, otherwise create. Preserves createdAt on update. */
+export function upsertHistoryEntry(id: string, title: string, payload?: ChatHistoryPayload | null): ChatHistoryEntry {
+  const existing = getHistoryEntry(id);
+  if (existing) {
+    const updated: ChatHistoryEntry = { ...existing, title: title.trim().slice(0, 80) || existing.title, payload: payload ?? existing.payload };
+    saveHistory(loadHistory().map((e) => (e.id === id ? updated : e)));
+    return updated;
+  }
+  return addHistoryEntry(title, payload, id);
 }
 
 export function updateHistoryEntry(id: string, patch: Partial<ChatHistoryEntry>) {

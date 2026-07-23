@@ -125,14 +125,18 @@ Even when the user asks for a list (e.g. "give me 10 fintech startup ideas"), CH
 Return: { "recommendation": {
   "headline": string (format "Build: <product> for <who>"),
   "opinion": string (2-3 sentences, opinionated advisor tone — starts with "I recommend..." or "Build this because..."),
+  "confidence": number (0-10, one decimal allowed — your honest confidence),
+  "confidenceReasons": [{"factor": string (e.g. "Market demand", "Competition", "Technical difficulty", "Founder fit", "Revenue potential"), "verdict": string ("High"|"Medium"|"Low"|"Unknown")}] (5-6 factors),
+  "whyPicked": string[] (5-6 short bullets — the exact reasons Jeradin chose this over alternatives, e.g. "Growing 42% yearly", "Low startup capital", "First revenue in 2 weeks"),
   "whyNow": string[] (3-5 short bullets — trends, funding, demand, gaps),
+  "whyNot": [{"idea": string, "reasons": string[] (2-4 short bullets)}] (2-3 ideas we explicitly REJECTED with concrete reasons — e.g. "Don't build another food delivery app: CAC extremely high, Dominated by incumbents"),
   "timeToMvp": string (e.g. "4-6 weeks"),
   "revenuePotential": string (e.g. "$$$ — $10-50k MRR in 6 months if X"),
-  "scores": { "marketScore": number(0-10), "competitionScore": number(0-10, higher=more crowded), "difficulty": number(0-10), "capitalNeeded": number(0-10), "aiPotential": number(0-10), "speedToMvp": number(0-10, higher=faster), "pmfChance": number(0-10) },
+  "scores": { "marketScore": number(0-10), "competitionScore": number(0-10, higher=more crowded), "difficulty": number(0-10), "capitalNeeded": number(0-10), "aiPotential": number(0-10), "speedToMvp": number(0-10, higher=faster), "pmfChance": number(0-10), "fundingChance": number(0-10), "globalScale": number(0-10) },
   "alternatives": [{"name": string, "reasonToPass": string}] (2-4 other ideas we considered and passed on)
 } }`,
       user: `Question: ${question}${projectContext ? `\n\nContext: ${projectContext}` : ""}${evidence}${memory}`,
-      maxTokens: 900,
+      maxTokens: 1400,
     }),
   },
   {

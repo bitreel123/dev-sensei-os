@@ -1662,8 +1662,9 @@ function RepoSelector({
   );
 }
 
-function ChatRunProgress({ capability, prompt, repo }: { capability: CapabilityKey; prompt: string; repo: string }) {
+function ChatRunProgress({ capability, prompt, repo, stages }: { capability: CapabilityKey; prompt: string; repo: string; stages?: Array<{ id: string; label: string; status: "running" | "done" | "error"; message?: string }> }) {
   const label = capability === "system" ? "Scanning codebase" : capability === "repo" ? "Analyzing GitHub codebase" : capability === "screen" ? "Analyzing screen" : "Researching answer";
+  const hasStages = stages && stages.length > 0;
   return (
     <div className="mt-5 w-full max-w-[640px] border-l border-white/15 pl-4 text-left">
       {prompt && <p className="mb-3 text-[13px] leading-relaxed text-white/55">{prompt}</p>}
@@ -1671,6 +1672,23 @@ function ChatRunProgress({ capability, prompt, repo }: { capability: CapabilityK
         <Loader2 className="h-3.5 w-3.5 animate-spin text-orange-400" />
         <Shimmer className="font-mono uppercase tracking-[0.16em]">{repo && (capability === "system" || capability === "repo") ? `${label} · ${repo}` : label}</Shimmer>
       </div>
+      {hasStages && (
+        <ul className="mt-3 space-y-1 text-[12.5px]">
+          {stages!.map((s) => (
+            <li key={s.id} className="flex items-center gap-2">
+              {s.status === "done" ? (
+                <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+              ) : s.status === "error" ? (
+                <X className="h-3.5 w-3.5 text-red-400 shrink-0" />
+              ) : (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-white/50 shrink-0" />
+              )}
+              <span className={s.status === "done" ? "text-white/85" : s.status === "error" ? "text-red-300" : "text-white/60"}>{s.label}</span>
+              {s.status === "error" && s.message && <span className="text-white/40 text-[11px] truncate">— {s.message}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

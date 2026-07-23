@@ -535,20 +535,55 @@ function ChatPage() {
     setPendingPrompt(text);
     setLastSubmittedPrompt(text || (capability === "system" ? "Scan my codebase" : "Run my GitHub code"));
     setLastRun({ kind: capability, status: "running" });
+    setSectionStages([]);
     try {
       if (capability === "knowledge") {
-        const res = await runKnowledge({ data: { question: text, projectContext: "" } });
-        setKnowledgeResult(res.report);
+        // Stream sections one-by-one so the UI paints as soon as each Claude call resolves.
+        const accumulated: KnowledgeReport = {
+          question: text,
+          laymanSummary: "",
+          recommendedStack: [],
+          resources: [],
+          nextSteps: [],
+          glossary: [],
+        };
+        let sectionCount = 0;
+        const handleEvent = (event: IntelStreamEvent) => {
+          if (event.type === "stage") {
+            setSectionStages((prev) => {
+              const idx = prev.findIndex((s) => s.id === event.id);
+              const next = { id: event.id, label: event.label, status: event.status, message: event.message };
+              if (idx >= 0) {
+                const copy = prev.slice();
+                copy[idx] = next;
+                return copy;
+              }
+              return [...prev, next];
+            });
+          } else if (event.type === "section") {
+            const partial = event.data as Partial<KnowledgeReport>;
+            Object.assign(accumulated, partial);
+            sectionCount += 1;
+            // Show the report card as soon as the first section lands.
+            setKnowledgeResult({ ...accumulated });
+          } else if (event.type === "section-error") {
+            console.warn("[knowledge stream] section failed:", event.id, event.message);
+          } else if (event.type === "error") {
+            throw new Error(event.message);
+          }
+        };
+        await streamIntel("/api/intel/knowledge/stream", { question: text, projectContext: "" }, handleEvent);
+        if (sectionCount === 0) throw new Error("Knowledge analysis returned no sections. Please retry.");
         setKnowledgeEnabled(true);
         const entry = addHistoryEntry(`Knowledge · ${text.slice(0, 60)}`, {
           mode: "knowledge",
-          knowledge: { report: res.report, input: { question: text, projectContext: "" } },
+          knowledge: { report: accumulated, input: { question: text, projectContext: "" } },
         });
         setCurrentEntryId(entry.id);
         navigate({ to: "/chat", search: { id: entry.id } });
         setPrompt("");
         toast.success("Knowledge report ready");
-        setLastRun({ kind: "knowledge", status: "success", message: "Knowledge report ready" });
+        setLastRun({ kind: "knowledge", status: "success", message: `${sectionCount} sections ready` });
         return;
       }
 

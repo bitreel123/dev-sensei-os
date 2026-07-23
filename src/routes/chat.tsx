@@ -612,10 +612,10 @@ function ChatPage() {
             throw new Error(event.message);
           }
         };
-        await streamIntel("/api/intel/knowledge/stream", { question: text, projectContext: "" }, handleEvent);
+        await streamIntel("/api/intel/knowledge/stream", { question: text, projectContext: "", sessionId }, handleEvent);
         if (sectionCount === 0) throw new Error("Knowledge analysis returned no sections. Please retry.");
         setKnowledgeEnabled(true);
-        const entry = addHistoryEntry(`Knowledge · ${text.slice(0, 60)}`, {
+        const entry = upsertHistoryEntry(sessionId, `Knowledge · ${text.slice(0, 60)}`, {
           mode: "knowledge",
           knowledge: { report: accumulated, input: { question: text, projectContext: "" } },
         });

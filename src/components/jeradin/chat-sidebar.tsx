@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import {
   PanelLeft,
   Plus,
@@ -16,17 +17,47 @@ import {
   subscribeHistory,
   type ChatHistoryEntry,
 } from "@/lib/chat-history";
+import { deleteIntelMemory, listIntelMemory } from "@/lib/intel-memory.functions";
 
 export function ChatSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [history, setHistory] = useState<ChatHistoryEntry[]>([]);
   const { user } = useAuth();
   const { pathname } = useLocation();
+  const loadCloudHistory = useServerFn(listIntelMemory);
+  const removeCloudHistory = useServerFn(deleteIntelMemory);
 
   useEffect(() => {
-    setHistory(loadHistory());
-    return subscribeHistory(() => setHistory(loadHistory()));
-  }, []);
+    let cancelled = false;
+    const refresh = () => {
+      const local = loadHistory();
+      loadCloudHistory({ data: { limit: 50 } })
+        .then(({ items }) => {
+          if (cancelled) return;
+          const localIds = new Set(local.map((item) => item.id));
+          const cloud = items
+            .filter((item) => {
+              if (localIds.has(item.id)) return false;
+              const cloudTitle = normalizeHistoryTitle(item.title);
+              const cloudTime = +new Date(item.created_at);
+              return !local.some((entry) =>
+                normalizeHistoryTitle(entry.title) === cloudTitle && Math.abs(entry.createdAt - cloudTime) < 120_000,
+              );
+            })
+            .map((item) => ({ id: item.id, title: item.title, createdAt: +new Date(item.created_at), payload: null }));
+          setHistory([...local, ...cloud].sort((a, b) => b.createdAt - a.createdAt));
+        })
+        .catch(() => {
+          if (!cancelled) setHistory(local);
+        });
+    };
+    refresh();
+    const unsubscribe = subscribeHistory(refresh);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [loadCloudHistory, user?.id]);
 
   const initial = user?.email?.[0]?.toUpperCase() ?? "J";
 
@@ -83,7 +114,10 @@ export function ChatSidebar() {
                 {h.title}
               </Link>
               <button
-                onClick={() => removeHistoryEntry(h.id)}
+                onClick={() => {
+                  removeHistoryEntry(h.id);
+                  void removeCloudHistory({ data: { id: h.id } }).catch(() => undefined);
+                }}
                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
                 aria-label="Delete"
               >
@@ -117,6 +151,10 @@ export function ChatSidebar() {
       </div>
     </aside>
   );
+}
+
+function normalizeHistoryTitle(title: string) {
+  return title.replace(/^(Knowledge|System|Repo)\s*·\s*/i, "").trim().toLowerCase();
 }
 
 function SideItem({

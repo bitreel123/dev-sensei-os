@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { JsonValue } from "@/lib/intel-memory.server";
 
 const GITHUB_API = "https://api.github.com";
 const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", ".turbo", "coverage", ".vercel", ".cache"]);
@@ -163,9 +164,12 @@ export const Route = createFileRoute("/api/intel/system/stream")({
           if (successCount >= 1) {
             try {
               await chargeAndRemember(userId, "system", INTEL_COST.system, {
-                title: (results.projectSummary as string | undefined)?.slice(0, 200) || "System analysis",
+                title: `System · ${body.repo ?? (results.projectSummary as string | undefined)?.slice(0, 160) ?? "uploaded codebase"}`,
                 summary: (results.laymanOverview as string | undefined)?.slice(0, 800) ?? null,
                 payload: {
+                  report: results as unknown as JsonValue,
+                  filesAnalyzed: files.length,
+                  input: { source, repo: body.repo ?? null, projectHint: hint },
                   stack: Array.isArray(results.stack) ? (results.stack as string[]).slice(0, 8) : [],
                   moduleCount: Array.isArray(results.modules) ? results.modules.length : 0,
                   source,

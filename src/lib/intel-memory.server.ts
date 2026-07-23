@@ -115,7 +115,7 @@ export async function chargeAndRemember(
   userId: string,
   mode: IntelMode,
   cost: number,
-  entry: { title: string; summary?: string | null; payload?: JsonValue; tags?: string[] },
+  entry: { title: string; summary?: string | null; payload?: JsonValue; tags?: string[]; sessionId?: string },
   env: "live" | "sandbox" = "live",
 ) {
   const charge = await chargeCredits(userId, cost, env);

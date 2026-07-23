@@ -74,6 +74,7 @@ function ChatPage() {
     status: "running" | "success" | "error";
     message?: string;
   } | null>(null);
+  const [sectionStages, setSectionStages] = useState<Array<{ id: string; label: string; status: "running" | "done" | "error"; message?: string }>>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);

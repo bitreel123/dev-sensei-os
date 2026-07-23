@@ -125,14 +125,18 @@ Even when the user asks for a list (e.g. "give me 10 fintech startup ideas"), CH
 Return: { "recommendation": {
   "headline": string (format "Build: <product> for <who>"),
   "opinion": string (2-3 sentences, opinionated advisor tone — starts with "I recommend..." or "Build this because..."),
+  "confidence": number (0-10, one decimal allowed — your honest confidence),
+  "confidenceReasons": [{"factor": string (e.g. "Market demand", "Competition", "Technical difficulty", "Founder fit", "Revenue potential"), "verdict": string ("High"|"Medium"|"Low"|"Unknown")}] (5-6 factors),
+  "whyPicked": string[] (5-6 short bullets — the exact reasons Jeradin chose this over alternatives, e.g. "Growing 42% yearly", "Low startup capital", "First revenue in 2 weeks"),
   "whyNow": string[] (3-5 short bullets — trends, funding, demand, gaps),
+  "whyNot": [{"idea": string, "reasons": string[] (2-4 short bullets)}] (2-3 ideas we explicitly REJECTED with concrete reasons — e.g. "Don't build another food delivery app: CAC extremely high, Dominated by incumbents"),
   "timeToMvp": string (e.g. "4-6 weeks"),
   "revenuePotential": string (e.g. "$$$ — $10-50k MRR in 6 months if X"),
-  "scores": { "marketScore": number(0-10), "competitionScore": number(0-10, higher=more crowded), "difficulty": number(0-10), "capitalNeeded": number(0-10), "aiPotential": number(0-10), "speedToMvp": number(0-10, higher=faster), "pmfChance": number(0-10) },
+  "scores": { "marketScore": number(0-10), "competitionScore": number(0-10, higher=more crowded), "difficulty": number(0-10), "capitalNeeded": number(0-10), "aiPotential": number(0-10), "speedToMvp": number(0-10, higher=faster), "pmfChance": number(0-10), "fundingChance": number(0-10), "globalScale": number(0-10) },
   "alternatives": [{"name": string, "reasonToPass": string}] (2-4 other ideas we considered and passed on)
 } }`,
       user: `Question: ${question}${projectContext ? `\n\nContext: ${projectContext}` : ""}${evidence}${memory}`,
-      maxTokens: 900,
+      maxTokens: 1400,
     }),
   },
   {
@@ -316,6 +320,105 @@ Return: { "founderKit": {
       maxTokens: 800,
     }),
   },
+  {
+    id: "marketTiming",
+    label: "Market Timing",
+    key: "marketTiming",
+    build: ({ question, evidence, memory }) => ({
+      system: `You judge market timing. ${BASE_RULES}
+Return: { "marketTiming": { "rating": number (0-5), "verdict": string (one of "Hot" | "Warming" | "Neutral" | "Cooling"), "reasons": string[] (3-6 short reasons — AI adoption, regulation, funding, customer demand, etc.) } }`,
+      user: `Question: ${question}${evidence}${memory}`,
+      maxTokens: 400,
+    }),
+  },
+  {
+    id: "buildDifficulty",
+    label: "Build Difficulty",
+    key: "buildDifficulty",
+    build: ({ question }) => ({
+      system: `You judge whether a solo founder can build this. ${BASE_RULES}
+Return: { "buildDifficulty": { "soloFounder": boolean, "requires": string[] (3-6 e.g. "Backend","AI","Mobile","Security","DevOps"), "estimatedMonths": string (e.g. "8 months"), "estimatedEngineers": string (e.g. "2 engineers"), "summary": string (1 short sentence) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 400,
+    }),
+  },
+  {
+    id: "moatSuggestions",
+    label: "Possible Moats",
+    key: "moatSuggestions",
+    build: ({ question }) => ({
+      system: `You suggest defensibility moats. ${BASE_RULES}
+Return: { "moatSuggestions": { "moats": [{"name": string (e.g. "Proprietary dataset","AI memory","Workflow automation","Community","Marketplace","Network effects","Brand","Integrations","Compliance"), "note": string (one short sentence)}] (4-7 items) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 500,
+    }),
+  },
+  {
+    id: "customerAcquisition",
+    label: "Customer Acquisition",
+    key: "customerAcquisition",
+    build: ({ question }) => ({
+      system: `You are a growth marketer. ${BASE_RULES}
+Return: { "customerAcquisition": { "first100Channels": string[] (5-7 concrete channels — Reddit, LinkedIn, Cold email, Product Hunt, HN, communities, SEO), "expectedCac": string (e.g. "$8-25"), "expectedConversion": string (e.g. "3-6%"), "playbook": string (1-2 sentences, the first-90-days move) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 400,
+    }),
+  },
+  {
+    id: "investorFit",
+    label: "Investor Fit",
+    key: "investorFit",
+    build: ({ question }) => ({
+      system: `You rate investor readiness. ${BASE_RULES}
+Return: { "investorFit": { "vc": number (0-5), "bootstrap": number (0-5), "yc": number (0-5), "seriesA": number (0-5), "notes": string (1 short sentence) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 300,
+    }),
+  },
+  {
+    id: "biggestRisks",
+    label: "Biggest Risks",
+    key: "biggestRisks",
+    build: ({ question }) => ({
+      system: `You honestly list the biggest risks. ${BASE_RULES}
+Return: { "biggestRisks": { "risks": [{"label": string (short — e.g. "Regulation","Customer acquisition","Low margins","Existing competitors","Technical complexity"), "detail": string (one short sentence), "severity": "high"|"medium"|"low"}] (4-6 items) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 500,
+    }),
+  },
+  {
+    id: "validationPlan",
+    label: "Validate in 7 Days",
+    key: "validationPlan",
+    build: ({ question }) => ({
+      system: `You design a 7-day validation plan. ${BASE_RULES}
+Return: { "validationPlan": { "days": [{"day": number (1-7), "task": string (one imperative sentence — Day 1 Landing page, Day 2 Interview 20 users, etc.)}] (exactly 7 entries), "decisionCriteria": string (1 short sentence — what "go/no-go" means on Day 7) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 500,
+    }),
+  },
+  {
+    id: "successProbability",
+    label: "Success Probability",
+    key: "successProbability",
+    build: ({ question }) => ({
+      system: `You estimate probability of success. Be honest and calibrated. ${BASE_RULES}
+Return: { "successProbability": { "first1kMrr": number (0-100), "tenKMrr": number (0-100), "vcFunding": number (0-100), "bootstrapSuccess": number (0-100), "basis": string[] (3-5 — competition, capital, complexity, founder profile, market demand), "disclaimer": string (one short sentence: "These are estimates, not predictions.") } }`,
+      user: `Question: ${question}`,
+      maxTokens: 350,
+    }),
+  },
+  {
+    id: "founderVerdict",
+    label: "What Jeradin Would Build",
+    key: "founderVerdict",
+    build: ({ question, memory }) => ({
+      system: `You are the closing voice — a seasoned founder giving a personal verdict. ${BASE_RULES}
+Return: { "founderVerdict": { "ifIWereYou": string (starts with "If I were starting today with one engineer and less than $10,000, I would..." — 1-2 sentences), "buildThis": string (1 short sentence — the exact product), "because": string[] (3-5 short bullets — fastest path to revenue, strong AI moat, low competition, etc.) } }`,
+      user: `Question: ${question}${memory}`,
+      maxTokens: 500,
+    }),
+  },
 ];
 
 // ---------------- System Intelligence section prompts ----------------
@@ -372,6 +475,94 @@ export const SYSTEM_SECTIONS: SystemSectionSpec[] = [
       maxTokens: 500,
     }),
     extract: (p) => ({ references: p.references ?? [] }),
+  },
+  {
+    id: "codeHealth",
+    label: "Code Health Score",
+    build: ({ filesBlock, hint }) => ({
+      system: `You are a staff engineer scoring project health. ${SYSTEM_BASE}
+Return: { "codeHealth": { "architecture": number(0-10), "security": number(0-10), "performance": number(0-10), "scalability": number(0-10), "maintainability": number(0-10), "technicalDebt": number(0-10, lower=worse debt), "developerDx": number(0-10), "documentation": number(0-10), "overall": number(0-10, one decimal ok) } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 400,
+    }),
+    extract: (p) => ({ codeHealth: p.codeHealth ?? null }),
+  },
+  {
+    id: "technicalDebt",
+    label: "Technical Debt",
+    build: ({ filesBlock, hint }) => ({
+      system: `You audit technical debt. ${SYSTEM_BASE}
+Return: { "technicalDebt": { "level": "high"|"medium"|"low", "items": string[] (5-8 concrete debts — e.g. "duplicated auth logic","17 unused components","dead APIs","circular dependency","large component"), "estimatedCleanup": string (e.g. "3 days") } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 700,
+    }),
+    extract: (p) => ({ technicalDebt: p.technicalDebt ?? null }),
+  },
+  {
+    id: "complexity",
+    label: "Complexity Heatmap",
+    build: ({ filesBlock, hint }) => ({
+      system: `You map complexity per area and per file. ${SYSTEM_BASE}
+Return: { "complexity": { "files": [{"path": string, "lines": number, "complexity": number (0-100), "needsRefactor": boolean, "note": string}] (5-8 most complex files), "heatmap": [{"area": string (short — Auth, API, Dashboard, Utils, etc.), "score": number (0-10)}] (5-8 areas) } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 900,
+    }),
+    extract: (p) => ({ complexity: p.complexity ?? null }),
+  },
+  {
+    id: "onboarding",
+    label: "New Developer Guide",
+    build: ({ filesBlock, hint }) => ({
+      system: `You write onboarding docs. "If I join this company today, what do I read first?" ${SYSTEM_BASE}
+Return: { "onboarding": { "filesToRead": [{"path": string, "why": string (one short sentence)}] (4-6 entries — ordered), "estimatedMinutes": number, "tips": string[] (2-4) } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 600,
+    }),
+    extract: (p) => ({ onboarding: p.onboarding ?? null }),
+  },
+  {
+    id: "businessLogic",
+    label: "Business Logic Graph",
+    build: ({ filesBlock, hint }) => ({
+      system: `You describe what the application actually DOES as a user-flow chain. ${SYSTEM_BASE}
+Return: { "businessLogic": { "steps": string[] (6-12 ordered short steps — e.g. "User", "Connect Wallet", "Verify Ownership", "Register Agent", "Save on Sui") } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 500,
+    }),
+    extract: (p) => ({ businessLogic: p.businessLogic ?? null }),
+  },
+  {
+    id: "refactorPlan",
+    label: "Refactor Plan",
+    build: ({ filesBlock, hint }) => ({
+      system: `You are an engineering lead. Give an actionable refactor plan. ${SYSTEM_BASE}
+Return: { "refactorPlan": { "steps": [{"title": string (short — e.g. "Lazy load ThreeScene"), "impact": "very high"|"high"|"medium"|"low", "time": string (e.g. "10 mins")}] (4-7 steps) } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 600,
+    }),
+    extract: (p) => ({ refactorPlan: p.refactorPlan ?? null }),
+  },
+  {
+    id: "followUps",
+    label: "Ask Follow-up",
+    build: ({ hint }) => ({
+      system: `Suggest 6-10 one-click follow-up questions a developer would ask about this project. ${SYSTEM_BASE}
+Return: { "followUps": { "suggestions": string[] (6-10 short prompts — e.g. "Explain Dashboard","Find security issues","Show data flow","Generate tests","Explain like I'm 12") } }`,
+      user: `${hint ? `Note: ${hint}` : "General project"}`,
+      maxTokens: 400,
+    }),
+    extract: (p) => ({ followUps: p.followUps ?? null }),
+  },
+  {
+    id: "riskAnalysis",
+    label: "Risk Analysis",
+    build: ({ filesBlock, hint }) => ({
+      system: `You are a senior staff engineer thinking like a production reviewer. ${SYSTEM_BASE}
+Return: { "riskAnalysis": { "deploymentRisks": [{"area": string, "level":"high"|"medium"|"low", "note": string}] (3-5), "productionReadiness": number (0-100), "whatBreaksFirst": string (1 sentence), "wontScale": string (1 sentence), "bottlenecks": string[] (2-4), "overengineered": string[] (0-3), "missingBeforeProd": string[] (2-5) } }`,
+      user: `${hint ? `Note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 900,
+    }),
+    extract: (p) => ({ riskAnalysis: p.riskAnalysis ?? null }),
   },
 ];
 

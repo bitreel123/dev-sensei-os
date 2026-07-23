@@ -105,6 +105,143 @@ export function SystemReportBody({ analysis }: { analysis: SystemAnalysis }) {
         </div>
       )}
 
+      {analysis.codeHealth && (
+        <div className="border border-white/10 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <SectionLabel>Project Health</SectionLabel>
+            <div className="font-mono text-[16px] text-emerald-300">{analysis.codeHealth.overall?.toFixed?.(1) ?? analysis.codeHealth.overall} / 10</div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5">
+            {(["architecture","security","performance","scalability","maintainability","technicalDebt","developerDx","documentation"] as const).map((k) => (
+              <ScoreBar key={k} label={k === "developerDx" ? "Developer DX" : k === "technicalDebt" ? "Technical debt" : k[0].toUpperCase() + k.slice(1)} value={analysis.codeHealth![k] ?? 0} invert={k === "technicalDebt"} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {analysis.technicalDebt && (
+        <div className="border border-amber-400/20 bg-amber-500/[0.03] rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <SectionLabel>Technical Debt</SectionLabel>
+            <span className={`text-[10.5px] font-mono uppercase tracking-[0.2em] ${analysis.technicalDebt.level === "high" ? "text-red-300" : analysis.technicalDebt.level === "medium" ? "text-amber-300" : "text-emerald-300"}`}>{analysis.technicalDebt.level}</span>
+          </div>
+          <ul className="space-y-1 text-[12.5px]">{analysis.technicalDebt.items?.map((i, idx) => <li key={idx} className="flex gap-2"><span className="text-amber-300">•</span>{i}</li>)}</ul>
+          {analysis.technicalDebt.estimatedCleanup && <div className="mt-2 text-[11.5px] text-white/60">Estimated cleanup: <span className="font-mono text-white">{analysis.technicalDebt.estimatedCleanup}</span></div>}
+        </div>
+      )}
+
+      {analysis.complexity && (
+        <Reveal label="🔥 Show Complexity Heatmap">
+          {analysis.complexity.heatmap?.length ? (
+            <div className="space-y-1 mb-3">
+              {analysis.complexity.heatmap.map((h, i) => (
+                <div key={i} className="flex items-center gap-2 text-[12px]">
+                  <span className="w-24 text-white/60 shrink-0">{h.area}</span>
+                  <div className="flex-1 h-1.5 bg-white/10 rounded overflow-hidden"><div className="h-full bg-orange-400/70" style={{ width: `${Math.max(0, Math.min(100, h.score * 10))}%` }} /></div>
+                  <span className="font-mono text-white/60 w-8 text-right">{h.score}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {analysis.complexity.files?.length ? (
+            <div className="space-y-1.5">
+              <div className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">Most Complex Files</div>
+              {analysis.complexity.files.map((f, i) => (
+                <div key={i} className="border border-white/10 rounded p-2 text-[12px]">
+                  <div className="flex justify-between"><span className="font-mono text-white">{f.path}</span><span className="font-mono text-orange-300">C:{f.complexity}</span></div>
+                  <div className="text-[11px] text-white/50">{f.lines} lines{f.needsRefactor ? " · ⚠ needs refactor" : ""}{f.note ? ` — ${f.note}` : ""}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </Reveal>
+      )}
+
+      {analysis.onboarding && (
+        <Reveal label={`👋 New Developer Guide (${analysis.onboarding.estimatedMinutes ?? "~"} min)`}>
+          <ol className="space-y-1.5 list-decimal pl-5">
+            {analysis.onboarding.filesToRead?.map((f, i) => (
+              <li key={i} className="text-[12.5px]"><span className="font-mono text-white">{f.path}</span><span className="text-white/60"> — {f.why}</span></li>
+            ))}
+          </ol>
+          {analysis.onboarding.tips?.length ? (
+            <ul className="mt-2 space-y-1 text-[12px] text-white/70">{analysis.onboarding.tips.map((t, i) => <li key={i}>💡 {t}</li>)}</ul>
+          ) : null}
+        </Reveal>
+      )}
+
+      {analysis.businessLogic?.steps?.length ? (
+        <Reveal label="🔀 Show Business Logic Flow">
+          <div className="font-mono text-[12px] space-y-1">
+            {analysis.businessLogic.steps.map((s, i) => (
+              <div key={i} className="flex items-center gap-2"><span className="text-orange-300 w-4">{i + 1}.</span>{s}{i < analysis.businessLogic!.steps.length - 1 ? <span className="text-white/30 ml-auto">↓</span> : null}</div>
+            ))}
+          </div>
+        </Reveal>
+      ) : null}
+
+      {analysis.refactorPlan?.steps?.length ? (
+        <Reveal label="🛠 Show Refactor Plan">
+          <ol className="space-y-2">
+            {analysis.refactorPlan.steps.map((s, i) => {
+              const c = s.impact === "very high" ? "text-emerald-300" : s.impact === "high" ? "text-amber-300" : "text-white/60";
+              return (
+                <li key={i} className="border border-white/10 rounded p-2.5">
+                  <div className="flex items-center justify-between text-[12.5px]"><span className="text-white">Step {i + 1}: {s.title}</span><span className="font-mono text-[11px] text-white/50">{s.time}</span></div>
+                  <div className={`text-[11px] font-mono uppercase tracking-[0.2em] ${c}`}>Impact: {s.impact}</div>
+                </li>
+              );
+            })}
+          </ol>
+        </Reveal>
+      ) : null}
+
+      {analysis.riskAnalysis && (
+        <div className="border border-white/10 rounded-lg p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <SectionLabel>Production Risk</SectionLabel>
+            <div className="font-mono text-[13px] text-emerald-300">{analysis.riskAnalysis.productionReadiness}% ready</div>
+          </div>
+          {analysis.riskAnalysis.deploymentRisks?.length ? (
+            <ul className="space-y-1 text-[12.5px]">
+              {analysis.riskAnalysis.deploymentRisks.map((r, i) => {
+                const c = r.level === "high" ? "text-red-300" : r.level === "medium" ? "text-amber-300" : "text-white/60";
+                return <li key={i}><span className={`font-mono ${c}`}>[{r.level.toUpperCase()}]</span> <span className="text-white">{r.area}</span>{r.note ? <span className="text-white/60"> — {r.note}</span> : null}</li>;
+              })}
+            </ul>
+          ) : null}
+          <div className="grid sm:grid-cols-2 gap-2 pt-1">
+            {analysis.riskAnalysis.whatBreaksFirst && <div className="border border-red-400/20 rounded p-2 text-[12px]"><div className="text-[10px] uppercase tracking-[0.2em] text-red-300 mb-0.5">What breaks first</div>{analysis.riskAnalysis.whatBreaksFirst}</div>}
+            {analysis.riskAnalysis.wontScale && <div className="border border-amber-400/20 rounded p-2 text-[12px]"><div className="text-[10px] uppercase tracking-[0.2em] text-amber-300 mb-0.5">Won't scale</div>{analysis.riskAnalysis.wontScale}</div>}
+          </div>
+          {analysis.riskAnalysis.bottlenecks?.length ? (
+            <div className="text-[12px]"><span className="text-white/50">Bottlenecks: </span>{analysis.riskAnalysis.bottlenecks.join(", ")}</div>
+          ) : null}
+          {analysis.riskAnalysis.missingBeforeProd?.length ? (
+            <div className="text-[12px]"><span className="text-white/50">Missing before prod: </span>{analysis.riskAnalysis.missingBeforeProd.join(", ")}</div>
+          ) : null}
+          {analysis.riskAnalysis.overengineered?.length ? (
+            <div className="text-[12px]"><span className="text-white/50">Overengineered: </span>{analysis.riskAnalysis.overengineered.join(", ")}</div>
+          ) : null}
+        </div>
+      )}
+
+      {analysis.followUps?.suggestions?.length ? (
+        <div className="border border-white/10 rounded-lg p-4">
+          <SectionLabel>Ask a Follow-up</SectionLabel>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {analysis.followUps.suggestions.map((s, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("jeradin:prefill-chat", { detail: { text: s } }))}
+                className="text-[11.5px] border border-white/15 hover:border-orange-400/50 hover:bg-orange-400/[0.06] px-2.5 py-1 rounded font-mono text-white/75 hover:text-white transition"
+              >{s}</button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {analysis.mermaid && (
         <details className="border border-white/10 rounded p-3">
           <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.22em] text-white/50">
@@ -195,13 +332,45 @@ export function KnowledgeReportBody({ report }: { report: KnowledgeReport }) {
       {/* TOP RECOMMENDATION — advisor pick, always visible */}
       {rec && (
         <div className="border border-orange-400/30 bg-gradient-to-br from-orange-500/[0.08] to-transparent rounded-xl p-5 space-y-4">
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-orange-300 mb-1">🚀 Top Recommendation</div>
-            <div className="text-[18px] font-semibold text-white leading-snug">{rec.headline}</div>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-orange-300 mb-1">🚀 Top Recommendation</div>
+              <div className="text-[18px] font-semibold text-white leading-snug">{rec.headline}</div>
+            </div>
+            {typeof rec.confidence === "number" && (
+              <div className="text-right shrink-0">
+                <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40">Confidence</div>
+                <div className="font-mono text-[16px] text-emerald-300">{rec.confidence.toFixed(1)}/10</div>
+              </div>
+            )}
           </div>
           {rec.opinion && (
             <p className="text-[13px] text-white/85 border-l-2 border-orange-400/50 pl-3">{rec.opinion}</p>
           )}
+          {rec.confidenceReasons?.length ? (
+            <div className="grid sm:grid-cols-2 gap-1.5 text-[11.5px]">
+              {rec.confidenceReasons.map((r, i) => {
+                const v = r.verdict.toLowerCase();
+                const c = v === "high" ? "text-emerald-300" : v === "medium" ? "text-amber-300" : v === "low" ? "text-red-300" : "text-white/50";
+                return (
+                  <div key={i} className="flex justify-between border border-white/10 rounded px-2 py-1">
+                    <span className="text-white/60">{r.factor}</span>
+                    <span className={`font-mono ${c}`}>{r.verdict}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+          {rec.whyPicked?.length ? (
+            <div>
+              <div className="text-[10.5px] uppercase tracking-[0.2em] text-white/45 mb-1.5">Why Jeradin chose this</div>
+              <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-[12.5px]">
+                {rec.whyPicked.map((w, i) => (
+                  <li key={i} className="flex gap-2"><span className="text-emerald-300 shrink-0">✓</span><span>{w}</span></li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {rec.whyNow?.length > 0 && (
             <div>
               <div className="text-[10.5px] uppercase tracking-[0.2em] text-white/45 mb-1.5">Why now</div>
@@ -232,11 +401,26 @@ export function KnowledgeReportBody({ report }: { report: KnowledgeReport }) {
               <ScoreBar label="Competition" value={rec.scores.competitionScore} invert />
               <ScoreBar label="Difficulty" value={rec.scores.difficulty} invert />
               <ScoreBar label="Capital needed" value={rec.scores.capitalNeeded} invert />
-              <ScoreBar label="AI potential" value={rec.scores.aiPotential} />
+              <ScoreBar label="AI moat potential" value={rec.scores.aiPotential} />
               <ScoreBar label="Speed to MVP" value={rec.scores.speedToMvp} />
-              <ScoreBar label="Product-market fit chance" value={rec.scores.pmfChance} />
+              <ScoreBar label="Product-market fit" value={rec.scores.pmfChance} />
+              {typeof rec.scores.fundingChance === "number" && <ScoreBar label="Funding chance" value={rec.scores.fundingChance} />}
+              {typeof rec.scores.globalScale === "number" && <ScoreBar label="Global scale" value={rec.scores.globalScale} />}
             </div>
           )}
+          {rec.whyNot?.length ? (
+            <div className="border-t border-white/10 pt-3 space-y-2">
+              <div className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">Why NOT — ideas we explicitly rejected</div>
+              {rec.whyNot.map((w, i) => (
+                <div key={i} className="border border-red-400/20 bg-red-500/[0.04] rounded p-2.5">
+                  <div className="text-[12.5px] text-white"><span className="text-red-300">❌ </span>{w.idea}</div>
+                  <ul className="mt-1 space-y-0.5 pl-4 text-[11.5px] text-white/70">
+                    {w.reasons.map((r, j) => <li key={j} className="list-disc">{r}</li>)}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {rec.alternatives?.length > 0 && (
             <details className="border-t border-white/10 pt-3">
               <summary className="cursor-pointer text-[11.5px] text-white/60 hover:text-white/80">Show alternatives we passed on ({rec.alternatives.length})</summary>
@@ -617,6 +801,130 @@ export function KnowledgeReportBody({ report }: { report: KnowledgeReport }) {
           </div>
         </Reveal>
       ) : null}
+
+      {report.marketTiming && (
+        <div className="border border-white/10 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <SectionLabel>Market Timing</SectionLabel>
+            <div className="font-mono text-amber-300 text-[13px]">{"★".repeat(Math.round(report.marketTiming.rating))}{"☆".repeat(Math.max(0, 5 - Math.round(report.marketTiming.rating)))} <span className="text-white/60 ml-1">{report.marketTiming.verdict}</span></div>
+          </div>
+          <ul className="text-[12.5px] space-y-1">{report.marketTiming.reasons?.map((r, i) => <li key={i} className="flex gap-2"><span className="text-amber-300">•</span>{r}</li>)}</ul>
+        </div>
+      )}
+
+      {report.buildDifficulty && (
+        <div className="border border-white/10 rounded-lg p-4 space-y-2">
+          <SectionLabel>Build Difficulty</SectionLabel>
+          <div className="text-[13px]">{report.buildDifficulty.soloFounder ? "✅ Solo founder can build this" : "⚠ Requires a team"}</div>
+          {report.buildDifficulty.requires?.length ? (
+            <div className="flex flex-wrap gap-1.5">{report.buildDifficulty.requires.map((r, i) => <span key={i} className="text-[11px] font-mono border border-white/10 px-2 py-0.5 rounded">{r}</span>)}</div>
+          ) : null}
+          <div className="grid grid-cols-2 gap-2 text-[12px] pt-1">
+            <div className="border border-white/10 rounded p-2"><div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Estimated time</div><div className="font-mono">{report.buildDifficulty.estimatedMonths}</div></div>
+            <div className="border border-white/10 rounded p-2"><div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Team size</div><div className="font-mono">{report.buildDifficulty.estimatedEngineers}</div></div>
+          </div>
+          {report.buildDifficulty.summary && <p className="text-[12px] text-white/70">{report.buildDifficulty.summary}</p>}
+        </div>
+      )}
+
+      {report.moatSuggestions?.moats?.length ? (
+        <Reveal label={`🛡 Show Possible Moats (${report.moatSuggestions.moats.length})`}>
+          <ul className="space-y-1.5">
+            {report.moatSuggestions.moats.map((m, i) => (
+              <li key={i} className="text-[12.5px]"><span className="font-mono text-white">{m.name}</span><span className="text-white/60"> — {m.note}</span></li>
+            ))}
+          </ul>
+        </Reveal>
+      ) : null}
+
+      {report.customerAcquisition && (
+        <Reveal label="📣 Show Customer Acquisition (First 100)">
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-1.5">{report.customerAcquisition.first100Channels?.map((c, i) => <span key={i} className="text-[11px] font-mono border border-white/10 px-2 py-0.5 rounded">{c}</span>)}</div>
+            <div className="grid grid-cols-2 gap-2 text-[12px]">
+              <div className="border border-white/10 rounded p-2"><div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Expected CAC</div><div className="font-mono">{report.customerAcquisition.expectedCac}</div></div>
+              <div className="border border-white/10 rounded p-2"><div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Conversion</div><div className="font-mono">{report.customerAcquisition.expectedConversion}</div></div>
+            </div>
+            {report.customerAcquisition.playbook && <p className="text-[12.5px] text-white/70">{report.customerAcquisition.playbook}</p>}
+          </div>
+        </Reveal>
+      )}
+
+      {report.investorFit && (
+        <Reveal label="💰 Show Investor Fit">
+          <div className="grid grid-cols-2 gap-2 text-[12.5px]">
+            {(["vc","bootstrap","yc","seriesA"] as const).map((k) => {
+              const v = report.investorFit![k];
+              return (
+                <div key={k} className="flex justify-between border border-white/10 rounded px-2 py-1.5">
+                  <span className="text-white/60 uppercase text-[10.5px] tracking-[0.18em]">{k === "seriesA" ? "Series A" : k}</span>
+                  <span className="font-mono text-amber-300">{"★".repeat(Math.round(v))}{"☆".repeat(Math.max(0, 5 - Math.round(v)))}</span>
+                </div>
+              );
+            })}
+          </div>
+          {report.investorFit.notes && <p className="mt-2 text-[12px] text-white/70">{report.investorFit.notes}</p>}
+        </Reveal>
+      )}
+
+      {report.biggestRisks?.risks?.length ? (
+        <div className="border border-red-400/20 bg-red-500/[0.03] rounded-lg p-4">
+          <SectionLabel>⚠ Biggest Risks</SectionLabel>
+          <ul className="mt-2 space-y-1.5">
+            {report.biggestRisks.risks.map((r, i) => {
+              const c = r.severity === "high" ? "text-red-300" : r.severity === "medium" ? "text-amber-300" : "text-white/60";
+              return (
+                <li key={i} className="text-[12.5px]"><span className={`font-mono ${c}`}>[{r.severity.toUpperCase()}]</span> <span className="text-white">{r.label}</span>{r.detail ? <span className="text-white/60"> — {r.detail}</span> : null}</li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
+      {report.validationPlan?.days?.length ? (
+        <Reveal label="📅 Validate in 7 Days">
+          <ol className="space-y-1.5">
+            {report.validationPlan.days.map((d, i) => (
+              <li key={i} className="text-[12.5px] flex gap-3"><span className="font-mono text-orange-300 shrink-0">Day {d.day}</span><span>{d.task}</span></li>
+            ))}
+          </ol>
+          {report.validationPlan.decisionCriteria && <p className="mt-2 text-[12px] text-white/60 border-l-2 border-orange-400/50 pl-2">Decision: {report.validationPlan.decisionCriteria}</p>}
+        </Reveal>
+      ) : null}
+
+      {report.successProbability && (
+        <div className="border border-white/10 rounded-lg p-4 space-y-2">
+          <SectionLabel>Success Probability (Jeradin estimate)</SectionLabel>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {([["First $1k MRR","first1kMrr"],["$10k MRR","tenKMrr"],["VC funding","vcFunding"],["Bootstrap success","bootstrapSuccess"]] as const).map(([label, key]) => {
+              const v = report.successProbability![key];
+              return (
+                <div key={key} className="border border-white/10 rounded p-2">
+                  <div className="flex justify-between text-[11.5px] mb-1"><span className="text-white/60">{label}</span><span className="font-mono text-emerald-300">{v}%</span></div>
+                  <div className="h-1.5 bg-white/10 rounded overflow-hidden"><div className="h-full bg-emerald-400/70" style={{ width: `${Math.max(0, Math.min(100, v))}%` }} /></div>
+                </div>
+              );
+            })}
+          </div>
+          {report.successProbability.basis?.length ? (
+            <div className="text-[11px] text-white/50">Based on: {report.successProbability.basis.join(" · ")}</div>
+          ) : null}
+          {report.successProbability.disclaimer && <div className="text-[10.5px] text-white/40 italic">{report.successProbability.disclaimer}</div>}
+        </div>
+      )}
+
+      {report.founderVerdict && (
+        <div className="border border-emerald-400/30 bg-gradient-to-br from-emerald-500/[0.06] to-transparent rounded-xl p-5 space-y-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-emerald-300">🎯 What Jeradin Would Build</div>
+          <p className="text-[13px] text-white/90 italic border-l-2 border-emerald-400/50 pl-3">{report.founderVerdict.ifIWereYou}</p>
+          <div className="text-[14px] font-semibold text-white">→ {report.founderVerdict.buildThis}</div>
+          {report.founderVerdict.because?.length ? (
+            <ul className="pt-1 space-y-1">
+              {report.founderVerdict.because.map((b, i) => <li key={i} className="text-[12.5px] flex gap-2"><span className="text-emerald-300">✓</span>{b}</li>)}
+            </ul>
+          ) : null}
+        </div>
+      )}
 
       {report.nextSteps?.length > 0 && (
         <div>

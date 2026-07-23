@@ -51,21 +51,29 @@ export async function chargeCredits(
   return { ok: !!row?.ok, balance: Number(row?.balance ?? 0) };
 }
 
-/** Persist a memory entry so Jeradin "remembers" this session for the user. */
+/** Persist a memory entry so Jeradin "remembers" this session for the user.
+ * When `sessionId` is provided (a UUID from the client), the row is upserted
+ * so retries within the same chat session overwrite the previous entry instead
+ * of creating duplicates in the sidebar history. */
 export async function rememberIntel(
   userId: string,
   mode: IntelMode,
-  entry: { title: string; summary?: string | null; payload?: JsonValue; tags?: string[] },
+  entry: { title: string; summary?: string | null; payload?: JsonValue; tags?: string[]; sessionId?: string },
 ) {
-  const { error } = await supabaseAdmin.from("intel_memory").insert({
+  const row = {
     user_id: userId,
     mode,
     title: entry.title.slice(0, 240),
     summary: entry.summary ?? null,
     payload: (entry.payload ?? {}) as JsonValue,
     tags: entry.tags ?? [],
-  });
-  if (error) console.warn("[intel-memory] insert failed:", error.message);
+    ...(entry.sessionId ? { id: entry.sessionId } : {}),
+  };
+  const query = entry.sessionId
+    ? supabaseAdmin.from("intel_memory").upsert(row, { onConflict: "id" })
+    : supabaseAdmin.from("intel_memory").insert(row);
+  const { error } = await query;
+  if (error) console.warn("[intel-memory] persist failed:", error.message);
 }
 
 /** Fetch the last N memory entries for a mode. Used to feed prompts. */

@@ -836,7 +836,7 @@ function ChatPage() {
                         : "Describe the issue, let Jeradin solve it for you."}
                     </p>
                     {analyzing && (
-                      <ChatRunProgress capability={activeCapability ?? "knowledge"} prompt={pendingPrompt} repo={selectedRepo} />
+                      <ChatRunProgress capability={activeCapability ?? "knowledge"} prompt={pendingPrompt} repo={selectedRepo} stages={sectionStages} />
                     )}
                     <DesktopPromptBlock
                       prompt={prompt}

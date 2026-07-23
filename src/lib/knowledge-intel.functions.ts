@@ -52,13 +52,17 @@ export type KnowledgeScoreBand = {
 };
 
 export type KnowledgeRecommendation = {
-  headline: string;            // "Build: X for Y"
-  opinion: string;             // 2-3 sentence opinionated advisor pick
-  whyNow: string[];            // 3-5 tight bullets
-  timeToMvp: string;           // "4-6 weeks"
-  revenuePotential: string;    // "$$$" style + note
-  scores: KnowledgeScoreBand;
-  alternatives: Array<{ name: string; reasonToPass: string }>; // ideas we did NOT pick and why
+  headline: string;
+  opinion: string;
+  whyNow: string[];
+  timeToMvp: string;
+  revenuePotential: string;
+  scores: KnowledgeScoreBand & { fundingChance?: number; globalScale?: number };
+  alternatives: Array<{ name: string; reasonToPass: string }>;
+  confidence?: number;             // 0-10, e.g. 9.2
+  confidenceReasons?: Array<{ factor: string; verdict: string }>; // e.g. Market demand: High
+  whyPicked?: string[];            // "Growing 42% yearly", "Low startup capital"
+  whyNot?: Array<{ idea: string; reasons: string[] }>; // expanded rejections
 };
 
 export type KnowledgeFounderKit = {
@@ -81,15 +85,72 @@ export type KnowledgeFounderKit = {
 };
 
 export type KnowledgeAiMoat = {
-  rating: number; // 0-5 stars
+  rating: number;
   headline: string;
-  reasons: string[]; // "Hard to copy because ..."
+  reasons: string[];
   dataFlywheel?: string;
 };
 
 export type KnowledgeMarketValidation = {
   signals: Array<{ label: string; detail?: string }>;
-  evidenceScore: number; // 0-100
+  evidenceScore: number;
+};
+
+export type KnowledgeMarketTiming = {
+  rating: number;               // 0-5 stars
+  verdict: string;              // "Hot" | "Warming" | "Cooling"
+  reasons: string[];
+};
+
+export type KnowledgeBuildDifficulty = {
+  soloFounder: boolean;
+  requires: string[];           // Backend, AI, Mobile, Security, DevOps
+  estimatedMonths: string;      // "8 months"
+  estimatedEngineers: string;   // "2 engineers"
+  summary?: string;
+};
+
+export type KnowledgeMoatSuggestions = {
+  moats: Array<{ name: string; note: string }>;
+};
+
+export type KnowledgeCustomerAcquisition = {
+  first100Channels: string[];   // Reddit, LinkedIn, Cold email
+  expectedCac: string;
+  expectedConversion: string;
+  playbook?: string;
+};
+
+export type KnowledgeInvestorFit = {
+  vc: number;         // 0-5 stars
+  bootstrap: number;
+  yc: number;
+  seriesA: number;
+  notes?: string;
+};
+
+export type KnowledgeBiggestRisks = {
+  risks: Array<{ label: string; detail?: string; severity: "high" | "medium" | "low" }>;
+};
+
+export type KnowledgeValidationPlan = {
+  days: Array<{ day: number; task: string }>;
+  decisionCriteria?: string;
+};
+
+export type KnowledgeSuccessProbability = {
+  first1kMrr: number;         // 0-100
+  tenKMrr: number;
+  vcFunding: number;
+  bootstrapSuccess: number;
+  basis: string[];            // "competition", "capital", "complexity", "market demand"
+  disclaimer?: string;
+};
+
+export type KnowledgeFounderVerdict = {
+  ifIWereYou: string;         // "If I were starting today with one engineer and <$10k..."
+  buildThis: string;          // "I would build X"
+  because: string[];          // fastest path to revenue, etc.
 };
 
 export type KnowledgeReport = {

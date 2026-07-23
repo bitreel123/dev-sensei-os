@@ -742,9 +742,9 @@ function ChatPage() {
           throw new Error(event.message);
         }
       };
-      await streamIntel("/api/intel/github/stream", { repo: repo!, focus }, handleRepo);
+      await streamIntel("/api/intel/github/stream", { repo: repo!, focus, sessionId }, handleRepo);
       if (repoSectionCount === 0) throw new Error("GitHub analysis returned no sections. Please retry.");
-      const entry = addHistoryEntry(`Repo · ${repo}`, {
+      const entry = upsertHistoryEntry(sessionId, `Repo · ${repo}`, {
         mode: "repo",
         repo: { report: accRepo, input: { repo: repo!, focus } },
       });

@@ -83,9 +83,8 @@ function ChatPage() {
 
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
-  const runSystem = useServerFn(analyzeSystem);
-  // runKnowledgeIntelligence is invoked via the streaming route /api/intel/knowledge/stream
-  const runRepo = useServerFn(runGithubIntelligence);
+  // system + repo intelligence run through streaming NDJSON endpoints (/api/intel/{system,github}/stream)
+
   const loadGithubRepos = useServerFn(listMyGithubRepos);
   const saveActiveRepo = useServerFn(setActiveRepo);
   const askScreenFollowUp = useServerFn(chatAboutAnalysis);

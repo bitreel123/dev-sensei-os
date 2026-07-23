@@ -245,3 +245,301 @@ export const KNOWLEDGE_SECTIONS: KnowledgeSectionSpec[] = [
     }),
   },
 ];
+
+// ---------------- System Intelligence section prompts ----------------
+export type SystemSectionSpec = {
+  id: string;
+  label: string;
+  build: (ctx: { filesBlock: string; hint: string }) => { system: string; user: string; maxTokens?: number };
+  extract: (parsed: Record<string, unknown>) => Record<string, unknown>;
+};
+
+const SYSTEM_BASE = `Return STRICT JSON only. No markdown fences. No prose outside the JSON. Plain English throughout. Assume a smart but non-deeply-technical reader. Never rewrite code — describe changes in prose.`;
+
+export const SYSTEM_SECTIONS: SystemSectionSpec[] = [
+  {
+    id: "overview",
+    label: "Understanding the project",
+    build: ({ filesBlock, hint }) => ({
+      system: `You are a senior staff engineer. ${SYSTEM_BASE}\nReturn: { "projectSummary": string (1-2 sentences, layman), "stack": string[] (max 10), "laymanOverview": string (1-2 short paragraphs) }`,
+      user: `${hint ? `Developer note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 700,
+    }),
+    extract: (p) => ({
+      projectSummary: p.projectSummary ?? "",
+      stack: p.stack ?? [],
+      laymanOverview: p.laymanOverview ?? "",
+    }),
+  },
+  {
+    id: "modules",
+    label: "Modules & dependencies",
+    build: ({ filesBlock, hint }) => ({
+      system: `You are a senior staff engineer. ${SYSTEM_BASE}\nReturn: { "modules": [{"name": string, "path": string, "role": string (1 line, plain English), "keyExports": string[] (max 4), "dependsOn": string[] (max 5)}] (5-10 entries max), "mermaid": string (small \`graph TD\` diagram, no code fences, max ~12 nodes) }`,
+      user: `${hint ? `Developer note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 1200,
+    }),
+    extract: (p) => ({ modules: p.modules ?? [], mermaid: p.mermaid ?? "" }),
+  },
+  {
+    id: "suggestions",
+    label: "Suggestions",
+    build: ({ filesBlock, hint }) => ({
+      system: `You are a senior code reviewer. ${SYSTEM_BASE}\nDo NOT rewrite code. Only describe changes in prose.\nReturn: { "suggestions": [{"file": string, "line": number|null, "title": string, "problem": string, "suggestion": string, "priority": "high"|"medium"|"low"}] (6-10 entries) }`,
+      user: `${hint ? `Developer note: ${hint}\n\n` : ""}Files:\n\n${filesBlock}`,
+      maxTokens: 1400,
+    }),
+    extract: (p) => ({ suggestions: p.suggestions ?? [] }),
+  },
+  {
+    id: "references",
+    label: "Reference projects",
+    build: ({ filesBlock, hint }) => ({
+      system: `You curate reference resources. ${SYSTEM_BASE}\nReturn: { "references": [{"kind":"repo"|"code"|"api","title":string,"url":string,"why":string (1 sentence)}] (3-5 entries) }`,
+      user: `${hint ? `Developer note: ${hint}\n\n` : ""}Given this project, list 3-5 well-known real reference repos or APIs that would help this developer learn from similar work. Files:\n\n${filesBlock.slice(0, 30_000)}`,
+      maxTokens: 500,
+    }),
+    extract: (p) => ({ references: p.references ?? [] }),
+  },
+];
+
+// ---------------- GitHub / Repo Intelligence section prompts ----------------
+export type GithubEvidence = {
+  repo: string;
+  focus: string;
+  meta: unknown;
+  commits: unknown;
+  pulls: unknown;
+  issues: unknown;
+  branches: unknown;
+  releases: unknown;
+  contributors: unknown;
+  dependencies: unknown;
+};
+
+export type GithubSectionSpec = {
+  id: string;
+  label: string;
+  build: (evidence: GithubEvidence, memory: string) => { system: string; user: string; maxTokens?: number };
+  extract: (parsed: Record<string, unknown>) => Record<string, unknown>;
+};
+
+const GH_BASE = `Return STRICT JSON only. No markdown fences. No prose outside the JSON. Plain English throughout. Every finding must be traceable to real evidence — never invent SHAs, PR numbers or dep versions you did not see.`;
+
+function evidencePayload(e: GithubEvidence): string {
+  return JSON.stringify(
+    {
+      repo: e.repo,
+      focus: e.focus,
+      meta: e.meta,
+      commits: e.commits,
+      pulls: e.pulls,
+      issues: e.issues,
+      branches: e.branches,
+      releases: e.releases,
+      contributors: e.contributors,
+      dependencies: e.dependencies,
+    },
+    null,
+    0,
+  ).slice(0, 45_000);
+}
+
+export const GITHUB_SECTIONS: GithubSectionSpec[] = [
+  {
+    id: "overview",
+    label: "Repository overview & health",
+    build: (e, memory) => ({
+      system: `You are a senior engineer auditing a repo. ${GH_BASE}\nReturn: { "summary": string (2 short paragraphs, layman), "activityScore": number (0-100), "dependencyNotes": [{"name":string,"version":string,"note":string}] (3-6 items), "glossary": [{"term":string,"meaning":string}] (max 5), "health": {"overall":number,"commits":"healthy"|"needs attention"|"poor","reviews":"healthy"|"needs attention"|"poor","testing":"healthy"|"needs attention"|"poor","security":"healthy"|"needs attention"|"poor","documentation":"healthy"|"needs attention"|"poor"} }`,
+      user: `Repository evidence:\n${evidencePayload(e)}${memory}`,
+      maxTokens: 1100,
+    }),
+    extract: (p) => ({
+      summary: p.summary ?? "",
+      activityScore: p.activityScore ?? 0,
+      dependencyNotes: p.dependencyNotes ?? [],
+      glossary: p.glossary ?? [],
+      health: p.health ?? null,
+    }),
+  },
+  {
+    id: "risks",
+    label: "Risks, opportunities & patterns",
+    build: (e, memory) => ({
+      system: `You are a senior code reviewer. ${GH_BASE}\nReturn: { "risks": [{"severity":"high"|"medium"|"low","title":string,"detail":string,"where":string|null}] (3-6), "opportunities": [{"title":string,"detail":string,"effort":"small"|"medium"|"large"}] (3-6), "patterns": [{"name":string,"description":string,"examples":string[] (max 3)}] (2-4) }`,
+      user: `Repository evidence:\n${evidencePayload(e)}${memory}`,
+      maxTokens: 1200,
+    }),
+    extract: (p) => ({
+      risks: p.risks ?? [],
+      opportunities: p.opportunities ?? [],
+      patterns: p.patterns ?? [],
+    }),
+  },
+  {
+    id: "commits",
+    label: "Commit intelligence",
+    build: (e, memory) => ({
+      system: `You interpret git history. ${GH_BASE}\nReturn: { "commitIntel": [{"sha":string,"title":string,"what":string,"why":string,"risk":"high"|"medium"|"low","files":string[],"breaking":boolean,"date":string|null,"author":string|null}] (4-8 most meaningful — pick the ones that matter, not just newest) }\nOnly use commit SHAs you see in the evidence.`,
+      user: `Repository evidence:\n${evidencePayload(e)}${memory}`,
+      maxTokens: 1200,
+    }),
+    extract: (p) => ({ commitIntel: p.commitIntel ?? [] }),
+  },
+  {
+    id: "prs",
+    label: "Pull request intelligence",
+    build: (e, memory) => ({
+      system: `You review pull requests. ${GH_BASE}\nReturn: { "prIntel": [{"number":number,"title":string,"purpose":string,"architectureImpact":string,"risks":string[] (max 3),"reviewSuggestions":string[] (max 3),"missingTests":boolean,"author":string|null,"url":string|null}] (3-6 notable PRs) }\nOnly use PR numbers you see in the evidence.`,
+      user: `Repository evidence:\n${evidencePayload(e)}${memory}`,
+      maxTokens: 1100,
+    }),
+    extract: (p) => ({ prIntel: p.prIntel ?? [] }),
+  },
+  {
+    id: "evolution",
+    label: "Evolution & regression",
+    build: (e, memory) => ({
+      system: `You trace how a repo evolved. ${GH_BASE}\nReturn: { "evolution": [{"topic":string,"timeline":[{"version":string,"change":string,"when":string|null}] (2-5 steps)}] (1-3 topics), "regression": {"description":string,"likelyCommit":string|null,"files":string[],"confidence":number (0-100),"reasoning":string}|null }\nOnly return "regression" when the evidence supports one.`,
+      user: `Repository evidence:\n${evidencePayload(e)}${memory}`,
+      maxTokens: 900,
+    }),
+    extract: (p) => ({ evolution: p.evolution ?? [], regression: p.regression ?? null }),
+  },
+  {
+    id: "team",
+    label: "Contributors, branches & releases",
+    build: (e, memory) => ({
+      system: `You map team ownership. ${GH_BASE}\nReturn: { "contributors": [{"area":string,"owner":string,"share":string}] (3-6), "branches": [{"branch":string,"vs":string,"summary":string,"differences":string[] (max 3)}] (0-3 — only if compare data supports), "releases": [{"version":string,"newApis":number,"breakingChanges":number,"databaseChanges":number,"migrationRequired":boolean,"risk":"high"|"medium"|"low","notes":string}] (0-5) }`,
+      user: `Repository evidence:\n${evidencePayload(e)}${memory}`,
+      maxTokens: 900,
+    }),
+    extract: (p) => ({
+      contributors: p.contributors ?? [],
+      branches: p.branches ?? [],
+      releases: p.releases ?? [],
+    }),
+  },
+  {
+    id: "history",
+    label: "Historical Q&A + memory",
+    build: (e, memory) => ({
+      system: `You produce durable knowledge about a repo. ${GH_BASE}\nReturn: { "historical": [{"question":string,"answer":string,"commit":string|null,"pr":string|null,"date":string|null,"reason":string|null}] (0-3), "memory": string[] (3-6 durable notes about WHY the repo looks like this) }`,
+      user: `Repository evidence:\n${evidencePayload(e)}${memory}`,
+      maxTokens: 700,
+    }),
+    extract: (p) => ({ historical: p.historical ?? [], memory: p.memory ?? [] }),
+  },
+];
+
+// ---------------- GitHub evidence gatherer ----------------
+const GH_API = "https://api.github.com";
+async function ghGet<T>(path: string, token: string, timeoutMs = 5000): Promise<T | null> {
+  try {
+    const res = await fetch(`${GH_API}${path}`, {
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "User-Agent": "jeradin-app",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+async function ghRawFile(owner: string, repo: string, branch: string, path: string, token: string, timeoutMs = 5000): Promise<string | null> {
+  try {
+    const res = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`, {
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+export async function gatherGithubEvidence(
+  owner: string,
+  repoName: string,
+  ghToken: string,
+  focus: string,
+): Promise<GithubEvidence> {
+  const meta = await ghGet<{
+    default_branch: string;
+    stargazers_count: number;
+    forks_count: number;
+    open_issues_count: number;
+    pushed_at: string;
+    language: string | null;
+    description: string | null;
+  }>(`/repos/${owner}/${repoName}`, ghToken);
+  const branch = meta?.default_branch ?? "main";
+
+  const [commits, pulls, issues, branches, releases, contributors, pkg, req, cargo, gomod, pyproject] = await Promise.all([
+    ghGet<Array<{ sha: string; commit: { message: string; author: { name: string; date: string } }; html_url: string }>>(
+      `/repos/${owner}/${repoName}/commits?per_page=20`,
+      ghToken,
+    ),
+    ghGet<Array<{ number: number; title: string; state: string; user: { login: string }; merged_at: string | null; created_at: string; html_url: string }>>(
+      `/repos/${owner}/${repoName}/pulls?state=all&per_page=15&sort=updated&direction=desc`,
+      ghToken,
+    ),
+    ghGet<Array<{ number: number; title: string; user: { login: string }; created_at: string; html_url: string; pull_request?: unknown; labels: Array<{ name: string }> }>>(
+      `/repos/${owner}/${repoName}/issues?state=open&per_page=15`,
+      ghToken,
+    ),
+    ghGet<Array<{ name: string; commit: { sha: string } }>>(`/repos/${owner}/${repoName}/branches?per_page=20`, ghToken),
+    ghGet<Array<{ tag_name: string; name: string; published_at: string; body: string; html_url: string }>>(
+      `/repos/${owner}/${repoName}/releases?per_page=10`,
+      ghToken,
+    ),
+    ghGet<Array<{ login: string; contributions: number }>>(`/repos/${owner}/${repoName}/contributors?per_page=15`, ghToken),
+    ghRawFile(owner, repoName, branch, "package.json", ghToken),
+    ghRawFile(owner, repoName, branch, "requirements.txt", ghToken),
+    ghRawFile(owner, repoName, branch, "Cargo.toml", ghToken),
+    ghRawFile(owner, repoName, branch, "go.mod", ghToken),
+    ghRawFile(owner, repoName, branch, "pyproject.toml", ghToken),
+  ]);
+
+  const dependencies: Record<string, string> = {};
+  if (pkg) dependencies["package.json"] = pkg.slice(0, 4000);
+  if (req) dependencies["requirements.txt"] = req.slice(0, 2000);
+  if (cargo) dependencies["Cargo.toml"] = cargo.slice(0, 2000);
+  if (gomod) dependencies["go.mod"] = gomod.slice(0, 2000);
+  if (pyproject) dependencies["pyproject.toml"] = pyproject.slice(0, 2000);
+
+  return {
+    repo: `${owner}/${repoName}`,
+    focus,
+    meta,
+    commits: (commits ?? []).map((c) => ({
+      sha: c.sha.slice(0, 7),
+      message: c.commit.message.split("\n")[0].slice(0, 160),
+      author: c.commit.author?.name,
+      date: c.commit.author?.date,
+      url: c.html_url,
+    })),
+    pulls: (pulls ?? []).map((p) => ({
+      number: p.number,
+      title: p.title,
+      state: p.state,
+      merged: !!p.merged_at,
+      author: p.user?.login,
+      url: p.html_url,
+      created: p.created_at,
+    })),
+    issues: (issues ?? [])
+      .filter((i) => !i.pull_request)
+      .map((i) => ({ number: i.number, title: i.title, author: i.user?.login, labels: i.labels.map((l) => l.name), url: i.html_url })),
+    branches: (branches ?? []).map((b) => ({ name: b.name, sha: b.commit.sha.slice(0, 7) })),
+    releases: (releases ?? []).map((r) => ({ tag: r.tag_name, name: r.name, published: r.published_at, notes: (r.body ?? "").slice(0, 1200), url: r.html_url })),
+    contributors: (contributors ?? []).map((c) => ({ login: c.login, commits: c.contributions })),
+    dependencies,
+  };
+}

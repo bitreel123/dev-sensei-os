@@ -320,6 +320,105 @@ Return: { "founderKit": {
       maxTokens: 800,
     }),
   },
+  {
+    id: "marketTiming",
+    label: "Market Timing",
+    key: "marketTiming",
+    build: ({ question, evidence, memory }) => ({
+      system: `You judge market timing. ${BASE_RULES}
+Return: { "marketTiming": { "rating": number (0-5), "verdict": string (one of "Hot" | "Warming" | "Neutral" | "Cooling"), "reasons": string[] (3-6 short reasons — AI adoption, regulation, funding, customer demand, etc.) } }`,
+      user: `Question: ${question}${evidence}${memory}`,
+      maxTokens: 400,
+    }),
+  },
+  {
+    id: "buildDifficulty",
+    label: "Build Difficulty",
+    key: "buildDifficulty",
+    build: ({ question }) => ({
+      system: `You judge whether a solo founder can build this. ${BASE_RULES}
+Return: { "buildDifficulty": { "soloFounder": boolean, "requires": string[] (3-6 e.g. "Backend","AI","Mobile","Security","DevOps"), "estimatedMonths": string (e.g. "8 months"), "estimatedEngineers": string (e.g. "2 engineers"), "summary": string (1 short sentence) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 400,
+    }),
+  },
+  {
+    id: "moatSuggestions",
+    label: "Possible Moats",
+    key: "moatSuggestions",
+    build: ({ question }) => ({
+      system: `You suggest defensibility moats. ${BASE_RULES}
+Return: { "moatSuggestions": { "moats": [{"name": string (e.g. "Proprietary dataset","AI memory","Workflow automation","Community","Marketplace","Network effects","Brand","Integrations","Compliance"), "note": string (one short sentence)}] (4-7 items) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 500,
+    }),
+  },
+  {
+    id: "customerAcquisition",
+    label: "Customer Acquisition",
+    key: "customerAcquisition",
+    build: ({ question }) => ({
+      system: `You are a growth marketer. ${BASE_RULES}
+Return: { "customerAcquisition": { "first100Channels": string[] (5-7 concrete channels — Reddit, LinkedIn, Cold email, Product Hunt, HN, communities, SEO), "expectedCac": string (e.g. "$8-25"), "expectedConversion": string (e.g. "3-6%"), "playbook": string (1-2 sentences, the first-90-days move) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 400,
+    }),
+  },
+  {
+    id: "investorFit",
+    label: "Investor Fit",
+    key: "investorFit",
+    build: ({ question }) => ({
+      system: `You rate investor readiness. ${BASE_RULES}
+Return: { "investorFit": { "vc": number (0-5), "bootstrap": number (0-5), "yc": number (0-5), "seriesA": number (0-5), "notes": string (1 short sentence) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 300,
+    }),
+  },
+  {
+    id: "biggestRisks",
+    label: "Biggest Risks",
+    key: "biggestRisks",
+    build: ({ question }) => ({
+      system: `You honestly list the biggest risks. ${BASE_RULES}
+Return: { "biggestRisks": { "risks": [{"label": string (short — e.g. "Regulation","Customer acquisition","Low margins","Existing competitors","Technical complexity"), "detail": string (one short sentence), "severity": "high"|"medium"|"low"}] (4-6 items) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 500,
+    }),
+  },
+  {
+    id: "validationPlan",
+    label: "Validate in 7 Days",
+    key: "validationPlan",
+    build: ({ question }) => ({
+      system: `You design a 7-day validation plan. ${BASE_RULES}
+Return: { "validationPlan": { "days": [{"day": number (1-7), "task": string (one imperative sentence — Day 1 Landing page, Day 2 Interview 20 users, etc.)}] (exactly 7 entries), "decisionCriteria": string (1 short sentence — what "go/no-go" means on Day 7) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 500,
+    }),
+  },
+  {
+    id: "successProbability",
+    label: "Success Probability",
+    key: "successProbability",
+    build: ({ question }) => ({
+      system: `You estimate probability of success. Be honest and calibrated. ${BASE_RULES}
+Return: { "successProbability": { "first1kMrr": number (0-100), "tenKMrr": number (0-100), "vcFunding": number (0-100), "bootstrapSuccess": number (0-100), "basis": string[] (3-5 — competition, capital, complexity, founder profile, market demand), "disclaimer": string (one short sentence: "These are estimates, not predictions.") } }`,
+      user: `Question: ${question}`,
+      maxTokens: 350,
+    }),
+  },
+  {
+    id: "founderVerdict",
+    label: "What Jeradin Would Build",
+    key: "founderVerdict",
+    build: ({ question, memory }) => ({
+      system: `You are the closing voice — a seasoned founder giving a personal verdict. ${BASE_RULES}
+Return: { "founderVerdict": { "ifIWereYou": string (starts with "If I were starting today with one engineer and less than $10,000, I would..." — 1-2 sentences), "buildThis": string (1 short sentence — the exact product), "because": string[] (3-5 short bullets — fastest path to revenue, strong AI moat, low competition, etc.) } }`,
+      user: `Question: ${question}${memory}`,
+      maxTokens: 500,
+    }),
+  },
 ];
 
 // ---------------- System Intelligence section prompts ----------------

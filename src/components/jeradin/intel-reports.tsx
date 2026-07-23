@@ -665,6 +665,130 @@ export function KnowledgeReportBody({ report }: { report: KnowledgeReport }) {
         </Reveal>
       ) : null}
 
+      {report.marketTiming && (
+        <div className="border border-white/10 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <SectionLabel>Market Timing</SectionLabel>
+            <div className="font-mono text-amber-300 text-[13px]">{"★".repeat(Math.round(report.marketTiming.rating))}{"☆".repeat(Math.max(0, 5 - Math.round(report.marketTiming.rating)))} <span className="text-white/60 ml-1">{report.marketTiming.verdict}</span></div>
+          </div>
+          <ul className="text-[12.5px] space-y-1">{report.marketTiming.reasons?.map((r, i) => <li key={i} className="flex gap-2"><span className="text-amber-300">•</span>{r}</li>)}</ul>
+        </div>
+      )}
+
+      {report.buildDifficulty && (
+        <div className="border border-white/10 rounded-lg p-4 space-y-2">
+          <SectionLabel>Build Difficulty</SectionLabel>
+          <div className="text-[13px]">{report.buildDifficulty.soloFounder ? "✅ Solo founder can build this" : "⚠ Requires a team"}</div>
+          {report.buildDifficulty.requires?.length ? (
+            <div className="flex flex-wrap gap-1.5">{report.buildDifficulty.requires.map((r, i) => <span key={i} className="text-[11px] font-mono border border-white/10 px-2 py-0.5 rounded">{r}</span>)}</div>
+          ) : null}
+          <div className="grid grid-cols-2 gap-2 text-[12px] pt-1">
+            <div className="border border-white/10 rounded p-2"><div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Estimated time</div><div className="font-mono">{report.buildDifficulty.estimatedMonths}</div></div>
+            <div className="border border-white/10 rounded p-2"><div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Team size</div><div className="font-mono">{report.buildDifficulty.estimatedEngineers}</div></div>
+          </div>
+          {report.buildDifficulty.summary && <p className="text-[12px] text-white/70">{report.buildDifficulty.summary}</p>}
+        </div>
+      )}
+
+      {report.moatSuggestions?.moats?.length ? (
+        <Reveal label={`🛡 Show Possible Moats (${report.moatSuggestions.moats.length})`}>
+          <ul className="space-y-1.5">
+            {report.moatSuggestions.moats.map((m, i) => (
+              <li key={i} className="text-[12.5px]"><span className="font-mono text-white">{m.name}</span><span className="text-white/60"> — {m.note}</span></li>
+            ))}
+          </ul>
+        </Reveal>
+      ) : null}
+
+      {report.customerAcquisition && (
+        <Reveal label="📣 Show Customer Acquisition (First 100)">
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-1.5">{report.customerAcquisition.first100Channels?.map((c, i) => <span key={i} className="text-[11px] font-mono border border-white/10 px-2 py-0.5 rounded">{c}</span>)}</div>
+            <div className="grid grid-cols-2 gap-2 text-[12px]">
+              <div className="border border-white/10 rounded p-2"><div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Expected CAC</div><div className="font-mono">{report.customerAcquisition.expectedCac}</div></div>
+              <div className="border border-white/10 rounded p-2"><div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Conversion</div><div className="font-mono">{report.customerAcquisition.expectedConversion}</div></div>
+            </div>
+            {report.customerAcquisition.playbook && <p className="text-[12.5px] text-white/70">{report.customerAcquisition.playbook}</p>}
+          </div>
+        </Reveal>
+      )}
+
+      {report.investorFit && (
+        <Reveal label="💰 Show Investor Fit">
+          <div className="grid grid-cols-2 gap-2 text-[12.5px]">
+            {(["vc","bootstrap","yc","seriesA"] as const).map((k) => {
+              const v = report.investorFit![k];
+              return (
+                <div key={k} className="flex justify-between border border-white/10 rounded px-2 py-1.5">
+                  <span className="text-white/60 uppercase text-[10.5px] tracking-[0.18em]">{k === "seriesA" ? "Series A" : k}</span>
+                  <span className="font-mono text-amber-300">{"★".repeat(Math.round(v))}{"☆".repeat(Math.max(0, 5 - Math.round(v)))}</span>
+                </div>
+              );
+            })}
+          </div>
+          {report.investorFit.notes && <p className="mt-2 text-[12px] text-white/70">{report.investorFit.notes}</p>}
+        </Reveal>
+      )}
+
+      {report.biggestRisks?.risks?.length ? (
+        <div className="border border-red-400/20 bg-red-500/[0.03] rounded-lg p-4">
+          <SectionLabel>⚠ Biggest Risks</SectionLabel>
+          <ul className="mt-2 space-y-1.5">
+            {report.biggestRisks.risks.map((r, i) => {
+              const c = r.severity === "high" ? "text-red-300" : r.severity === "medium" ? "text-amber-300" : "text-white/60";
+              return (
+                <li key={i} className="text-[12.5px]"><span className={`font-mono ${c}`}>[{r.severity.toUpperCase()}]</span> <span className="text-white">{r.label}</span>{r.detail ? <span className="text-white/60"> — {r.detail}</span> : null}</li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
+      {report.validationPlan?.days?.length ? (
+        <Reveal label="📅 Validate in 7 Days">
+          <ol className="space-y-1.5">
+            {report.validationPlan.days.map((d, i) => (
+              <li key={i} className="text-[12.5px] flex gap-3"><span className="font-mono text-orange-300 shrink-0">Day {d.day}</span><span>{d.task}</span></li>
+            ))}
+          </ol>
+          {report.validationPlan.decisionCriteria && <p className="mt-2 text-[12px] text-white/60 border-l-2 border-orange-400/50 pl-2">Decision: {report.validationPlan.decisionCriteria}</p>}
+        </Reveal>
+      ) : null}
+
+      {report.successProbability && (
+        <div className="border border-white/10 rounded-lg p-4 space-y-2">
+          <SectionLabel>Success Probability (Jeradin estimate)</SectionLabel>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {([["First $1k MRR","first1kMrr"],["$10k MRR","tenKMrr"],["VC funding","vcFunding"],["Bootstrap success","bootstrapSuccess"]] as const).map(([label, key]) => {
+              const v = report.successProbability![key];
+              return (
+                <div key={key} className="border border-white/10 rounded p-2">
+                  <div className="flex justify-between text-[11.5px] mb-1"><span className="text-white/60">{label}</span><span className="font-mono text-emerald-300">{v}%</span></div>
+                  <div className="h-1.5 bg-white/10 rounded overflow-hidden"><div className="h-full bg-emerald-400/70" style={{ width: `${Math.max(0, Math.min(100, v))}%` }} /></div>
+                </div>
+              );
+            })}
+          </div>
+          {report.successProbability.basis?.length ? (
+            <div className="text-[11px] text-white/50">Based on: {report.successProbability.basis.join(" · ")}</div>
+          ) : null}
+          {report.successProbability.disclaimer && <div className="text-[10.5px] text-white/40 italic">{report.successProbability.disclaimer}</div>}
+        </div>
+      )}
+
+      {report.founderVerdict && (
+        <div className="border border-emerald-400/30 bg-gradient-to-br from-emerald-500/[0.06] to-transparent rounded-xl p-5 space-y-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-emerald-300">🎯 What Jeradin Would Build</div>
+          <p className="text-[13px] text-white/90 italic border-l-2 border-emerald-400/50 pl-3">{report.founderVerdict.ifIWereYou}</p>
+          <div className="text-[14px] font-semibold text-white">→ {report.founderVerdict.buildThis}</div>
+          {report.founderVerdict.because?.length ? (
+            <ul className="pt-1 space-y-1">
+              {report.founderVerdict.because.map((b, i) => <li key={i} className="text-[12.5px] flex gap-2"><span className="text-emerald-300">✓</span>{b}</li>)}
+            </ul>
+          ) : null}
+        </div>
+      )}
+
       {report.nextSteps?.length > 0 && (
         <div>
           <SectionLabel>Next steps</SectionLabel>

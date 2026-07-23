@@ -41,9 +41,50 @@ export type KnowledgeGraphNode = {
 
 export type KnowledgeGraphEdge = { from: string; to: string; relation: string };
 
+export type KnowledgeScoreBand = {
+  marketScore: number;       // 0-10
+  competitionScore: number;  // 0-10 (higher = more competition)
+  difficulty: number;        // 0-10
+  capitalNeeded: number;     // 0-10 (higher = more capital)
+  aiPotential: number;       // 0-10
+  speedToMvp: number;        // 0-10 (higher = faster to MVP)
+  pmfChance: number;         // 0-10
+};
+
+export type KnowledgeRecommendation = {
+  headline: string;            // "Build: X for Y"
+  opinion: string;             // 2-3 sentence opinionated advisor pick
+  whyNow: string[];            // 3-5 tight bullets
+  timeToMvp: string;           // "4-6 weeks"
+  revenuePotential: string;    // "$$$" style + note
+  scores: KnowledgeScoreBand;
+  alternatives: Array<{ name: string; reasonToPass: string }>; // ideas we did NOT pick and why
+};
+
+export type KnowledgeFounderKit = {
+  businessModelCanvas?: {
+    customerSegments: string[];
+    valuePropositions: string[];
+    channels: string[];
+    customerRelationships: string[];
+    revenueStreams: string[];
+    keyResources: string[];
+    keyActivities: string[];
+    keyPartners: string[];
+    costStructure: string[];
+  };
+  goToMarket?: { phase: string; playbook: string; targets: string[] }[];
+  pricingStrategy?: { model: string; tiers: Array<{ name: string; price: string; includes: string[] }>; rationale: string };
+  tamSamSom?: { tam: string; sam: string; som: string; assumptions: string[] };
+  investorReadiness?: { score: number; checklist: Array<{ item: string; done: boolean }>; missing: string[] };
+  risksAndAssumptions?: Array<{ risk: string; assumption: string; mitigation: string }>;
+};
+
 export type KnowledgeReport = {
   question: string;
   laymanSummary: string;
+  recommendation?: KnowledgeRecommendation;
+  founderKit?: KnowledgeFounderKit;
 
   // Product Discovery
   productDiscovery?: {

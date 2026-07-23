@@ -136,6 +136,38 @@ Return: { "recommendation": {
     }),
   },
   {
+    id: "aiMoat",
+    label: "AI Moat",
+    key: "aiMoat",
+    build: ({ question, memory }) => ({
+      system: `You explain WHY AI makes the recommended idea defensible. ${BASE_RULES}
+Return: { "aiMoat": {
+  "rating": number (0-5, integer, how strong the moat is),
+  "headline": string (one short sentence),
+  "reasons": string[] (3-5 short "Hard to copy because ..." bullets — data flywheel, domain-tuned model, feedback loops, proprietary integrations, etc.),
+  "dataFlywheel": string (1 short sentence describing the data → model → product loop)
+} }`,
+      user: `Question: ${question}${memory}`,
+      maxTokens: 500,
+    }),
+  },
+  {
+    id: "marketValidation",
+    label: "Market Validation",
+    key: "marketValidation",
+    build: ({ question, evidence, memory }) => ({
+      system: `You collect market-validation signals. ${BASE_RULES}
+Prefer concrete, quantitative signals over vague claims. Only cite figures you can support from the evidence or well-known public knowledge.
+Return: { "marketValidation": {
+  "signals": [{"label": string (e.g. "YC funded 8 startups here", "$500M invested last year", "Google search trend rising", "Reddit complaints increasing", "Enterprise demand growing"), "detail": string (optional, one short line)}] (5-8 signals),
+  "evidenceScore": number (0-100, how strong the aggregate evidence is)
+} }`,
+      user: `Question: ${question}${evidence}${memory}`,
+      maxTokens: 600,
+    }),
+  },
+
+  {
     id: "intro",
     label: "Understanding your idea",
     key: "intro",

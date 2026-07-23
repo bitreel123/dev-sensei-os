@@ -11,7 +11,7 @@ const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unse
 export default defineMcp({
   name: "jeradin-mcp",
   title: "Jeradin",
-  version: "0.1.0",
+  version: "0.2.0",
   instructions:
     "Tools for your Jeradin workspace. Read your profile and notifications, and view or change the GitHub repo Jeradin uses to ground its screen analysis. All tools act as the signed-in Jeradin user.",
   auth: auth.oauth.issuer({

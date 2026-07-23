@@ -19,7 +19,7 @@ export const Route = createFileRoute("/api/intel/github/stream")({
         const anthropicKey = process.env.ANTHROPIC_API_KEY;
         if (!anthropicKey) return new Response("ANTHROPIC_API_KEY not configured", { status: 500 });
 
-        let body: { repo?: string; focus?: string };
+        let body: { repo?: string; focus?: string; sessionId?: string };
         try {
           body = (await request.json()) as typeof body;
         } catch {
@@ -27,6 +27,7 @@ export const Route = createFileRoute("/api/intel/github/stream")({
         }
         const repo = (body.repo ?? "").trim();
         const focus = (body.focus ?? "").slice(0, 1000);
+        const sessionId = typeof body.sessionId === "string" && /^[0-9a-f-]{36}$/i.test(body.sessionId) ? body.sessionId : undefined;
         if (!/^[^/]+\/[^/]+$/.test(repo)) return new Response("repo must be 'owner/name'", { status: 400 });
 
         const { assertCreditsAvailable, INTEL_COST, chargeAndRemember, recallIntel, memoryPromptSuffix } = await import(
@@ -101,6 +102,7 @@ export const Route = createFileRoute("/api/intel/github/stream")({
           if (successCount >= 1) {
             try {
               await chargeAndRemember(userId, "repo", INTEL_COST.repo, {
+                sessionId,
                 title: `Repo · ${repo}${focus ? ` — ${focus.slice(0, 70)}` : ""}`,
                 summary: typeof results.summary === "string" ? (results.summary as string).slice(0, 800) : null,
                 payload: {

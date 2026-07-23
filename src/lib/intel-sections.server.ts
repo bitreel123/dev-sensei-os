@@ -115,11 +115,32 @@ const BASE_RULES = `Return STRICT JSON only. No markdown fences. No prose outsid
 
 export const KNOWLEDGE_SECTIONS: KnowledgeSectionSpec[] = [
   {
+    id: "recommendation",
+    label: "Top Recommendation",
+    key: "recommendation",
+    build: ({ question, projectContext, memory, evidence }) => ({
+      system: `You are a senior YC-partner-style advisor. Do NOT list many ideas. PICK ONE.
+${BASE_RULES}
+Even when the user asks for a list (e.g. "give me 10 fintech startup ideas"), CHOOSE the single best one to build right now based on market demand, competition, capital needs, and speed to MVP. Runners-up go in "alternatives" with a one-sentence reason we did not pick each. Be opinionated. Sound like a founder-coach, not an encyclopedia.
+Return: { "recommendation": {
+  "headline": string (format "Build: <product> for <who>"),
+  "opinion": string (2-3 sentences, opinionated advisor tone — starts with "I recommend..." or "Build this because..."),
+  "whyNow": string[] (3-5 short bullets — trends, funding, demand, gaps),
+  "timeToMvp": string (e.g. "4-6 weeks"),
+  "revenuePotential": string (e.g. "$$$ — $10-50k MRR in 6 months if X"),
+  "scores": { "marketScore": number(0-10), "competitionScore": number(0-10, higher=more crowded), "difficulty": number(0-10), "capitalNeeded": number(0-10), "aiPotential": number(0-10), "speedToMvp": number(0-10, higher=faster), "pmfChance": number(0-10) },
+  "alternatives": [{"name": string, "reasonToPass": string}] (2-4 other ideas we considered and passed on)
+} }`,
+      user: `Question: ${question}${projectContext ? `\n\nContext: ${projectContext}` : ""}${evidence}${memory}`,
+      maxTokens: 900,
+    }),
+  },
+  {
     id: "intro",
     label: "Understanding your idea",
     key: "intro",
     build: ({ question, projectContext, memory }) => ({
-      system: `You are Knowledge Intelligence. ${BASE_RULES}\nReturn: { "laymanSummary": string (2 short paragraphs, plain English), "recommendedStack": string[] (max 8), "glossary": [{"term":string,"meaning":string}] (max 5), "nextSteps": string[] (max 5) }`,
+      system: `You are Knowledge Intelligence. ${BASE_RULES}\nReturn: { "laymanSummary": string (2 short paragraphs, plain English, references the top recommendation naturally), "recommendedStack": string[] (max 8), "glossary": [{"term":string,"meaning":string}] (max 5), "nextSteps": string[] (max 5) }`,
       user: `Question: ${question}${projectContext ? `\n\nProject context: ${projectContext}` : ""}${memory}`,
       maxTokens: 900,
     }),
@@ -222,6 +243,25 @@ export const KNOWLEDGE_SECTIONS: KnowledgeSectionSpec[] = [
       system: `You are a launch and growth expert. ${BASE_RULES}\nReturn: { "launch": { "analytics": string[] (max 4), "monitoring": string[] (max 4), "cicd": string[] (max 4), "featureFlags": string, "pricingIdeas": string[] (max 4), "betaStrategy": string, "growthExperiments": string[] (max 4), "checklist": string[] (4-6) } }`,
       user: `Question: ${question}`,
       maxTokens: 900,
+    }),
+  },
+  {
+    id: "founderKit",
+    label: "Founder Kit",
+    key: "founderKit",
+    build: ({ question, projectContext, memory }) => ({
+      system: `You are McKinsey + YC Partner + Product Manager combined. ${BASE_RULES}
+Produce a founder-ready operating kit for the recommended idea. Numbers are estimates but must be plausible — cite the assumption in the "assumptions" field.
+Return: { "founderKit": {
+  "businessModelCanvas": { "customerSegments": string[] (max 4), "valuePropositions": string[] (max 4), "channels": string[] (max 4), "customerRelationships": string[] (max 3), "revenueStreams": string[] (max 4), "keyResources": string[] (max 4), "keyActivities": string[] (max 4), "keyPartners": string[] (max 3), "costStructure": string[] (max 4) },
+  "goToMarket": [{"phase":string,"playbook":string,"targets":string[] (max 3)}] (3 phases: launch / growth / scale),
+  "pricingStrategy": { "model": string, "tiers": [{"name":string,"price":string,"includes":string[] (max 4)}] (2-3 tiers), "rationale": string },
+  "tamSamSom": { "tam": string, "sam": string, "som": string, "assumptions": string[] (max 4) },
+  "investorReadiness": { "score": number (0-100), "checklist": [{"item":string,"done":boolean}] (5-7), "missing": string[] (max 5) },
+  "risksAndAssumptions": [{"risk":string,"assumption":string,"mitigation":string}] (3-5)
+} }`,
+      user: `Question: ${question}${projectContext ? `\n\nContext: ${projectContext}` : ""}${memory}`,
+      maxTokens: 1400,
     }),
   },
   {

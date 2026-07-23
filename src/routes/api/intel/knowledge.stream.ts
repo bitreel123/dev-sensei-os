@@ -22,7 +22,7 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
         const anthropicKey = process.env.ANTHROPIC_API_KEY;
         if (!anthropicKey) return new Response("ANTHROPIC_API_KEY not configured", { status: 500 });
 
-        let body: { question?: string; projectContext?: string; only?: string[] };
+        let body: { question?: string; projectContext?: string; only?: string[]; sessionId?: string };
         try {
           body = (await request.json()) as typeof body;
         } catch {
@@ -30,6 +30,7 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
         }
         const question = (body.question ?? "").trim();
         const projectContext = (body.projectContext ?? "").slice(0, 3000);
+        const sessionId = typeof body.sessionId === "string" && /^[0-9a-f-]{36}$/i.test(body.sessionId) ? body.sessionId : undefined;
         if (question.length < 5) return new Response("Question must be at least 5 characters", { status: 400 });
 
         const { assertCreditsAvailable, INTEL_COST, chargeAndRemember, recallIntel, memoryPromptSuffix } = await import(
@@ -148,6 +149,7 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
           if (successCount >= Math.max(1, Math.floor(sectionsToRun.length / 3)) && !only) {
             try {
               await chargeAndRemember(userId, "knowledge", INTEL_COST.knowledge, {
+                sessionId,
                 title: `Knowledge · ${question.slice(0, 180)}`,
                 summary: typeof results.laymanSummary === "string" ? results.laymanSummary.slice(0, 800) : null,
                 payload: {

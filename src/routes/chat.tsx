@@ -7,7 +7,7 @@ import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
 import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { addHistoryEntry, updateHistoryEntry, getHistoryEntry } from "@/lib/chat-history";
+import { addHistoryEntry, updateHistoryEntry, getHistoryEntry, upsertHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, CodeBlock } from "@/components/jeradin/screen-intel-overlay";
@@ -573,6 +573,9 @@ function ChatPage() {
     setLastSubmittedPrompt(text || (capability === "system" ? "Scan my codebase" : "Run my GitHub code"));
     setLastRun({ kind: capability, status: "running" });
     setSectionStages([]);
+    // Reuse the current session id so retries within the same chat update the
+    // existing history row instead of creating duplicate sidebar entries.
+    const sessionId = currentEntryId ?? crypto.randomUUID();
     try {
       if (capability === "knowledge") {
         // Stream sections one-by-one so the UI paints as soon as each Claude call resolves.
@@ -609,10 +612,10 @@ function ChatPage() {
             throw new Error(event.message);
           }
         };
-        await streamIntel("/api/intel/knowledge/stream", { question: text, projectContext: "" }, handleEvent);
+        await streamIntel("/api/intel/knowledge/stream", { question: text, projectContext: "", sessionId }, handleEvent);
         if (sectionCount === 0) throw new Error("Knowledge analysis returned no sections. Please retry.");
         setKnowledgeEnabled(true);
-        const entry = addHistoryEntry(`Knowledge · ${text.slice(0, 60)}`, {
+        const entry = upsertHistoryEntry(sessionId, `Knowledge · ${text.slice(0, 60)}`, {
           mode: "knowledge",
           knowledge: { report: accumulated, input: { question: text, projectContext: "" } },
         });
@@ -667,9 +670,9 @@ function ChatPage() {
             setLastRun({ kind: "system", status: "error", message: "No readable code files" });
             return;
           }
-          await streamIntel("/api/intel/system/stream", { source: "upload", files, projectHint: text }, handleSys);
+          await streamIntel("/api/intel/system/stream", { source: "upload", files, projectHint: text, sessionId }, handleSys);
           if (sysSectionCount === 0) throw new Error("System analysis returned no sections. Please retry.");
-          const entry = addHistoryEntry(`System · ${files.length} files`, {
+          const entry = upsertHistoryEntry(sessionId, `System · ${files.length} files`, {
             mode: "system",
             system: { analysis: accSys, filesAnalyzed, input: { source: "upload", projectHint: text } },
           });
@@ -686,9 +689,9 @@ function ChatPage() {
           setLastRun({ kind: "system", status: "error", message: "GitHub not connected" });
           return;
         }
-        await streamIntel("/api/intel/system/stream", { source: "github", repo: repo!, projectHint: text }, handleSys);
+        await streamIntel("/api/intel/system/stream", { source: "github", repo: repo!, projectHint: text, sessionId }, handleSys);
         if (sysSectionCount === 0) throw new Error("System analysis returned no sections. Please retry.");
-        const entry = addHistoryEntry(`System · ${repo}`, {
+        const entry = upsertHistoryEntry(sessionId, `System · ${repo}`, {
           mode: "system",
           system: { analysis: accSys, filesAnalyzed, input: { source: "github", repo: repo!, projectHint: text } },
         });
@@ -739,9 +742,9 @@ function ChatPage() {
           throw new Error(event.message);
         }
       };
-      await streamIntel("/api/intel/github/stream", { repo: repo!, focus }, handleRepo);
+      await streamIntel("/api/intel/github/stream", { repo: repo!, focus, sessionId }, handleRepo);
       if (repoSectionCount === 0) throw new Error("GitHub analysis returned no sections. Please retry.");
-      const entry = addHistoryEntry(`Repo · ${repo}`, {
+      const entry = upsertHistoryEntry(sessionId, `Repo · ${repo}`, {
         mode: "repo",
         repo: { report: accRepo, input: { repo: repo!, focus } },
       });

@@ -75,7 +75,7 @@ export const Route = createFileRoute("/api/intel/system/stream")({
         const anthropicKey = process.env.ANTHROPIC_API_KEY;
         if (!anthropicKey) return new Response("ANTHROPIC_API_KEY not configured", { status: 500 });
 
-        type Body = { source?: "github" | "upload"; repo?: string; files?: FileInput[]; projectHint?: string };
+        type Body = { source?: "github" | "upload"; repo?: string; files?: FileInput[]; projectHint?: string; sessionId?: string };
         let body: Body;
         try {
           body = (await request.json()) as Body;
@@ -84,6 +84,7 @@ export const Route = createFileRoute("/api/intel/system/stream")({
         }
         const source = body.source === "upload" ? "upload" : "github";
         const hint = (body.projectHint ?? "").slice(0, 2000);
+        const sessionId = typeof body.sessionId === "string" && /^[0-9a-f-]{36}$/i.test(body.sessionId) ? body.sessionId : undefined;
         if (source === "github" && (!body.repo || !/^[^/]+\/[^/]+$/.test(body.repo))) {
           return new Response("repo must be 'owner/name'", { status: 400 });
         }
@@ -164,6 +165,7 @@ export const Route = createFileRoute("/api/intel/system/stream")({
           if (successCount >= 1) {
             try {
               await chargeAndRemember(userId, "system", INTEL_COST.system, {
+                sessionId,
                 title: `System · ${body.repo ?? (results.projectSummary as string | undefined)?.slice(0, 160) ?? "uploaded codebase"}`,
                 summary: (results.laymanOverview as string | undefined)?.slice(0, 800) ?? null,
                 payload: {

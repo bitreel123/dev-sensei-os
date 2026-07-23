@@ -118,6 +118,21 @@ export async function chargeAndRemember(
   entry: { title: string; summary?: string | null; payload?: JsonValue; tags?: string[]; sessionId?: string },
   env: "live" | "sandbox" = "live",
 ) {
+  // Idempotent by sessionId: if this session already has a memory row for this
+  // user, treat this call as an in-place update (no credit charge). Prevents
+  // double-billing when the user re-submits the same prompt in the same chat.
+  if (entry.sessionId) {
+    const { data: existing } = await supabaseAdmin
+      .from("intel_memory")
+      .select("id")
+      .eq("id", entry.sessionId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (existing) {
+      await rememberIntel(userId, mode, entry);
+      return { ok: true, balance: -1 };
+    }
+  }
   const charge = await chargeCredits(userId, cost, env);
   if (!charge.ok) {
     throw new Error(
@@ -127,6 +142,7 @@ export async function chargeAndRemember(
   await rememberIntel(userId, mode, entry);
   return charge;
 }
+
 
 /** Verify that a user can afford an intelligence run before paid work starts. */
 export async function assertCreditsAvailable(

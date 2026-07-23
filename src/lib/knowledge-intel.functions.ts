@@ -80,11 +80,26 @@ export type KnowledgeFounderKit = {
   risksAndAssumptions?: Array<{ risk: string; assumption: string; mitigation: string }>;
 };
 
+export type KnowledgeAiMoat = {
+  rating: number; // 0-5 stars
+  headline: string;
+  reasons: string[]; // "Hard to copy because ..."
+  dataFlywheel?: string;
+};
+
+export type KnowledgeMarketValidation = {
+  signals: Array<{ label: string; detail?: string }>;
+  evidenceScore: number; // 0-100
+};
+
 export type KnowledgeReport = {
   question: string;
   laymanSummary: string;
   recommendation?: KnowledgeRecommendation;
+  aiMoat?: KnowledgeAiMoat;
+  marketValidation?: KnowledgeMarketValidation;
   founderKit?: KnowledgeFounderKit;
+
 
   // Product Discovery
   productDiscovery?: {

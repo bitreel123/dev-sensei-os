@@ -246,6 +246,25 @@ Return: { "recommendation": {
     }),
   },
   {
+    id: "founderKit",
+    label: "Founder Kit",
+    key: "founderKit",
+    build: ({ question, projectContext, memory }) => ({
+      system: `You are McKinsey + YC Partner + Product Manager combined. ${BASE_RULES}
+Produce a founder-ready operating kit for the recommended idea. Numbers are estimates but must be plausible — cite the assumption in the "assumptions" field.
+Return: { "founderKit": {
+  "businessModelCanvas": { "customerSegments": string[] (max 4), "valuePropositions": string[] (max 4), "channels": string[] (max 4), "customerRelationships": string[] (max 3), "revenueStreams": string[] (max 4), "keyResources": string[] (max 4), "keyActivities": string[] (max 4), "keyPartners": string[] (max 3), "costStructure": string[] (max 4) },
+  "goToMarket": [{"phase":string,"playbook":string,"targets":string[] (max 3)}] (3 phases: launch / growth / scale),
+  "pricingStrategy": { "model": string, "tiers": [{"name":string,"price":string,"includes":string[] (max 4)}] (2-3 tiers), "rationale": string },
+  "tamSamSom": { "tam": string, "sam": string, "som": string, "assumptions": string[] (max 4) },
+  "investorReadiness": { "score": number (0-100), "checklist": [{"item":string,"done":boolean}] (5-7), "missing": string[] (max 5) },
+  "risksAndAssumptions": [{"risk":string,"assumption":string,"mitigation":string}] (3-5)
+} }`,
+      user: `Question: ${question}${projectContext ? `\n\nContext: ${projectContext}` : ""}${memory}`,
+      maxTokens: 1400,
+    }),
+  },
+  {
     id: "resources",
     label: "Resources",
     key: "resources",

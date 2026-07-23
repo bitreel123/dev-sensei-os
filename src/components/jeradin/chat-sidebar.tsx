@@ -53,9 +53,12 @@ export function ChatSidebar() {
     };
     refresh();
     const unsubscribe = subscribeHistory(refresh);
+    // Poll cloud memory so a chat started on mobile appears on desktop within 20s.
+    const interval = user?.id ? window.setInterval(refresh, 20_000) : null;
     return () => {
       cancelled = true;
       unsubscribe();
+      if (interval) window.clearInterval(interval);
     };
   }, [loadCloudHistory, user?.id]);
 

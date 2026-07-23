@@ -165,6 +165,7 @@ export const Route = createFileRoute("/api/intel/system/stream")({
           if (successCount >= 1) {
             try {
               await chargeAndRemember(userId, "system", INTEL_COST.system, {
+                sessionId,
                 title: `System · ${body.repo ?? (results.projectSummary as string | undefined)?.slice(0, 160) ?? "uploaded codebase"}`,
                 summary: (results.laymanOverview as string | undefined)?.slice(0, 800) ?? null,
                 payload: {

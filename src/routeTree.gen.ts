@@ -39,7 +39,9 @@ import { Route as ApiPublicGithubCallbackRouteImport } from './routes/api/public
 import { Route as ApiPublicGithubAuthorizeRouteImport } from './routes/api/public/github.authorize'
 import { Route as ApiPublicExtensionWhoamiRouteImport } from './routes/api/public/extension/whoami'
 import { Route as ApiPublicExtensionAnalyzeRouteImport } from './routes/api/public/extension/analyze'
+import { Route as ApiIntelSystemStreamRouteImport } from './routes/api/intel/system.stream'
 import { Route as ApiIntelKnowledgeStreamRouteImport } from './routes/api/intel/knowledge.stream'
+import { Route as ApiIntelGithubStreamRouteImport } from './routes/api/intel/github.stream'
 
 const WorkflowRoute = WorkflowRouteImport.update({
   id: '/workflow',
@@ -199,9 +201,19 @@ const ApiPublicExtensionAnalyzeRoute =
     path: '/api/public/extension/analyze',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiIntelSystemStreamRoute = ApiIntelSystemStreamRouteImport.update({
+  id: '/api/intel/system/stream',
+  path: '/api/intel/system/stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiIntelKnowledgeStreamRoute = ApiIntelKnowledgeStreamRouteImport.update({
   id: '/api/intel/knowledge/stream',
   path: '/api/intel/knowledge/stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIntelGithubStreamRoute = ApiIntelGithubStreamRouteImport.update({
+  id: '/api/intel/github/stream',
+  path: '/api/intel/github/stream',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -229,7 +241,9 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
   '/api/intel/knowledge/stream': typeof ApiIntelKnowledgeStreamRoute
+  '/api/intel/system/stream': typeof ApiIntelSystemStreamRoute
   '/api/public/extension/analyze': typeof ApiPublicExtensionAnalyzeRoute
   '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
@@ -262,7 +276,9 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
   '/api/intel/knowledge/stream': typeof ApiIntelKnowledgeStreamRoute
+  '/api/intel/system/stream': typeof ApiIntelSystemStreamRoute
   '/api/public/extension/analyze': typeof ApiPublicExtensionAnalyzeRoute
   '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
@@ -296,7 +312,9 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
   '/api/intel/knowledge/stream': typeof ApiIntelKnowledgeStreamRoute
+  '/api/intel/system/stream': typeof ApiIntelSystemStreamRoute
   '/api/public/extension/analyze': typeof ApiPublicExtensionAnalyzeRoute
   '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
   '/api/public/github/authorize': typeof ApiPublicGithubAuthorizeRoute
@@ -331,7 +349,9 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/intel/github/stream'
     | '/api/intel/knowledge/stream'
+    | '/api/intel/system/stream'
     | '/api/public/extension/analyze'
     | '/api/public/extension/whoami'
     | '/api/public/github/authorize'
@@ -364,7 +384,9 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/intel/github/stream'
     | '/api/intel/knowledge/stream'
+    | '/api/intel/system/stream'
     | '/api/public/extension/analyze'
     | '/api/public/extension/whoami'
     | '/api/public/github/authorize'
@@ -397,7 +419,9 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/intel/github/stream'
     | '/api/intel/knowledge/stream'
+    | '/api/intel/system/stream'
     | '/api/public/extension/analyze'
     | '/api/public/extension/whoami'
     | '/api/public/github/authorize'
@@ -431,7 +455,9 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiIntelGithubStreamRoute: typeof ApiIntelGithubStreamRoute
   ApiIntelKnowledgeStreamRoute: typeof ApiIntelKnowledgeStreamRoute
+  ApiIntelSystemStreamRoute: typeof ApiIntelSystemStreamRoute
   ApiPublicExtensionAnalyzeRoute: typeof ApiPublicExtensionAnalyzeRoute
   ApiPublicExtensionWhoamiRoute: typeof ApiPublicExtensionWhoamiRoute
   ApiPublicGithubAuthorizeRoute: typeof ApiPublicGithubAuthorizeRoute
@@ -653,11 +679,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicExtensionAnalyzeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/intel/system/stream': {
+      id: '/api/intel/system/stream'
+      path: '/api/intel/system/stream'
+      fullPath: '/api/intel/system/stream'
+      preLoaderRoute: typeof ApiIntelSystemStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/intel/knowledge/stream': {
       id: '/api/intel/knowledge/stream'
       path: '/api/intel/knowledge/stream'
       fullPath: '/api/intel/knowledge/stream'
       preLoaderRoute: typeof ApiIntelKnowledgeStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/intel/github/stream': {
+      id: '/api/intel/github/stream'
+      path: '/api/intel/github/stream'
+      fullPath: '/api/intel/github/stream'
+      preLoaderRoute: typeof ApiIntelGithubStreamRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -688,7 +728,9 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiIntelGithubStreamRoute: ApiIntelGithubStreamRoute,
   ApiIntelKnowledgeStreamRoute: ApiIntelKnowledgeStreamRoute,
+  ApiIntelSystemStreamRoute: ApiIntelSystemStreamRoute,
   ApiPublicExtensionAnalyzeRoute: ApiPublicExtensionAnalyzeRoute,
   ApiPublicExtensionWhoamiRoute: ApiPublicExtensionWhoamiRoute,
   ApiPublicGithubAuthorizeRoute: ApiPublicGithubAuthorizeRoute,

@@ -12,9 +12,9 @@ import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, ty
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ScreenIntelOverlay, CodeBlock } from "@/components/jeradin/screen-intel-overlay";
 import { chatAboutAnalysis } from "@/lib/screen-intel.functions";
-import { analyzeSystem, type FileInput, type SystemAnalysis } from "@/lib/system-intel.functions";
+import type { FileInput, SystemAnalysis } from "@/lib/system-intel.functions";
 import { type KnowledgeReport } from "@/lib/knowledge-intel.functions";
-import { runGithubIntelligence, type GithubIntelReport } from "@/lib/github-intel.functions";
+import type { GithubIntelReport } from "@/lib/github-intel.functions";
 import { SystemReportBody, KnowledgeReportBody, RepoReportBody } from "@/components/jeradin/intel-reports";
 import { NotificationsBell } from "@/components/jeradin/notifications-bell";
 import { listMyGithubRepos, setActiveRepo, type GithubRepo } from "@/lib/repo-intel.functions";
@@ -83,9 +83,8 @@ function ChatPage() {
 
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const runAnalyze = useServerFn(analyzeScreenAndSuggestFix);
-  const runSystem = useServerFn(analyzeSystem);
-  // runKnowledgeIntelligence is invoked via the streaming route /api/intel/knowledge/stream
-  const runRepo = useServerFn(runGithubIntelligence);
+  // system + repo intelligence run through streaming NDJSON endpoints (/api/intel/{system,github}/stream)
+
   const loadGithubRepos = useServerFn(listMyGithubRepos);
   const saveActiveRepo = useServerFn(setActiveRepo);
   const askScreenFollowUp = useServerFn(chatAboutAnalysis);
@@ -588,6 +587,41 @@ function ChatPage() {
       }
 
       if (capability === "system") {
+        const accSys: SystemAnalysis = {
+          projectSummary: "",
+          stack: [],
+          laymanOverview: "",
+          mermaid: "",
+          modules: [],
+          suggestions: [],
+          references: [],
+        };
+        let filesAnalyzed = 0;
+        let sysSectionCount = 0;
+
+        const handleSys = (event: IntelStreamEvent) => {
+          if (event.type === "stage") {
+            setSectionStages((prev) => {
+              const idx = prev.findIndex((s) => s.id === event.id);
+              const next = { id: event.id, label: event.label, status: event.status, message: event.message };
+              if (idx >= 0) {
+                const copy = prev.slice();
+                copy[idx] = next;
+                return copy;
+              }
+              return [...prev, next];
+            });
+          } else if (event.type === "section") {
+            const partial = event.data as Partial<SystemAnalysis> & { filesAnalyzed?: number };
+            if (typeof partial.filesAnalyzed === "number") filesAnalyzed = partial.filesAnalyzed;
+            Object.assign(accSys, partial);
+            sysSectionCount += 1;
+            setSystemResult({ analysis: { ...accSys }, filesAnalyzed });
+          } else if (event.type === "error") {
+            throw new Error(event.message);
+          }
+        };
+
         if (attachments.length > 0) {
           const files = await attachmentsToFileInputs(attachments);
           if (files.length === 0) {
@@ -595,17 +629,17 @@ function ChatPage() {
             setLastRun({ kind: "system", status: "error", message: "No readable code files" });
             return;
           }
-          const res = await runSystem({ data: { source: "upload", files, projectHint: text } });
-          setSystemResult(res);
+          await streamIntel("/api/intel/system/stream", { source: "upload", files, projectHint: text }, handleSys);
+          if (sysSectionCount === 0) throw new Error("System analysis returned no sections. Please retry.");
           const entry = addHistoryEntry(`System · ${files.length} files`, {
             mode: "system",
-            system: { analysis: res.analysis, filesAnalyzed: res.filesAnalyzed, input: { source: "upload", projectHint: text } },
+            system: { analysis: accSys, filesAnalyzed, input: { source: "upload", projectHint: text } },
           });
           setCurrentEntryId(entry.id);
           navigate({ to: "/chat", search: { id: entry.id } });
           setPrompt("");
           toast.success("System analysis complete");
-          setLastRun({ kind: "system", status: "success", message: `${res.filesAnalyzed} files analyzed` });
+          setLastRun({ kind: "system", status: "success", message: `${filesAnalyzed} files analyzed` });
           return;
         }
         if (!github) {
@@ -614,11 +648,11 @@ function ChatPage() {
           setLastRun({ kind: "system", status: "error", message: "GitHub not connected" });
           return;
         }
-        const res = await runSystem({ data: { source: "github", repo: repo!, projectHint: text } });
-        setSystemResult(res);
+        await streamIntel("/api/intel/system/stream", { source: "github", repo: repo!, projectHint: text }, handleSys);
+        if (sysSectionCount === 0) throw new Error("System analysis returned no sections. Please retry.");
         const entry = addHistoryEntry(`System · ${repo}`, {
           mode: "system",
-          system: { analysis: res.analysis, filesAnalyzed: res.filesAnalyzed, input: { source: "github", repo: repo!, projectHint: text } },
+          system: { analysis: accSys, filesAnalyzed, input: { source: "github", repo: repo!, projectHint: text } },
         });
         setCurrentEntryId(entry.id);
         navigate({ to: "/chat", search: { id: entry.id } });
@@ -635,17 +669,50 @@ function ChatPage() {
         return;
       }
       const focus = text || "Run my GitHub code and explain its health, risks, and recent changes.";
-      const res = await runRepo({ data: { repo: repo!, focus } });
-      setRepoResult(res.report);
+      const accRepo: GithubIntelReport = {
+        repo: repo!,
+        summary: "",
+        activityScore: 0,
+        risks: [],
+        opportunities: [],
+        patterns: [],
+        dependencyNotes: [],
+        glossary: [],
+      };
+      let repoSectionCount = 0;
+      const handleRepo = (event: IntelStreamEvent) => {
+        if (event.type === "stage") {
+          setSectionStages((prev) => {
+            const idx = prev.findIndex((s) => s.id === event.id);
+            const next = { id: event.id, label: event.label, status: event.status, message: event.message };
+            if (idx >= 0) {
+              const copy = prev.slice();
+              copy[idx] = next;
+              return copy;
+            }
+            return [...prev, next];
+          });
+        } else if (event.type === "section") {
+          const partial = event.data as Partial<GithubIntelReport>;
+          Object.assign(accRepo, partial);
+          repoSectionCount += 1;
+          setRepoResult({ ...accRepo });
+        } else if (event.type === "error") {
+          throw new Error(event.message);
+        }
+      };
+      await streamIntel("/api/intel/github/stream", { repo: repo!, focus }, handleRepo);
+      if (repoSectionCount === 0) throw new Error("GitHub analysis returned no sections. Please retry.");
       const entry = addHistoryEntry(`Repo · ${repo}`, {
         mode: "repo",
-        repo: { report: res.report, input: { repo: repo!, focus } },
+        repo: { report: accRepo, input: { repo: repo!, focus } },
       });
       setCurrentEntryId(entry.id);
       navigate({ to: "/chat", search: { id: entry.id } });
       setPrompt("");
       toast.success("Repo audit complete");
       setLastRun({ kind: "repo", status: "success", message: `Audited ${repo}` });
+
     } catch (e) {
       console.error("[runPromptCapability] failed:", e);
       const message = formatAnalysisError(e);

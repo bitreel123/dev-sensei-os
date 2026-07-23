@@ -195,13 +195,45 @@ export function KnowledgeReportBody({ report }: { report: KnowledgeReport }) {
       {/* TOP RECOMMENDATION — advisor pick, always visible */}
       {rec && (
         <div className="border border-orange-400/30 bg-gradient-to-br from-orange-500/[0.08] to-transparent rounded-xl p-5 space-y-4">
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-orange-300 mb-1">🚀 Top Recommendation</div>
-            <div className="text-[18px] font-semibold text-white leading-snug">{rec.headline}</div>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-orange-300 mb-1">🚀 Top Recommendation</div>
+              <div className="text-[18px] font-semibold text-white leading-snug">{rec.headline}</div>
+            </div>
+            {typeof rec.confidence === "number" && (
+              <div className="text-right shrink-0">
+                <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/40">Confidence</div>
+                <div className="font-mono text-[16px] text-emerald-300">{rec.confidence.toFixed(1)}/10</div>
+              </div>
+            )}
           </div>
           {rec.opinion && (
             <p className="text-[13px] text-white/85 border-l-2 border-orange-400/50 pl-3">{rec.opinion}</p>
           )}
+          {rec.confidenceReasons?.length ? (
+            <div className="grid sm:grid-cols-2 gap-1.5 text-[11.5px]">
+              {rec.confidenceReasons.map((r, i) => {
+                const v = r.verdict.toLowerCase();
+                const c = v === "high" ? "text-emerald-300" : v === "medium" ? "text-amber-300" : v === "low" ? "text-red-300" : "text-white/50";
+                return (
+                  <div key={i} className="flex justify-between border border-white/10 rounded px-2 py-1">
+                    <span className="text-white/60">{r.factor}</span>
+                    <span className={`font-mono ${c}`}>{r.verdict}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+          {rec.whyPicked?.length ? (
+            <div>
+              <div className="text-[10.5px] uppercase tracking-[0.2em] text-white/45 mb-1.5">Why Jeradin chose this</div>
+              <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-[12.5px]">
+                {rec.whyPicked.map((w, i) => (
+                  <li key={i} className="flex gap-2"><span className="text-emerald-300 shrink-0">✓</span><span>{w}</span></li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {rec.whyNow?.length > 0 && (
             <div>
               <div className="text-[10.5px] uppercase tracking-[0.2em] text-white/45 mb-1.5">Why now</div>
@@ -232,11 +264,26 @@ export function KnowledgeReportBody({ report }: { report: KnowledgeReport }) {
               <ScoreBar label="Competition" value={rec.scores.competitionScore} invert />
               <ScoreBar label="Difficulty" value={rec.scores.difficulty} invert />
               <ScoreBar label="Capital needed" value={rec.scores.capitalNeeded} invert />
-              <ScoreBar label="AI potential" value={rec.scores.aiPotential} />
+              <ScoreBar label="AI moat potential" value={rec.scores.aiPotential} />
               <ScoreBar label="Speed to MVP" value={rec.scores.speedToMvp} />
-              <ScoreBar label="Product-market fit chance" value={rec.scores.pmfChance} />
+              <ScoreBar label="Product-market fit" value={rec.scores.pmfChance} />
+              {typeof rec.scores.fundingChance === "number" && <ScoreBar label="Funding chance" value={rec.scores.fundingChance} />}
+              {typeof rec.scores.globalScale === "number" && <ScoreBar label="Global scale" value={rec.scores.globalScale} />}
             </div>
           )}
+          {rec.whyNot?.length ? (
+            <div className="border-t border-white/10 pt-3 space-y-2">
+              <div className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">Why NOT — ideas we explicitly rejected</div>
+              {rec.whyNot.map((w, i) => (
+                <div key={i} className="border border-red-400/20 bg-red-500/[0.04] rounded p-2.5">
+                  <div className="text-[12.5px] text-white"><span className="text-red-300">❌ </span>{w.idea}</div>
+                  <ul className="mt-1 space-y-0.5 pl-4 text-[11.5px] text-white/70">
+                    {w.reasons.map((r, j) => <li key={j} className="list-disc">{r}</li>)}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {rec.alternatives?.length > 0 && (
             <details className="border-t border-white/10 pt-3">
               <summary className="cursor-pointer text-[11.5px] text-white/60 hover:text-white/80">Show alternatives we passed on ({rec.alternatives.length})</summary>

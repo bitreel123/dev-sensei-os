@@ -26,6 +26,24 @@ export const listIntelMemory = createServerFn({ method: "GET" })
     return { items: merged.slice(0, data.limit) as MemoryEntry[] };
   });
 
+export const getIntelMemory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => {
+    if (!input?.id) throw new Error("id is required");
+    return { id: input.id };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: item, error } = await supabaseAdmin
+      .from("intel_memory")
+      .select("id, mode, title, summary, payload, tags, created_at")
+      .eq("id", data.id)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { item: (item as MemoryEntry | null) ?? null };
+  });
+
 export const deleteIntelMemory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string }) => {

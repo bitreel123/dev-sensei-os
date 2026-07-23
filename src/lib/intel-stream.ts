@@ -51,19 +51,23 @@ export async function streamIntel(
       const line = buffer.slice(0, idx).trim();
       buffer = buffer.slice(idx + 1);
       if (!line) continue;
+      let event: IntelStreamEvent;
       try {
-        onEvent(JSON.parse(line) as IntelStreamEvent);
+        event = JSON.parse(line) as IntelStreamEvent;
       } catch {
-        /* ignore malformed line */
+        continue;
       }
+      onEvent(event);
     }
   }
   const tail = buffer.trim();
   if (tail) {
+    let event: IntelStreamEvent | null = null;
     try {
-      onEvent(JSON.parse(tail) as IntelStreamEvent);
+      event = JSON.parse(tail) as IntelStreamEvent;
     } catch {
-      /* ignore */
+      event = null;
     }
+    if (event) onEvent(event);
   }
 }

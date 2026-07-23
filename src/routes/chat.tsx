@@ -20,6 +20,8 @@ import { NotificationsBell } from "@/components/jeradin/notifications-bell";
 import { listMyGithubRepos, setActiveRepo, type GithubRepo } from "@/lib/repo-intel.functions";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { streamIntel, type IntelStreamEvent } from "@/lib/intel-stream";
+import { getIntelMemory } from "@/lib/intel-memory.functions";
+import type { MemoryEntry } from "@/lib/intel-memory.server";
 
 
 
@@ -88,6 +90,7 @@ function ChatPage() {
   const loadGithubRepos = useServerFn(listMyGithubRepos);
   const saveActiveRepo = useServerFn(setActiveRepo);
   const askScreenFollowUp = useServerFn(chatAboutAnalysis);
+  const loadCloudHistoryEntry = useServerFn(getIntelMemory);
 
   useEffect(() => {
     const htmlOverflow = document.documentElement.style.overflow;
@@ -110,8 +113,23 @@ function ChatPage() {
   useEffect(() => {
     if (!search.id) return;
     const entry = getHistoryEntry(search.id);
-    if (!entry?.payload) return;
-    const p = entry.payload;
+    if (entry?.payload) {
+      restoreHistoryPayload(entry.id, entry.payload);
+      return;
+    }
+    let cancelled = false;
+    loadCloudHistoryEntry({ data: { id: search.id } })
+      .then(({ item }) => {
+        if (!cancelled && item) restoreCloudMemory(item);
+      })
+      .catch((error) => {
+        if (!cancelled) toast.error(error instanceof Error ? error.message : "Could not load this chat");
+      });
+    return () => { cancelled = true; };
+  }, [search.id, loadCloudHistoryEntry]);
+
+  function restoreHistoryPayload(entryId: string, p: NonNullable<ReturnType<typeof getHistoryEntry>>["payload"]) {
+    if (!p) return;
     if (p.analysis && p.fix) {
       setAnalysisResult({ analysis: p.analysis, fix: p.fix });
       setSystemResult(null);
@@ -120,7 +138,7 @@ function ChatPage() {
       setOverlayMessages(p.messages ?? []);
       setOverlayOpen(true);
       setActiveCapability(p.mode ?? "screen");
-      setCurrentEntryId(entry.id);
+      setCurrentEntryId(entryId);
     } else if (p.system || p.knowledge || p.repo) {
       setAnalysisResult(null);
       setOverlayOpen(false);
@@ -129,9 +147,30 @@ function ChatPage() {
       setRepoResult(p.repo?.report ?? null);
       setActiveCapability(p.mode ?? "system");
       setOpenedCapabilityPanel(null);
-      setCurrentEntryId(entry.id);
+      setCurrentEntryId(entryId);
     }
-  }, [search.id]);
+  }
+
+  function restoreCloudMemory(item: MemoryEntry) {
+    const payload = item.payload && typeof item.payload === "object" && !Array.isArray(item.payload)
+      ? item.payload as Record<string, unknown>
+      : {};
+    const report = payload.report;
+    setAnalysisResult(null);
+    setSystemResult(null);
+    setKnowledgeResult(null);
+    setRepoResult(null);
+    setAnalysisError(null);
+    setOpenedCapabilityPanel(null);
+    setLastSubmittedPrompt(item.title);
+    if (item.mode === "knowledge" && report) setKnowledgeResult(report as KnowledgeReport);
+    if (item.mode === "system" && report) {
+      setSystemResult({ analysis: report as SystemAnalysis, filesAnalyzed: Number(payload.filesAnalyzed ?? 0) });
+    }
+    if (item.mode === "repo" && report) setRepoResult(report as GithubIntelReport);
+    setActiveCapability(item.mode === "repo" ? "repo" : item.mode);
+    setCurrentEntryId(item.id);
+  }
 
   useEffect(() => {
     if (!user || !github) {
@@ -905,38 +944,6 @@ function ChatPage() {
                     {analyzing && (
                       <ChatRunProgress capability={activeCapability ?? "knowledge"} prompt={pendingPrompt} repo={selectedRepo} stages={sectionStages} />
                     )}
-                    <DesktopPromptBlock
-                      prompt={prompt}
-                      setPrompt={setPrompt}
-                      current={activeCapability}
-                      attachments={attachments}
-                      onRemoveAttachment={removeAttachment}
-                      onAttach={() => fileInputRef.current?.click()}
-                      fileInputRef={fileInputRef}
-                      imageInputRef={imageInputRef}
-                      addFiles={addFiles}
-                      recording={recording}
-                      onRecord={recording ? stopRecording : startRecording}
-                      analyzing={analyzing}
-                      onSend={send}
-                      knowledgeEnabled={knowledgeEnabled}
-                      githubConnected={!!github}
-                      githubLogin={github?.login ?? null}
-                      githubRepos={githubRepos}
-                      selectedRepo={selectedRepo}
-                      reposLoading={reposLoading}
-                      onSelectRepo={chooseRepo}
-                      onSelectCapability={(m) => {
-                        setActiveCapability((currentMode) => currentMode === m ? null : m);
-                        setOpenedCapabilityPanel(null);
-                        setAnalysisResult(null);
-                        setSystemResult(null);
-                        setKnowledgeResult(null);
-                        setRepoResult(null);
-                        setAnalysisError(null);
-                        navigate({ to: "/chat", search: {} });
-                      }}
-                    />
                   </div>
                 )}
               </>
@@ -945,8 +952,8 @@ function ChatPage() {
           </div>
         </div>
 
-        {/* Bottom composer only stays after a result/panel is open */}
-        {(analysisResult || systemResult || knowledgeResult || repoResult) && (
+        {/* One persistent desktop composer, ChatGPT/Claude style. */}
+        {
           <div className="shrink-0">
             <div className="mx-auto w-full max-w-[820px] px-5 py-4">
               <DesktopPromptBlock
@@ -974,12 +981,6 @@ function ChatPage() {
                 onSelectCapability={(m) => {
                   setActiveCapability((currentMode) => currentMode === m ? null : m);
                   setOpenedCapabilityPanel(null);
-                  setAnalysisResult(null);
-                  setSystemResult(null);
-                  setKnowledgeResult(null);
-                  setRepoResult(null);
-                  setAnalysisError(null);
-                  navigate({ to: "/chat", search: {} });
                 }}
               />
               <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
@@ -987,7 +988,7 @@ function ChatPage() {
               </div>
             </div>
           </div>
-        )}
+        }
       </main>
       </div>
 

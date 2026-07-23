@@ -150,6 +150,8 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
                 title: question.slice(0, 200),
                 summary: typeof results.laymanSummary === "string" ? results.laymanSummary.slice(0, 800) : null,
                 payload: {
+                  report: results,
+                  input: { question, projectContext },
                   stack: Array.isArray(results.recommendedStack) ? (results.recommendedStack as string[]).slice(0, 8) : [],
                   competitors: Array.isArray(results.competitors)
                     ? (results.competitors as Array<{ name?: string }>).slice(0, 6).map((c) => c.name ?? "")

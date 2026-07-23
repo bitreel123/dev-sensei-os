@@ -166,6 +166,9 @@ export const Route = createFileRoute("/api/intel/system/stream")({
                 title: (results.projectSummary as string | undefined)?.slice(0, 200) || "System analysis",
                 summary: (results.laymanOverview as string | undefined)?.slice(0, 800) ?? null,
                 payload: {
+                  report: results,
+                  filesAnalyzed: files.length,
+                  input: { source, repo: body.repo ?? null, projectHint: hint },
                   stack: Array.isArray(results.stack) ? (results.stack as string[]).slice(0, 8) : [],
                   moduleCount: Array.isArray(results.modules) ? results.modules.length : 0,
                   source,

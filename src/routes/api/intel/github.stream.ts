@@ -101,6 +101,8 @@ export const Route = createFileRoute("/api/intel/github/stream")({
                 title: `${repo}${focus ? ` — ${focus.slice(0, 80)}` : ""}`,
                 summary: typeof results.summary === "string" ? (results.summary as string).slice(0, 800) : null,
                 payload: {
+                  report: results,
+                  input: { repo, focus },
                   repo,
                   risks: Array.isArray(results.risks) ? (results.risks as Array<{ title?: string }>).slice(0, 5).map((r) => r.title ?? "") : [],
                   regression: (results.regression as { description?: string } | null)?.description ?? null,

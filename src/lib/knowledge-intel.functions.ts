@@ -160,6 +160,15 @@ export type KnowledgeReport = {
   aiMoat?: KnowledgeAiMoat;
   marketValidation?: KnowledgeMarketValidation;
   founderKit?: KnowledgeFounderKit;
+  marketTiming?: KnowledgeMarketTiming;
+  buildDifficulty?: KnowledgeBuildDifficulty;
+  moatSuggestions?: KnowledgeMoatSuggestions;
+  customerAcquisition?: KnowledgeCustomerAcquisition;
+  investorFit?: KnowledgeInvestorFit;
+  biggestRisks?: KnowledgeBiggestRisks;
+  validationPlan?: KnowledgeValidationPlan;
+  successProbability?: KnowledgeSuccessProbability;
+  founderVerdict?: KnowledgeFounderVerdict;
 
 
   // Product Discovery

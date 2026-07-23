@@ -670,9 +670,9 @@ function ChatPage() {
             setLastRun({ kind: "system", status: "error", message: "No readable code files" });
             return;
           }
-          await streamIntel("/api/intel/system/stream", { source: "upload", files, projectHint: text }, handleSys);
+          await streamIntel("/api/intel/system/stream", { source: "upload", files, projectHint: text, sessionId }, handleSys);
           if (sysSectionCount === 0) throw new Error("System analysis returned no sections. Please retry.");
-          const entry = addHistoryEntry(`System · ${files.length} files`, {
+          const entry = upsertHistoryEntry(sessionId, `System · ${files.length} files`, {
             mode: "system",
             system: { analysis: accSys, filesAnalyzed, input: { source: "upload", projectHint: text } },
           });
@@ -689,9 +689,9 @@ function ChatPage() {
           setLastRun({ kind: "system", status: "error", message: "GitHub not connected" });
           return;
         }
-        await streamIntel("/api/intel/system/stream", { source: "github", repo: repo!, projectHint: text }, handleSys);
+        await streamIntel("/api/intel/system/stream", { source: "github", repo: repo!, projectHint: text, sessionId }, handleSys);
         if (sysSectionCount === 0) throw new Error("System analysis returned no sections. Please retry.");
-        const entry = addHistoryEntry(`System · ${repo}`, {
+        const entry = upsertHistoryEntry(sessionId, `System · ${repo}`, {
           mode: "system",
           system: { analysis: accSys, filesAnalyzed, input: { source: "github", repo: repo!, projectHint: text } },
         });

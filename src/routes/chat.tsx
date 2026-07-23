@@ -573,6 +573,9 @@ function ChatPage() {
     setLastSubmittedPrompt(text || (capability === "system" ? "Scan my codebase" : "Run my GitHub code"));
     setLastRun({ kind: capability, status: "running" });
     setSectionStages([]);
+    // Reuse the current session id so retries within the same chat update the
+    // existing history row instead of creating duplicate sidebar entries.
+    const sessionId = currentEntryId ?? crypto.randomUUID();
     try {
       if (capability === "knowledge") {
         // Stream sections one-by-one so the UI paints as soon as each Claude call resolves.

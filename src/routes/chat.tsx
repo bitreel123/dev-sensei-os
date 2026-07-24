@@ -1049,6 +1049,30 @@ function ChatPage() {
           <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">Analysis</span>
         </button>
       )}
+
+      {/* Android-style "Ask Jeradin" pill — appears after the user stops
+          recording. Tapping it opens an attached bottom sheet that streams the
+          analysis in stages (Reading screen → Understanding code → …). The
+          user never leaves whichever page they were on. */}
+      {pendingAsk && (
+        <AskJeradinPill
+          pending={pendingAsk}
+          onDismiss={() => setPendingAsk(null)}
+          onComplete={({ analysis, fix }) => {
+            setAnalysisResult({ analysis, fix });
+            setOverlayMessages([]);
+            setActiveCapability("screen");
+            const entry = upsertHistoryEntry(pendingAsk.sessionId, pendingAsk.title, {
+              mode: "screen",
+              analysis,
+              fix,
+              messages: [],
+            });
+            setCurrentEntryId(entry.id);
+            navigate({ to: "/chat", search: { id: entry.id } });
+          }}
+        />
+      )}
     </div>
 
   );

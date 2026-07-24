@@ -349,7 +349,6 @@ function ChatPage() {
       const rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       rec.ondataavailable = (e) => e.data.size && chunksRef.current.push(e.data);
       rec.onstop = async () => {
-        setAnalyzing(true);
         setAnalysisError(null);
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" });
         const url = URL.createObjectURL(blob);
@@ -360,17 +359,23 @@ function ChatPage() {
         setRecording(false);
         try {
           const base64 = preCaptured ?? (await videoBlobToFrameBase64(blob));
-          await analyzeImageBase64(
-            base64,
-            prompt.trim(),
-            prompt.trim() || "Screen recording",
-          );
+          // Android-style "Ask Jeradin" pill: stash the captured frame, show a
+          // floating pill on top of whatever the user is doing, and wait for
+          // them to tap it. The streaming analysis kicks off on tap.
+          const note = prompt.trim();
+          setPendingAsk({
+            imageBase64: base64,
+            note,
+            title: note || "Screen recording",
+            sessionId: currentEntryId ?? crypto.randomUUID(),
+          });
+          setLastScreenshotBase64(base64);
+          setLastScreenshotNote(note);
         } catch (e) {
-          console.error("[auto-analyze on stop] failed:", e);
+          console.error("[stop → pill capture] failed:", e);
           const message = formatAnalysisError(e);
           setAnalysisError(message);
           toast.error(message);
-          setAnalyzing(false);
         }
       };
 

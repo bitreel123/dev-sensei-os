@@ -157,7 +157,7 @@ export function ChatSidebar() {
 }
 
 function normalizeHistoryTitle(title: string) {
-  return title.replace(/^(Knowledge|System|Repo)\s*·\s*/i, "").trim().toLowerCase();
+  return title.replace(/^(Knowledge|System|Repo|Screen)\s*·\s*/i, "").trim().toLowerCase().slice(0, 40);
 }
 
 function SideItem({

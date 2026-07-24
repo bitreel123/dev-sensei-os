@@ -1062,7 +1062,11 @@ function ChatPage() {
             setAnalysisResult({ analysis, fix });
             setOverlayMessages([]);
             setActiveCapability("screen");
-            const entry = upsertHistoryEntry(pendingAsk.sessionId, pendingAsk.title, {
+            const title =
+              (pendingAsk.title && pendingAsk.title.trim()) ||
+              analysis.summary?.slice(0, 80) ||
+              "Screen analysis";
+            const entry = upsertHistoryEntry(pendingAsk.sessionId, title, {
               mode: "screen",
               analysis,
               fix,

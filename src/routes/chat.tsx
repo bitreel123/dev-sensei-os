@@ -21,6 +21,7 @@ import { listMyGithubRepos, setActiveRepo, type GithubRepo } from "@/lib/repo-in
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { streamIntel, type IntelStreamEvent } from "@/lib/intel-stream";
 import { getIntelMemory, type MemoryEntry } from "@/lib/intel-memory.functions";
+import { AskJeradinPill, type PendingAsk } from "@/components/jeradin/ask-jeradin-pill";
 
 
 
@@ -76,6 +77,7 @@ function ChatPage() {
     message?: string;
   } | null>(null);
   const [sectionStages, setSectionStages] = useState<Array<{ id: string; label: string; status: "running" | "done" | "error"; message?: string }>>([]);
+  const [pendingAsk, setPendingAsk] = useState<PendingAsk | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -347,7 +349,6 @@ function ChatPage() {
       const rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       rec.ondataavailable = (e) => e.data.size && chunksRef.current.push(e.data);
       rec.onstop = async () => {
-        setAnalyzing(true);
         setAnalysisError(null);
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" });
         const url = URL.createObjectURL(blob);
@@ -358,17 +359,23 @@ function ChatPage() {
         setRecording(false);
         try {
           const base64 = preCaptured ?? (await videoBlobToFrameBase64(blob));
-          await analyzeImageBase64(
-            base64,
-            prompt.trim(),
-            prompt.trim() || "Screen recording",
-          );
+          // Android-style "Ask Jeradin" pill: stash the captured frame, show a
+          // floating pill on top of whatever the user is doing, and wait for
+          // them to tap it. The streaming analysis kicks off on tap.
+          const note = prompt.trim();
+          setPendingAsk({
+            imageBase64: base64,
+            note,
+            title: note || "Screen recording",
+            sessionId: currentEntryId ?? crypto.randomUUID(),
+          });
+          setLastScreenshotBase64(base64);
+          setLastScreenshotNote(note);
         } catch (e) {
-          console.error("[auto-analyze on stop] failed:", e);
+          console.error("[stop → pill capture] failed:", e);
           const message = formatAnalysisError(e);
           setAnalysisError(message);
           toast.error(message);
-          setAnalyzing(false);
         }
       };
 
@@ -1041,6 +1048,30 @@ function ChatPage() {
           <Square className="h-3.5 w-3.5 fill-current" />
           <span className="font-mono text-[10.5px] uppercase tracking-[0.22em]">Analysis</span>
         </button>
+      )}
+
+      {/* Android-style "Ask Jeradin" pill — appears after the user stops
+          recording. Tapping it opens an attached bottom sheet that streams the
+          analysis in stages (Reading screen → Understanding code → …). The
+          user never leaves whichever page they were on. */}
+      {pendingAsk && (
+        <AskJeradinPill
+          pending={pendingAsk}
+          onDismiss={() => setPendingAsk(null)}
+          onComplete={({ analysis, fix }) => {
+            setAnalysisResult({ analysis, fix });
+            setOverlayMessages([]);
+            setActiveCapability("screen");
+            const entry = upsertHistoryEntry(pendingAsk.sessionId, pendingAsk.title, {
+              mode: "screen",
+              analysis,
+              fix,
+              messages: [],
+            });
+            setCurrentEntryId(entry.id);
+            navigate({ to: "/chat", search: { id: entry.id } });
+          }}
+        />
       )}
     </div>
 

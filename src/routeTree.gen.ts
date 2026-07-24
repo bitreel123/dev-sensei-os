@@ -40,6 +40,7 @@ import { Route as ApiPublicGithubAuthorizeRouteImport } from './routes/api/publi
 import { Route as ApiPublicExtensionWhoamiRouteImport } from './routes/api/public/extension/whoami'
 import { Route as ApiPublicExtensionAnalyzeRouteImport } from './routes/api/public/extension/analyze'
 import { Route as ApiIntelSystemStreamRouteImport } from './routes/api/intel/system.stream'
+import { Route as ApiIntelScreenStreamRouteImport } from './routes/api/intel/screen.stream'
 import { Route as ApiIntelKnowledgeStreamRouteImport } from './routes/api/intel/knowledge.stream'
 import { Route as ApiIntelGithubStreamRouteImport } from './routes/api/intel/github.stream'
 
@@ -206,6 +207,11 @@ const ApiIntelSystemStreamRoute = ApiIntelSystemStreamRouteImport.update({
   path: '/api/intel/system/stream',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiIntelScreenStreamRoute = ApiIntelScreenStreamRouteImport.update({
+  id: '/api/intel/screen/stream',
+  path: '/api/intel/screen/stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiIntelKnowledgeStreamRoute = ApiIntelKnowledgeStreamRouteImport.update({
   id: '/api/intel/knowledge/stream',
   path: '/api/intel/knowledge/stream',
@@ -243,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
   '/api/intel/knowledge/stream': typeof ApiIntelKnowledgeStreamRoute
+  '/api/intel/screen/stream': typeof ApiIntelScreenStreamRoute
   '/api/intel/system/stream': typeof ApiIntelSystemStreamRoute
   '/api/public/extension/analyze': typeof ApiPublicExtensionAnalyzeRoute
   '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
@@ -278,6 +285,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
   '/api/intel/knowledge/stream': typeof ApiIntelKnowledgeStreamRoute
+  '/api/intel/screen/stream': typeof ApiIntelScreenStreamRoute
   '/api/intel/system/stream': typeof ApiIntelSystemStreamRoute
   '/api/public/extension/analyze': typeof ApiPublicExtensionAnalyzeRoute
   '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
@@ -314,6 +322,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
   '/api/intel/knowledge/stream': typeof ApiIntelKnowledgeStreamRoute
+  '/api/intel/screen/stream': typeof ApiIntelScreenStreamRoute
   '/api/intel/system/stream': typeof ApiIntelSystemStreamRoute
   '/api/public/extension/analyze': typeof ApiPublicExtensionAnalyzeRoute
   '/api/public/extension/whoami': typeof ApiPublicExtensionWhoamiRoute
@@ -351,6 +360,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/intel/github/stream'
     | '/api/intel/knowledge/stream'
+    | '/api/intel/screen/stream'
     | '/api/intel/system/stream'
     | '/api/public/extension/analyze'
     | '/api/public/extension/whoami'
@@ -386,6 +396,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/intel/github/stream'
     | '/api/intel/knowledge/stream'
+    | '/api/intel/screen/stream'
     | '/api/intel/system/stream'
     | '/api/public/extension/analyze'
     | '/api/public/extension/whoami'
@@ -421,6 +432,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/intel/github/stream'
     | '/api/intel/knowledge/stream'
+    | '/api/intel/screen/stream'
     | '/api/intel/system/stream'
     | '/api/public/extension/analyze'
     | '/api/public/extension/whoami'
@@ -457,6 +469,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiIntelGithubStreamRoute: typeof ApiIntelGithubStreamRoute
   ApiIntelKnowledgeStreamRoute: typeof ApiIntelKnowledgeStreamRoute
+  ApiIntelScreenStreamRoute: typeof ApiIntelScreenStreamRoute
   ApiIntelSystemStreamRoute: typeof ApiIntelSystemStreamRoute
   ApiPublicExtensionAnalyzeRoute: typeof ApiPublicExtensionAnalyzeRoute
   ApiPublicExtensionWhoamiRoute: typeof ApiPublicExtensionWhoamiRoute
@@ -686,6 +699,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiIntelSystemStreamRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/intel/screen/stream': {
+      id: '/api/intel/screen/stream'
+      path: '/api/intel/screen/stream'
+      fullPath: '/api/intel/screen/stream'
+      preLoaderRoute: typeof ApiIntelScreenStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/intel/knowledge/stream': {
       id: '/api/intel/knowledge/stream'
       path: '/api/intel/knowledge/stream'
@@ -730,6 +750,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiIntelGithubStreamRoute: ApiIntelGithubStreamRoute,
   ApiIntelKnowledgeStreamRoute: ApiIntelKnowledgeStreamRoute,
+  ApiIntelScreenStreamRoute: ApiIntelScreenStreamRoute,
   ApiIntelSystemStreamRoute: ApiIntelSystemStreamRoute,
   ApiPublicExtensionAnalyzeRoute: ApiPublicExtensionAnalyzeRoute,
   ApiPublicExtensionWhoamiRoute: ApiPublicExtensionWhoamiRoute,

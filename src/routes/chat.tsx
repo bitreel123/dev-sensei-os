@@ -21,6 +21,7 @@ import { listMyGithubRepos, setActiveRepo, type GithubRepo } from "@/lib/repo-in
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { streamIntel, type IntelStreamEvent } from "@/lib/intel-stream";
 import { getIntelMemory, type MemoryEntry } from "@/lib/intel-memory.functions";
+import { AskJeradinPill, type PendingAsk } from "@/components/jeradin/ask-jeradin-pill";
 
 
 

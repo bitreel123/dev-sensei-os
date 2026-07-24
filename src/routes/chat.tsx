@@ -77,6 +77,7 @@ function ChatPage() {
     message?: string;
   } | null>(null);
   const [sectionStages, setSectionStages] = useState<Array<{ id: string; label: string; status: "running" | "done" | "error"; message?: string }>>([]);
+  const [pendingAsk, setPendingAsk] = useState<PendingAsk | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);

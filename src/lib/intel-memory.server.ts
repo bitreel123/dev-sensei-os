@@ -48,7 +48,7 @@ export async function chargeCredits(
     p_amount: amount,
     p_env: env,
     p_mode: mode,
-    p_session_id: sessionId ?? null,
+    p_session_id: sessionId ?? undefined,
   });
   if (error) throw new Error(`credit deduction failed: ${error.message}`);
   const row = Array.isArray(data) ? data[0] : data;

@@ -12,11 +12,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import {
   createContext,
@@ -27,7 +26,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Streamdown } from "streamdown";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -318,23 +316,63 @@ export const MessageBranchPage = ({
   );
 };
 
-export type MessageResponseProps = ComponentProps<typeof Streamdown>;
+export type MessageResponseProps = HTMLAttributes<HTMLDivElement> & {
+  children?: string;
+  isAnimating?: boolean;
+};
 
-// Mermaid currently pulls a CommonJS-only dayjs build into Vite's browser
-// graph and crashes the entire /chat route before it can render. Chat replies
-// still support markdown, tables, math and IDE-highlighted code without it.
-const streamdownPlugins = { cjk, code, math };
+function renderResponse(content: string) {
+  const parts = content.split(/(```[\s\S]*?```)/g).filter(Boolean);
+  return parts.map((part, index) => {
+    const codeMatch = part.match(/^```([^\n]*)\n?([\s\S]*?)```$/);
+    if (codeMatch) {
+      const language = codeMatch[1].trim() || "text";
+      return (
+        <SyntaxHighlighter
+          key={`code-${index}`}
+          language={language}
+          style={oneDark}
+          wrapLongLines
+          customStyle={{
+            margin: "1rem 0",
+            padding: "1rem",
+            background: "#0b0f17",
+            borderRadius: "6px",
+            overflowX: "visible",
+            whiteSpace: "pre-wrap",
+          }}
+          codeTagProps={{ style: { whiteSpace: "pre-wrap", wordBreak: "break-word" } }}
+        >
+          {codeMatch[2]}
+        </SyntaxHighlighter>
+      );
+    }
+
+    return part.split("\n").map((line, lineIndex) => {
+      if (!line.trim()) return <div key={`space-${index}-${lineIndex}`} className="h-3" />;
+      const heading = line.match(/^(#{1,3})\s+(.+)$/);
+      if (heading) {
+        const Heading = heading[1].length === 1 ? "h2" : "h3";
+        return <Heading key={`heading-${index}-${lineIndex}`} className="mt-4 mb-2 font-semibold">{heading[2]}</Heading>;
+      }
+      const bullet = line.match(/^\s*[-*]\s+(.+)$/);
+      if (bullet) return <div key={`bullet-${index}-${lineIndex}`} className="pl-4 before:mr-2 before:content-['•']">{bullet[1]}</div>;
+      return <p key={`line-${index}-${lineIndex}`} className="my-1 whitespace-pre-wrap break-words">{line}</p>;
+    });
+  });
+}
 
 export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
-    <Streamdown
+  ({ className, children = "", isAnimating: _isAnimating, ...props }: MessageResponseProps) => (
+    <div
       className={cn(
         "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_pre]:!bg-code-editor [&_pre]:!text-code-editor-foreground [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre_code]:whitespace-pre-wrap [&_pre_code]:break-words",
         className
       )}
-      plugins={streamdownPlugins}
       {...props}
-    />
+    >
+      {renderResponse(children)}
+    </div>
   ),
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&

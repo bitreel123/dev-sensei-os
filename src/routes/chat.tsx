@@ -1381,9 +1381,11 @@ function ScreenAnalysisConversation({
           {messages.map((message, i) => (
             <div key={i} className={message.role === "user" ? "flex justify-end" : "block"}>
               {message.role === "user" ? (
-                <div className="max-w-[72%] rounded-2xl bg-white/[0.09] px-4 py-2.5 text-[15px] leading-6 text-white">
-                  {message.content}
-                </div>
+                <EditableUserMessage
+                  content={message.content}
+                  disabled={sending || !onEditResend}
+                  onResend={onEditResend ? (t) => onEditResend(i, t) : undefined}
+                />
               ) : (
                 <div className="max-w-[760px] whitespace-pre-wrap text-[16px] leading-7 text-white/90">
                   {message.content}
@@ -1393,6 +1395,7 @@ function ScreenAnalysisConversation({
           ))}
         </div>
       )}
+
 
       {sending && (
         <div className="inline-flex items-center gap-2 text-[14px] text-white/55">

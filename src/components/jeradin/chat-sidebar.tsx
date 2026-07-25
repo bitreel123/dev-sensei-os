@@ -33,6 +33,10 @@ export function ChatSidebar() {
     let cancelled = false;
     const refresh = () => {
       const local = loadHistory();
+      if (!user?.id) {
+        setHistory(local);
+        return;
+      }
       loadCloudHistory({ data: { limit: 100 } })
         .then(({ items }) => {
           if (cancelled) return;

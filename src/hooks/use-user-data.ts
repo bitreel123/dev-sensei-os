@@ -29,26 +29,34 @@ export function useUserData(userId: string | null) {
     }
     setLoading(true);
     const env = getPaddleEnvironment();
-
-    const [creditsRes, subRes] = await Promise.all([
-      supabase
-        .from("user_credits")
-        .select("plan, monthly_credits, balance")
-        .eq("user_id", userId)
-        .eq("environment", env)
-        .maybeSingle(),
-      supabase
-        .from("subscriptions")
-        .select("paddle_subscription_id, price_id, status, cancel_at_period_end, current_period_end")
-        .eq("user_id", userId)
-        .eq("environment", env)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
-    setCredits(creditsRes.data ?? null);
-    setSubscription(subRes.data ?? null);
-    setLoading(false);
+    try {
+      const [creditsRes, subRes] = await Promise.all([
+        supabase
+          .from("user_credits")
+          .select("plan, monthly_credits, balance")
+          .eq("user_id", userId)
+          .eq("environment", env)
+          .maybeSingle(),
+        supabase
+          .from("subscriptions")
+          .select("paddle_subscription_id, price_id, status, cancel_at_period_end, current_period_end")
+          .eq("user_id", userId)
+          .eq("environment", env)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      if (creditsRes.error) console.error("[user-data] credits lookup failed:", creditsRes.error.message);
+      if (subRes.error) console.error("[user-data] subscription lookup failed:", subRes.error.message);
+      setCredits(creditsRes.data ?? null);
+      setSubscription(subRes.data ?? null);
+    } catch (error) {
+      console.error("[user-data] lookup failed:", error);
+      setCredits(null);
+      setSubscription(null);
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
 
   useEffect(() => {

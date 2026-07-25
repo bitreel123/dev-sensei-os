@@ -49,6 +49,10 @@ type Tier = {
 const YEARLY_DISCOUNT = 0.2;
 const RANK: Record<PlanId, number> = { free: 0, basic: 1, pro: 2, elite: 3 };
 
+function normalizePlanId(plan: string | null | undefined): PlanId {
+  return plan === "basic" || plan === "pro" || plan === "elite" ? plan : "free";
+}
+
 const TIERS: Tier[] = [
   {
     id: "free",
@@ -200,12 +204,14 @@ function PricingPage() {
     }
   }, [refetch]);
 
-  const currentPlan: PlanId = (credits?.plan as PlanId) ?? "free";
+  // Older preview accounts can contain internal plans such as "grant".
+  // Never use an untrusted database value as a TIERS/RANK key.
+  const currentPlan = normalizePlanId(credits?.plan);
   const currentPriceId = subscription?.price_id;
   const currentCycle: Cycle | null = currentPriceId ? PLAN_MAP[currentPriceId]?.cycle ?? null : null;
 
   const currentTier = useMemo(
-    () => TIERS.find((t) => t.id === currentPlan)!,
+    () => TIERS.find((t) => t.id === currentPlan) ?? TIERS[0],
     [currentPlan],
   );
 

@@ -385,7 +385,9 @@ function ChatPage() {
           // extension is absent or cannot reach that tab, retain the in-app
           // Ask Jeradin sheet as the fallback without running analysis twice.
           const openedInSharedTab = await requestExtensionOverlay(askPayload);
-          if (!openedInSharedTab) setPendingAsk(askPayload);
+          if (!openedInSharedTab) {
+            toast.error("Ask Jeradin could not open on the shared tab. Reload extension v1.6.0 and try again.");
+          }
           setLastScreenshotBase64(base64);
           setLastScreenshotNote(note);
         } catch (e) {

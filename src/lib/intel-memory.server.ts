@@ -39,12 +39,20 @@ export const INTEL_COST: Record<IntelMode | "screen_deep", number> = {
 export async function chargeCredits(
   userId: string,
   amount: number,
+  mode: IntelMode | "screen_deep",
+  sessionId?: string,
   env: "live" | "sandbox" = "live",
 ): Promise<{ ok: boolean; balance: number }> {
-  const { data, error } = await supabaseAdmin.rpc("deduct_credit", {
+  const rpc = supabaseAdmin.rpc as unknown as (
+    name: string,
+    args: Record<string, unknown>,
+  ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+  const { data, error } = await rpc("deduct_credit", {
     p_user_id: userId,
     p_amount: amount,
     p_env: env,
+    p_mode: mode,
+    p_session_id: sessionId ?? null,
   });
   if (error) throw new Error(`credit deduction failed: ${error.message}`);
   const row = Array.isArray(data) ? data[0] : data;
@@ -145,7 +153,8 @@ export async function chargeAndRemember(
   // A session id identifies one conversation/history row, not one billable
   // request. Every successfully delivered prompt is charged, while the memory
   // row is updated in place so follow-ups stay in one conversation.
-  const charge = await chargeCredits(userId, cost, env);
+  const billedMode = mode === "screen" && cost === INTEL_COST.screen_deep ? "screen_deep" : mode;
+  const charge = await chargeCredits(userId, cost, billedMode, entry.sessionId, env);
   if (!charge.ok) {
     throw new Error(
       `Out of credits. You have ${charge.balance} credits left; this action costs ${cost}. Upgrade at /pricing to continue.`,

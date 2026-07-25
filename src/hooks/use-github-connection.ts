@@ -21,7 +21,7 @@ export function useGithubConnection(userId: string | null) {
     }
     let cancelled = false;
     setLoading(true);
-    supabase
+    void supabase
       .from("github_connections")
       .select("user_id, github_id, login, avatar_url, scopes")
       .eq("user_id", userId)
@@ -30,6 +30,12 @@ export function useGithubConnection(userId: string | null) {
         if (cancelled) return;
         if (error) console.error("[github-connection] lookup failed:", error.message);
         setConn((data as GithubConnection | null) ?? null);
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("[github-connection] lookup failed:", error);
+        setConn(null);
         setLoading(false);
       });
     return () => {

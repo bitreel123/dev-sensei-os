@@ -323,16 +323,24 @@ export function AskJeradinPill({ pending, onDismiss, onComplete }: Props) {
                   <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50 px-1">
                     Follow up
                   </div>
-                  {messages.map((m, i) => (
-                    <div
-                      key={i}
-                      className={`text-[12.5px] leading-relaxed rounded-md px-2.5 py-1.5 ${
-                        m.role === "user" ? "bg-white/10 text-white" : "text-white/85"
-                      }`}
-                    >
-                      {m.content}
-                    </div>
-                  ))}
+                  {messages.map((m, i) =>
+                    m.role === "user" ? (
+                      <PillEditableUserMessage
+                        key={i}
+                        content={m.content}
+                        disabled={sending}
+                        onResend={(newText) => void sendFollowUp(newText, i)}
+                      />
+                    ) : (
+                      <div
+                        key={i}
+                        className="text-[12.5px] leading-relaxed rounded-md px-2.5 py-1.5 text-white/85 whitespace-pre-wrap break-words"
+                      >
+                        {m.content}
+                      </div>
+                    ),
+                  )}
+
                   {sending && (
                     <div className="flex items-center gap-2 px-2 text-[11.5px] text-white/60">
                       <Loader2 className="h-3 w-3 animate-spin text-orange-400" />

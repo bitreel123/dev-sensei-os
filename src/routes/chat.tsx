@@ -2079,7 +2079,9 @@ function MobileChat({
   onSelectRepo: (repo: string) => void;
   pendingPrompt: string;
   lastSubmittedPrompt: string;
+  onEditOverlayMessage?: (index: number, newText: string) => void;
 }) {
+
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [capabilitySheetOpen, setCapabilitySheetOpen] = useState(false);

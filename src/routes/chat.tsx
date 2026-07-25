@@ -1217,12 +1217,15 @@ function ScreenAnalysisConversation({
   result,
   messages,
   sending,
+  onEditResend,
 }: {
   result: { analysis: ScreenAnalysis; fix: FixSuggestion };
   messages: OverlayChatMessage[];
   sending: boolean;
+  onEditResend?: (index: number, newText: string) => void;
 }) {
   const { analysis, fix } = result;
+
   return (
     <div className="mx-auto max-w-[760px] space-y-8 text-[16px] leading-7 text-white/90">
       <article className="space-y-6">

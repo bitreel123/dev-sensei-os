@@ -383,14 +383,16 @@ function ChatPage() {
             targetTabTitle: stream.getVideoTracks()[0]?.label || undefined,
           };
           // Prefer the extension-injected sheet in the shared tab. If the
-          // extension is absent or cannot reach that tab, retain the in-app
-          // Ask Jeradin sheet as the fallback without running analysis twice.
+          // extension is absent (e.g. mobile browsers, no install) or cannot
+          // reach that tab, fall back to the in-app Ask Jeradin pill so the
+          // overlay always appears somewhere.
           const openedInSharedTab = await requestExtensionOverlay(askPayload);
           if (!openedInSharedTab) {
-            toast.error("Ask Jeradin could not open on the shared tab. Reload extension v1.6.0 and try again.");
+            setPendingAsk(askPayload);
           }
           setLastScreenshotBase64(base64);
           setLastScreenshotNote(note);
+
         } catch (e) {
           console.error("[stop → pill capture] failed:", e);
           const message = formatAnalysisError(e);

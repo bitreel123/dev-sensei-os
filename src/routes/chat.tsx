@@ -2043,6 +2043,8 @@ function MobileChat({
   onSelectRepo,
   pendingPrompt,
   lastSubmittedPrompt,
+  onEditOverlayMessage,
+
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;

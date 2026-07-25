@@ -180,7 +180,9 @@ export const Route = createFileRoute("/api/intel/system/stream")({
                 tags: Array.isArray(results.stack) ? (results.stack as string[]).slice(0, 6) : [],
               });
             } catch (e) {
-              console.warn("[system.stream] charge failed:", e instanceof Error ? e.message : e);
+              const message = e instanceof Error ? e.message : String(e);
+              console.error("[system.stream] charge failed:", message);
+              emit({ type: "error", message: `Billing failed: ${message}` });
             }
           }
 

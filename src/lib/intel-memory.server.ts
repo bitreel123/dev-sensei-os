@@ -160,6 +160,10 @@ export async function chargeAndRemember(
       `Out of credits. You have ${charge.balance} credits left; this action costs ${cost}. Upgrade at /pricing to continue.`,
     );
   }
+  // Diagnosable trail for future silent-billing bugs.
+  console.log(
+    `[credits] user=${userId.slice(0, 8)} mode=${billedMode} charged=${cost} balance=${charge.balance}`,
+  );
   await rememberIntel(userId, mode, entry);
   return charge;
 }

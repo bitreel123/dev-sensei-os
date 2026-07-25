@@ -163,8 +163,9 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
                 tags: Array.isArray(results.recommendedStack) ? (results.recommendedStack as string[]).slice(0, 5) : [],
               });
             } catch (e) {
-              // Non-fatal: user already saw the sections stream.
-              console.warn("[knowledge.stream] charge failed:", e instanceof Error ? e.message : e);
+              const message = e instanceof Error ? e.message : String(e);
+              console.error("[knowledge.stream] charge failed:", message);
+              emit({ type: "error", message: `Billing failed: ${message}` });
             }
           }
 

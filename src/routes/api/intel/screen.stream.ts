@@ -112,7 +112,9 @@ export const Route = createFileRoute("/api/intel/screen/stream")({
                 tags: result.analysis.category ? [result.analysis.category] : [],
               });
             } catch (e) {
-              console.warn("[screen.stream] charge failed:", e instanceof Error ? e.message : e);
+              const message = e instanceof Error ? e.message : String(e);
+              console.error("[screen.stream] charge failed:", message);
+              emit({ type: "error", message: `Billing failed: ${message}` });
             }
 
             emit({

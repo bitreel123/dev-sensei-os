@@ -4,12 +4,10 @@ import type { IntelMode, MemoryEntry } from "./intel-memory.server";
 
 export type { MemoryEntry } from "./intel-memory.server";
 
-const MODES: ReadonlyArray<IntelMode> = ["screen", "system", "knowledge", "repo"];
-
 export const listIntelMemory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { mode?: IntelMode; limit?: number } = {}) => ({
-    mode: input.mode && MODES.includes(input.mode) ? input.mode : undefined,
+    mode: input.mode && (["screen", "system", "knowledge", "repo"] as IntelMode[]).includes(input.mode) ? input.mode : undefined,
     limit: Math.min(Math.max(input.limit ?? 20, 1), 100),
   }))
   .handler(async ({ data, context }) => {
@@ -20,7 +18,7 @@ export const listIntelMemory = createServerFn({ method: "GET" })
     }
     // All modes, interleaved by recency.
     const results = await Promise.all(
-      MODES.map((m) => recallIntel(context.userId, m, data.limit)),
+      (["screen", "system", "knowledge", "repo"] as IntelMode[]).map((m) => recallIntel(context.userId, m, data.limit)),
     );
     const merged = results.flat().sort(
       (a, b) => +new Date(b.created_at) - +new Date(a.created_at),

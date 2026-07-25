@@ -2435,7 +2435,7 @@ function MobileChat({
               </div>
             }
           >
-            <ChatSidebar />
+            <ChatSidebar mobile onNavigate={() => setSidebarOpen(false)} />
           </DashboardBoundary>
         </SheetContent>
       </Sheet>

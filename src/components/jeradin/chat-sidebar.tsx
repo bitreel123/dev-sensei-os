@@ -21,9 +21,14 @@ import {
 import { deleteIntelMemory, listIntelMemory } from "@/lib/intel-memory.functions";
 import { useUserData } from "@/hooks/use-user-data";
 
-export function ChatSidebar() {
+type ChatSidebarProps = {
+  mobile?: boolean;
+  onNavigate?: () => void;
+};
+
+export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [history, setHistory] = useState<ChatHistoryEntry[]>([]);
+  const [history, setHistory] = useState<ChatHistoryEntry[]>(() => loadHistory());
   const { user } = useAuth();
   const { credits } = useUserData(user?.id ?? null);
   const { pathname } = useLocation();
@@ -40,17 +45,25 @@ export function ChatSidebar() {
         setHistory(local);
         return;
       }
-      loadCloudHistory({ data: { limit: 100 } })
-        .then(({ items }) => {
+       loadCloudHistory({ data: { limit: 100 } })
+        .then((response) => {
           if (cancelled || sequence !== refreshSequence) return;
+          const items = Array.isArray(response?.items) ? response.items : [];
           const merged = new Map(local.map((item) => [item.id, item]));
           for (const item of items) {
             const createdAt = new Date(item.created_at).getTime();
             if (!item.id || !item.title || !Number.isFinite(createdAt)) continue;
             const existing = merged.get(item.id);
+            const mode = typeof item.mode === "string" ? item.mode : "screen";
+            const modeLabel = mode === "repo"
+              ? "GitHub"
+              : mode.charAt(0).toUpperCase() + mode.slice(1);
+            const title = item.title.toLowerCase().startsWith(`${modeLabel.toLowerCase()} ·`)
+              ? item.title
+              : `${modeLabel} · ${item.title}`;
             merged.set(item.id, {
               id: item.id,
-              title: item.title,
+              title,
               createdAt,
               payload: existing?.payload ?? null,
             });
@@ -81,28 +94,28 @@ export function ChatSidebar() {
   return (
     <aside
       className={`${
-        collapsed ? "w-[56px]" : "w-[240px]"
+        mobile ? "w-full" : collapsed ? "w-[56px]" : "w-[240px]"
       } h-full min-h-0 shrink-0 border-r border-white/10 bg-[#0a0a0a] text-white flex flex-col transition-[width] duration-200`}
     >
       <div className="flex items-center justify-between px-3 h-14 border-b border-white/10">
         {!collapsed && (
-          <Link to="/chat" search={{}} className="flex items-center gap-2">
+          <Link to="/chat" search={{}} onClick={onNavigate} className="flex items-center gap-2">
             <LogoMark className="h-[18px] w-[18px]" />
             <span className="text-[14px] font-semibold tracking-tight">Jeradin</span>
           </Link>
         )}
         <button
-          onClick={() => setCollapsed((v) => !v)}
+          onClick={() => mobile ? onNavigate?.() : setCollapsed((v) => !v)}
           className="p-1.5 rounded hover:bg-white/10 text-white/60 hover:text-white"
-          aria-label="Toggle sidebar"
+          aria-label={mobile ? "Close sidebar" : "Toggle sidebar"}
         >
           <PanelLeft className="h-4 w-4" />
         </button>
       </div>
 
       <div className="p-2 flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <SideItem to="/chat" icon={<Plus className="h-4 w-4" />} label="New chat" collapsed={collapsed} active={pathname === "/chat"} />
-        <SideItem to="/pricing" icon={<Sparkles className="h-4 w-4" />} label="Upgrade" collapsed={collapsed} />
+        <SideItem to="/chat" icon={<Plus className="h-5 w-5" />} label="New chat" collapsed={collapsed} active={pathname === "/chat"} onNavigate={onNavigate} prominent />
+        <SideItem to="/pricing" icon={<Sparkles className="h-5 w-5" />} label="Upgrade" collapsed={collapsed} onNavigate={onNavigate} />
 
 
 
@@ -125,7 +138,8 @@ export function ChatSidebar() {
               <Link
                 to="/chat"
                 search={{ id: h.id }}
-                className="flex-1 min-w-0 text-[12.5px] text-white/75 truncate"
+                onClick={onNavigate}
+                className="flex-1 min-w-0 text-[14px] text-white/75 truncate"
                 title={h.title}
               >
                 {h.title}
@@ -144,20 +158,21 @@ export function ChatSidebar() {
           ))}
       </div>
 
-      <div className="border-t border-white/10 p-2 space-y-1">
-        <SideItem to="/download" icon={<Download className="h-4 w-4" />} label="Download app" collapsed={collapsed} />
+      <div className="mt-auto shrink-0 border-t border-white/10 p-2 space-y-1">
+        <SideItem to="/download" icon={<Download className="h-5 w-5" />} label="Download app" collapsed={collapsed} onNavigate={onNavigate} />
         <Link
           to="/account"
+          onClick={onNavigate}
           className={`flex items-center gap-2.5 px-2 py-2 rounded hover:bg-white/10 transition-colors ${
             pathname === "/account" ? "bg-white/10" : ""
           }`}
         >
-          <div className="h-6 w-6 rounded-full bg-orange-400/90 text-black flex items-center justify-center text-[11px] font-semibold shrink-0">
+          <div className="h-9 w-9 rounded-full bg-orange-400/90 text-black flex items-center justify-center text-[14px] font-semibold shrink-0">
             {initial}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] truncate">
+              <div className="text-[14px] truncate">
                 {user?.email ?? "Account"}
               </div>
               <div className="text-[10.5px] capitalize text-white/45">{credits?.plan ?? "free"} plan</div>
@@ -176,17 +191,24 @@ function SideItem({
   label,
   collapsed,
   active,
+  onNavigate,
+  prominent,
 }: {
   to: string;
   icon: React.ReactNode;
   label: string;
   collapsed: boolean;
   active?: boolean;
+  onNavigate?: () => void;
+  prominent?: boolean;
 }) {
   return (
     <Link
       to={to}
-      className={`flex items-center gap-2.5 px-2 py-2 rounded text-[13px] hover:bg-white/10 transition-colors ${
+      onClick={onNavigate}
+      className={`flex items-center gap-3 px-2 py-2.5 rounded text-[15px] hover:bg-white/10 transition-colors ${
+        prominent ? "mb-1 " : ""
+      }${
         active ? "bg-white/10 text-white" : "text-white/75"
       }`}
     >

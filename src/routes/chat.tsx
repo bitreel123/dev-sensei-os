@@ -1113,6 +1113,35 @@ function ChatPage() {
 
 
 
+function requestExtensionOverlay(payload: PendingAsk): Promise<boolean> {
+  return new Promise((resolve) => {
+    const requestId = crypto.randomUUID();
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener("message", onMessage);
+      resolve(ok);
+    };
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== window || event.origin !== window.location.origin) return;
+      if (event.data?.type !== "JERADIN_EXTENSION_ACK" || event.data.requestId !== requestId) return;
+      finish(Boolean(event.data.ok));
+    };
+    window.addEventListener("message", onMessage);
+    window.postMessage({
+      type: "JERADIN_ANALYZE_ACTIVE_TAB",
+      requestId,
+      payload: {
+        imageBase64: payload.imageBase64,
+        note: payload.note,
+        sessionId: payload.sessionId,
+      },
+    }, window.location.origin);
+    window.setTimeout(() => finish(false), 900);
+  });
+}
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

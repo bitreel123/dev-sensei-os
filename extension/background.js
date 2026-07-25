@@ -1,17 +1,92 @@
-// Receives session pushes from jeradin.com content script and stores them.
+// Session sync, target-tab tracking, and cross-tab Screen Intelligence streaming.
+const API_BASE = "https://jeradin.com";
+let lastNonJeradinTabId = null;
 
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type === "JERADIN_SESSION" && msg.session?.access_token) {
-    chrome.storage.local.set({
-      session: {
-        access_token: msg.session.access_token,
-        email: msg.session.email || null,
-        expires_at: msg.session.expires_at || null,
-        origin: msg.session.origin || "https://jeradin.com",
-        updated_at: Date.now(),
-      },
+function isJeradinUrl(url) {
+  try { return new URL(url || "").hostname === "jeradin.com"; } catch { return false; }
+}
+
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (tab.url && !isJeradinUrl(tab.url) && !tab.url.startsWith("chrome://")) lastNonJeradinTabId = tabId;
+  } catch (_) {}
+});
+
+async function sendToTab(tabId, message) {
+  try { return await chrome.tabs.sendMessage(tabId, message); }
+  catch (_) {
+    await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
+    return chrome.tabs.sendMessage(tabId, message);
+  }
+}
+
+async function resolveTargetTab(senderTab) {
+  const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (active?.id && !isJeradinUrl(active.url)) return active;
+  if (lastNonJeradinTabId) {
+    try { return await chrome.tabs.get(lastNonJeradinTabId); } catch (_) {}
+  }
+  return active?.id ? active : senderTab;
+}
+
+async function streamAnalysis(tabId, payload) {
+  const stored = await chrome.storage.local.get(["session"]);
+  const token = stored.session?.access_token;
+  if (!token) {
+    await sendToTab(tabId, { type: "JERADIN_OVERLAY_ERROR", message: "Sign in to Jeradin, then try again." });
+    return;
+  }
+  try {
+    const response = await fetch(`${API_BASE}/api/intel/screen/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
     });
+    if (!response.ok || !response.body) throw new Error((await response.text()).slice(0, 400) || `Analysis failed (${response.status})`);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let newline = buffer.indexOf("\n");
+      while (newline >= 0) {
+        const line = buffer.slice(0, newline).trim();
+        buffer = buffer.slice(newline + 1);
+        if (line) {
+          try { await sendToTab(tabId, { type: "JERADIN_OVERLAY_EVENT", event: JSON.parse(line) }); } catch (_) {}
+        }
+        newline = buffer.indexOf("\n");
+      }
+    }
+    if (buffer.trim()) await sendToTab(tabId, { type: "JERADIN_OVERLAY_EVENT", event: JSON.parse(buffer.trim()) });
+  } catch (error) {
+    await sendToTab(tabId, { type: "JERADIN_OVERLAY_ERROR", message: error instanceof Error ? error.message : "Analysis failed" }).catch(() => undefined);
+  }
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === "JERADIN_SESSION" && msg.session?.access_token) {
+    chrome.storage.local.set({ session: {
+      access_token: msg.session.access_token,
+      email: msg.session.email || null,
+      expires_at: msg.session.expires_at || null,
+      origin: msg.session.origin || API_BASE,
+      updated_at: Date.now(),
+    } });
     sendResponse({ ok: true });
+    return true;
+  }
+  if (msg?.type === "JERADIN_ANALYZE_ACTIVE_TAB" && msg.payload?.imageBase64) {
+    void (async () => {
+      const target = await resolveTargetTab(sender.tab);
+      if (!target?.id) throw new Error("No browser tab is available for the overlay.");
+      await sendToTab(target.id, { type: "JERADIN_SHOW_OVERLAY", title: msg.payload.note || "Screen analysis" });
+      void streamAnalysis(target.id, msg.payload);
+      sendResponse({ ok: true, tabId: target.id });
+    })().catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
 });

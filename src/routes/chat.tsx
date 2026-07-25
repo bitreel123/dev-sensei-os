@@ -2139,7 +2139,9 @@ function MobileChat({
               result={analysisResult}
               messages={overlayMessages}
               sending={analyzing && overlayMessages.length > 0}
+              onEditResend={onEditOverlayMessage}
             />
+
           </div>
         </div>
       ) : systemResult ? (

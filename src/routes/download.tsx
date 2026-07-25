@@ -31,7 +31,7 @@ const platforms: Platform[] = [
     name: "Chrome Extension",
     sub: "Chrome · Edge · Brave · Arc",
     file: "jeradin-extension-v1.4.0.zip",
-    action: { type: "download", href: "/jeradin-screen-intelligence-extension.zip" },
+    action: { type: "download", href: "/jeradin-extension.zip" },
     primary: true,
   },
   {

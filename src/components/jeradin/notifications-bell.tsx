@@ -17,6 +17,10 @@ function severityClass(s: string) {
 
 function Item({ n, onRead }: { n: NotificationRow; onRead: (id: string) => void }) {
   const unread = !n.read_at;
+  const createdAt = new Date(n.created_at);
+  const relativeTime = Number.isNaN(createdAt.getTime())
+    ? "Recently"
+    : formatDistanceToNow(createdAt, { addSuffix: true });
   return (
     <div className={`p-3 border-b border-white/5 ${unread ? "bg-white/[0.03]" : ""}`}>
       <div className="flex items-center gap-2 mb-1">
@@ -25,7 +29,7 @@ function Item({ n, onRead }: { n: NotificationRow; onRead: (id: string) => void 
         </span>
         {n.category && <span className="font-mono text-[10px] text-white/50">{n.category}</span>}
         <span className="ml-auto font-mono text-[10px] text-white/40">
-          {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+          {relativeTime}
         </span>
       </div>
       <div className="text-[13px] text-white font-medium">{n.title}</div>

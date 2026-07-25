@@ -23,6 +23,7 @@ import { streamIntel, type IntelStreamEvent } from "@/lib/intel-stream";
 import { getIntelMemory, type MemoryEntry } from "@/lib/intel-memory.functions";
 import { AskJeradinPill, type PendingAsk } from "@/components/jeradin/ask-jeradin-pill";
 import { MessageResponse } from "@/components/ai-elements/message";
+import { DashboardBoundary } from "@/components/jeradin/dashboard-boundary";
 
 
 
@@ -902,7 +903,9 @@ function ChatPage() {
 
       {/* ============= DESKTOP LAYOUT ============= */}
       <div className="hidden md:flex h-full">
-      <ChatSidebar />
+      <DashboardBoundary name="sidebar">
+        <ChatSidebar />
+      </DashboardBoundary>
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-3 px-5 text-[12px] text-white/70 shrink-0">
@@ -938,7 +941,9 @@ function ChatPage() {
             )}
           </div>
           <div className="flex justify-end">
-            <NotificationsBell tone="dark" />
+            <DashboardBoundary name="notifications">
+              <NotificationsBell tone="dark" />
+            </DashboardBoundary>
           </div>
         </div>
 

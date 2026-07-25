@@ -19,7 +19,7 @@ export default defineConfig({
     // Vite's dev pre-bundle prevents stale/missing optimized chunk URLs after
     // HMR or environment reloads.
     optimizeDeps: {
-      exclude: ["streamdown", "@streamdown/cjk", "@streamdown/code", "@streamdown/math", "@streamdown/mermaid"],
+      exclude: ["streamdown", "@streamdown/cjk", "@streamdown/code", "@streamdown/math"],
     },
   },
 });

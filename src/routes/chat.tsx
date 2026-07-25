@@ -369,6 +369,7 @@ function ChatPage() {
             note,
             title: note || "Screen recording",
             sessionId: currentEntryId ?? crypto.randomUUID(),
+            targetTabTitle: stream.getVideoTracks()[0]?.label || undefined,
           };
           // Prefer the extension-injected sheet in the shared tab. If the
           // extension is absent or cannot reach that tab, retain the in-app
@@ -1153,6 +1154,7 @@ function requestExtensionOverlay(payload: PendingAsk): Promise<boolean> {
         imageBase64: payload.imageBase64,
         note: payload.note,
         sessionId: payload.sessionId,
+        targetTabTitle: payload.targetTabTitle,
       },
     }, window.location.origin);
     window.setTimeout(() => finish(false), 4000);

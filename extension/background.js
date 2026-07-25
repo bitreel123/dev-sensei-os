@@ -31,9 +31,26 @@ async function sendToTab(tabId, message) {
   }
 }
 
-async function resolveTargetTab(senderTab) {
+function normalizedTitle(value) {
+  return String(value || "")
+    .replace(/\s*[-–—]\s*(Google Chrome|Chromium|Microsoft Edge|Brave|Arc)\s*$/i, "")
+    .trim()
+    .toLowerCase();
+}
+
+async function resolveTargetTab(senderTab, capturedTitle) {
   const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
   const senderId = senderTab?.id;
+  const wantedTitle = normalizedTitle(capturedTitle);
+  if (wantedTitle) {
+    const tabs = await chrome.tabs.query({ currentWindow: true });
+    const exact = tabs.find((tab) => {
+      const title = normalizedTitle(tab.title);
+      return isInjectableTab(tab) && tab.id !== senderId && !isJeradinUrl(tab.url) &&
+        (title === wantedTitle || title.includes(wantedTitle) || wantedTitle.includes(title));
+    });
+    if (exact) return exact;
+  }
   if (isInjectableTab(active) && active.id !== senderId && !isJeradinUrl(active.url)) return active;
   if (!lastNonJeradinTabId) {
     const stored = await chrome.storage.local.get(["lastNonJeradinTabId"]);
@@ -105,7 +122,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg?.type === "JERADIN_ANALYZE_ACTIVE_TAB" && msg.payload?.imageBase64) {
     void (async () => {
-      const target = await resolveTargetTab(sender.tab);
+      const target = await resolveTargetTab(sender.tab, msg.payload.targetTabTitle);
       if (!target?.id) throw new Error("Open the codebase tab once, then stop sharing again.");
       lastNonJeradinTabId = target.id;
       await chrome.storage.local.set({ lastNonJeradinTabId: target.id });

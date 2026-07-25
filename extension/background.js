@@ -147,4 +147,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     })().catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
+  // Deep dive re-runs the analysis on the same tab that already has the overlay,
+  // so we stream new stage/section events into the existing sheet.
+  if (msg?.type === "JERADIN_DEEP_DIVE" && msg.payload?.imageBase64) {
+    const tabId = sender.tab?.id;
+    if (!tabId) { sendResponse({ ok: false, error: "no-tab" }); return true; }
+    void streamAnalysis(tabId, { ...msg.payload, mode: "deep" });
+    sendResponse({ ok: true });
+    return true;
+  }
 });

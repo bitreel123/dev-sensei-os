@@ -46,36 +46,36 @@ function normalizedTitle(value) {
 }
 
 async function resolveTargetTab(senderTab, capturedTitle) {
-  const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
   const senderId = senderTab?.id;
   const wantedTitle = normalizedTitle(capturedTitle);
+  const tabs = await chrome.tabs.query({ currentWindow: true });
+  const candidates = tabs.filter((tab) => isInjectableTab(tab) && tab.id !== senderId && !isJeradinUrl(tab.url));
+
+  // 1. Match on the captured surface title first — this is the tab the user actually shared.
   if (wantedTitle) {
-    const tabs = await chrome.tabs.query({ currentWindow: true });
-    const exact = tabs.find((tab) => {
+    const exact = candidates.find((tab) => {
       const title = normalizedTitle(tab.title);
-      return isInjectableTab(tab) && tab.id !== senderId && !isJeradinUrl(tab.url) &&
-        (title === wantedTitle || title.includes(wantedTitle) || wantedTitle.includes(title));
+      return title === wantedTitle || title.includes(wantedTitle) || wantedTitle.includes(title);
     });
     if (exact) return exact;
   }
-  if (isInjectableTab(active) && active.id !== senderId && !isJeradinUrl(active.url)) return active;
+
+  // 2. Fall back to the last non-Jeradin tab we remembered.
   if (!lastNonJeradinTabId) {
     const stored = await chrome.storage.local.get(["lastNonJeradinTabId"]);
     lastNonJeradinTabId = stored.lastNonJeradinTabId || null;
   }
   if (lastNonJeradinTabId && lastNonJeradinTabId !== senderId) {
-    try {
-      const remembered = await chrome.tabs.get(lastNonJeradinTabId);
-      if (isInjectableTab(remembered) && !isJeradinUrl(remembered.url)) return remembered;
-    } catch (_) {}
+    const remembered = candidates.find((tab) => tab.id === lastNonJeradinTabId);
+    if (remembered) return remembered;
   }
-  // Screen sharing does not activate the tab selected in Chrome's picker.
-  // Fall back to the most recently used injectable tab other than Jeradin.
-  const tabs = await chrome.tabs.query({ currentWindow: true });
-  const recent = tabs
-    .filter((tab) => isInjectableTab(tab) && tab.id !== senderId && !isJeradinUrl(tab.url))
-    .sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0))[0];
-  return recent || null;
+
+  // 3. Then the currently-active tab, if it's not Jeradin itself.
+  const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (candidates.find((tab) => tab.id === active?.id)) return active;
+
+  // 4. Finally, the most-recently-accessed injectable non-Jeradin tab.
+  return candidates.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0))[0] || null;
 }
 
 async function streamAnalysis(tabId, payload) {

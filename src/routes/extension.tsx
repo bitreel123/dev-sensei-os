@@ -105,7 +105,7 @@ function ExtensionPage() {
             className="inline-flex items-center gap-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 text-sm font-medium"
             download
           >
-            <Download className="h-4 w-4" /> Install extension v1.5.0
+            <Download className="h-4 w-4" /> Install extension v1.6.0
           </a>
           <ol className="mt-4 text-[13.5px] text-white/70 space-y-1.5 leading-relaxed list-decimal pl-5">
             <li>Unzip the file.</li>

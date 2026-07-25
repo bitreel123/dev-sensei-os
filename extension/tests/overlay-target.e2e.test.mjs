@@ -13,6 +13,7 @@ const tabs = [
 const chrome = {
   tabs: {
     onActivated: { addListener() {} },
+    onUpdated: { addListener() {} },
     async query(query) {
       if (query.active) return tabs.filter((tab) => tab.active);
       return tabs;

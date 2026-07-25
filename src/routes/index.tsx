@@ -12,6 +12,7 @@ import { BrandLogo, ALL_BRANDS, BrandName } from "@/components/jeradin/brand-log
 import { HermesFeatures } from "@/components/jeradin/hermes-features";
 import { IntelligenceFeatures } from "@/components/jeradin/intelligence-features";
 import { JeradinPortal } from "@/components/jeradin/jeradin-portal";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,8 +52,12 @@ function Landing() {
 
 const FAQ_ITEMS = [
   {
-    question: "What does Jeradin help me understand?",
+    question: "What is Jeradin?",
     answer: "Jeradin turns a screen, codebase, repository, document, or business idea into a clear diagnosis and an actionable plan. It explains what is happening, why it matters, and what to do next without assuming you are deeply technical.",
+  },
+  {
+    question: "What does Jeradin actually do?",
+    answer: "Jeradin combines Screen, Knowledge, System, and GitHub Intelligence. It can diagnose what is visible on your screen, research and validate an idea, review an entire codebase, or answer repository-specific questions with evidence from the real files.",
   },
   {
     question: "Can I use Jeradin if I am not a developer?",
@@ -70,42 +75,51 @@ const FAQ_ITEMS = [
     question: "Does Jeradin replace my coding tools?",
     answer: "No. Jeradin works alongside the tools you already use. It provides the second layer of judgment: understanding the system, validating decisions, detecting hidden risk, and translating recommendations for every person on the team.",
   },
+  {
+    question: "Can I use just one Intelligence capability?",
+    answer: "Yes. Use only the capability that fits the work in front of you. Each one works independently, while using them together gives Jeradin broader context across the idea, interface, system, and repository.",
+  },
+  {
+    question: "Who owns the code and ideas I analyze?",
+    answer: "You do. Jeradin analyzes your material to produce the requested result; it does not claim ownership of your code, documents, product ideas, or generated recommendations.",
+  },
+  {
+    question: "How do credits work?",
+    answer: "Credits are charged only after an Intelligence prompt successfully produces a useful result. Screen Intelligence costs 1 credit, a Screen Deep Dive costs 3, and Knowledge, System, or GitHub Intelligence costs 5 credits per completed prompt.",
+  },
 ];
 
 function QuestionsWorthAnswering() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   return (
-    <section className="border-y border-black/10 bg-black/[0.025]">
-      <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-        <div className="grid gap-10 md:grid-cols-[0.75fr_1.25fr] md:gap-16">
-          <div>
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-black/45">Jeradin, clearly</span>
-            <h2 className="mt-3 max-w-sm text-[36px] font-semibold leading-[1.02] text-black sm:text-[48px]">
-              Questions worth answering.
-            </h2>
-            <p className="mt-5 max-w-sm text-[14px] leading-relaxed text-black/60">
-              Built for vibe coders, developers, founders, and teams who need useful answers—not more technical noise.
-            </p>
-          </div>
-          <div className="space-y-2">
-            {FAQ_ITEMS.map((item, index) => {
-              const open = openIndex === index;
-              return (
-                <article key={item.question} className="border border-black/10 bg-white">
-                  <button
-                    type="button"
-                    aria-expanded={open}
-                    onClick={() => setOpenIndex(open ? null : index)}
-                    className="flex w-full items-center justify-between gap-5 px-5 py-5 text-left"
-                  >
-                    <span className="text-[14px] font-medium text-black sm:text-[15px]">{item.question}</span>
-                    <ChevronDown className={`h-4 w-4 shrink-0 text-black/45 transition-transform ${open ? "rotate-180" : ""}`} />
-                  </button>
-                  {open && <p className="px-5 pb-5 pr-12 text-[13.5px] leading-relaxed text-black/60">{item.answer}</p>}
-                </article>
-              );
-            })}
-          </div>
+    <section className="border-y border-white/15 bg-black text-white">
+      <div className="mx-auto max-w-4xl px-6 py-20 md:py-24">
+        <div className="border-b border-white/20 pb-3 font-mono text-[11px] uppercase text-white/55">
+          Questions worth answering
+        </div>
+        <div>
+          {FAQ_ITEMS.map((item, index) => {
+            const open = openIndex === index;
+            return (
+              <article key={item.question} className="border-b border-white/20">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  aria-expanded={open}
+                  onClick={() => setOpenIndex(open ? null : index)}
+                  className="h-auto w-full justify-between rounded-none px-0 py-4 text-left text-white hover:bg-transparent hover:text-white"
+                >
+                  <span className="whitespace-normal text-[15px] font-medium sm:text-[16px]">{item.question}</span>
+                  <ChevronDown className={`h-4 w-4 shrink-0 text-white/55 transition-transform ${open ? "rotate-180" : ""}`} />
+                </Button>
+                {open && (
+                  <p className="max-w-3xl pb-6 pr-10 text-[14px] leading-7 text-white/60">
+                    {item.answer}
+                  </p>
+                )}
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

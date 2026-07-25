@@ -23,10 +23,17 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   } catch (_) {}
 });
 
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status !== "complete" || !tab.active || !isInjectableTab(tab) || isJeradinUrl(tab.url)) return;
+  lastNonJeradinTabId = tabId;
+  await chrome.storage.local.set({ lastNonJeradinTabId: tabId });
+});
+
 async function sendToTab(tabId, message) {
   try { return await chrome.tabs.sendMessage(tabId, message); }
   catch (_) {
     await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
+    await new Promise((resolve) => setTimeout(resolve, 75));
     return chrome.tabs.sendMessage(tabId, message);
   }
 }
@@ -123,7 +130,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "JERADIN_ANALYZE_ACTIVE_TAB" && msg.payload?.imageBase64) {
     void (async () => {
       const target = await resolveTargetTab(sender.tab, msg.payload.targetTabTitle);
-      if (!target?.id) throw new Error("Open the codebase tab once, then stop sharing again.");
+      if (!target?.id || isJeradinUrl(target.url)) throw new Error("No codebase tab was found. Open the tab you want Jeradin to analyze, then stop sharing again.");
       lastNonJeradinTabId = target.id;
       await chrome.storage.local.set({ lastNonJeradinTabId: target.id });
       await sendToTab(target.id, { type: "JERADIN_SHOW_OVERLAY", title: msg.payload.note || "Screen analysis" });

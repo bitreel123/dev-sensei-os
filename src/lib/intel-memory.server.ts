@@ -43,11 +43,7 @@ export async function chargeCredits(
   sessionId?: string,
   env: "live" | "sandbox" = "live",
 ): Promise<{ ok: boolean; balance: number }> {
-  const rpc = supabaseAdmin.rpc as unknown as (
-    name: string,
-    args: Record<string, unknown>,
-  ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
-  const { data, error } = await rpc("deduct_credit", {
+  const { data, error } = await supabaseAdmin.rpc("deduct_credit", {
     p_user_id: userId,
     p_amount: amount,
     p_env: env,

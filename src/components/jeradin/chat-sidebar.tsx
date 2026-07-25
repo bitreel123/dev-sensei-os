@@ -9,7 +9,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { LogoMark } from "./logo";
-import { useAuth } from "@/hooks/use-auth";
 import {
   loadHistory,
   removeHistoryEntry,
@@ -18,19 +17,25 @@ import {
   type ChatHistoryEntry,
 } from "@/lib/chat-history";
 import { deleteIntelMemory } from "@/lib/intel-memory.functions";
-import { useUserData } from "@/hooks/use-user-data";
 import { supabase } from "@/integrations/supabase/client";
 
 type ChatSidebarProps = {
   mobile?: boolean;
   onNavigate?: () => void;
+  userId?: string | null;
+  userEmail?: string | null;
+  plan?: string | null;
 };
 
-export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
+export function ChatSidebar({
+  mobile = false,
+  onNavigate,
+  userId = null,
+  userEmail = null,
+  plan = null,
+}: ChatSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [history, setHistory] = useState<ChatHistoryEntry[]>(() => loadHistory());
-  const { user } = useAuth();
-  const { credits } = useUserData(user?.id ?? null);
   const { pathname } = useLocation();
 
   useEffect(() => {
@@ -39,17 +44,18 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
     const refresh = () => {
       const sequence = ++refreshSequence;
       const local = loadHistory();
-      if (!user?.id) {
+      if (!userId) {
         setHistory(local);
         return;
       }
-      supabase
-        .from("intel_memory")
-        .select("id, mode, title, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(100)
-        .then(({ data, error }) => {
+      void (async () => {
+        try {
+          const { data, error } = await supabase
+            .from("intel_memory")
+            .select("id, mode, title, created_at")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(100);
           if (cancelled || sequence !== refreshSequence) return;
           if (error) {
             setHistory(local);
@@ -80,22 +86,24 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
           const localSignature = local.map(({ id, title, createdAt }) => `${id}:${title}:${createdAt}`).join("|");
           const nextSignature = next.map(({ id, title, createdAt }) => `${id}:${title}:${createdAt}`).join("|");
           if (nextSignature !== localSignature) saveHistory(next);
-        }, () => {
+        } catch (error) {
+          console.error("[chat-sidebar] history lookup failed:", error);
           if (!cancelled && sequence === refreshSequence) setHistory(local);
-        });
+        }
+      })();
     };
     refresh();
     const unsubscribe = subscribeHistory(refresh);
     // Poll cloud memory so a chat started on mobile appears on desktop within 20s.
-    const interval = user?.id ? window.setInterval(refresh, 20_000) : null;
+    const interval = userId ? window.setInterval(refresh, 20_000) : null;
     return () => {
       cancelled = true;
       unsubscribe();
       if (interval) window.clearInterval(interval);
     };
-  }, [user?.id]);
+  }, [userId]);
 
-  const initial = user?.email?.[0]?.toUpperCase() ?? "J";
+  const initial = userEmail?.[0]?.toUpperCase() ?? "J";
 
   return (
     <aside
@@ -179,9 +187,9 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <div className="text-[14px] truncate">
-                {user?.email ?? "Account"}
+                {userEmail ?? "Account"}
               </div>
-              <div className="text-[10.5px] capitalize text-white/45">{credits?.plan ?? "free"} plan</div>
+              <div className="text-[10.5px] capitalize text-white/45">{plan ?? "free"} plan</div>
             </div>
           )}
           {!collapsed && <UserIcon className="h-3.5 w-3.5 text-white/40" />}

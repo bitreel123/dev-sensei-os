@@ -905,8 +905,11 @@ function ChatPage() {
 
       {/* ============= DESKTOP LAYOUT ============= */}
       <div className="hidden md:flex h-full">
-      <DashboardBoundary name="sidebar">
-        <ChatSidebar />
+      <DashboardBoundary
+        name="sidebar"
+        fallback={<SidebarRecovery userEmail={user.email} plan={credits?.plan} />}
+      >
+        <ChatSidebar userId={user.id} userEmail={user.email} plan={credits?.plan} />
       </DashboardBoundary>
 
       <main className="flex-1 flex flex-col overflow-hidden">
@@ -2425,14 +2428,79 @@ function MobileChat({
       {/* Sidebar drawer */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="h-dvh p-0 w-[260px] bg-[#0a0a0a] border-white/10">
-          <DashboardBoundary name="mobile-sidebar">
-            <ChatSidebar mobile onNavigate={() => setSidebarOpen(false)} />
+          <DashboardBoundary
+            name="mobile-sidebar"
+            fallback={<SidebarRecovery userEmail={user?.email} plan={credits?.plan} onNavigate={() => setSidebarOpen(false)} />}
+          >
+            <ChatSidebar
+              mobile
+              userId={(user as { id?: string } | null)?.id ?? null}
+              userEmail={user?.email}
+              plan={credits?.plan}
+              onNavigate={() => setSidebarOpen(false)}
+            />
           </DashboardBoundary>
         </SheetContent>
       </Sheet>
 
     </div>
   );
+}
+
+function SidebarRecovery({
+  userEmail,
+  plan,
+  onNavigate,
+}: {
+  userEmail?: string | null;
+  plan?: string | null;
+  onNavigate?: () => void;
+}) {
+  const localHistory = loadSafeSidebarHistory();
+  const initial = userEmail?.[0]?.toUpperCase() ?? "J";
+  return (
+    <aside className="flex h-full w-[260px] min-h-0 flex-col border-r border-white/10 bg-[#0a0a0a] text-white">
+      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 px-4">
+        <span className="text-[15px] font-semibold">Jeradin</span>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <Link to="/chat" search={{}} onClick={onNavigate} className="flex items-center gap-3 rounded bg-white/10 px-3 py-3 text-[15px]">
+          <Plus className="h-5 w-5" /> New chat
+        </Link>
+        <div className="mb-2 mt-6 px-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">History</div>
+        {localHistory.length === 0 ? (
+          <div className="px-2 py-2 text-[12px] text-white/40">No recent chats</div>
+        ) : localHistory.map((item) => (
+          <Link key={item.id} to="/chat" search={{ id: item.id }} onClick={onNavigate} className="block truncate rounded px-2 py-2 text-[14px] text-white/75 hover:bg-white/10">
+            {item.title}
+          </Link>
+        ))}
+      </div>
+      <div className="mt-auto shrink-0 border-t border-white/10 p-2">
+        <Link to="/account" onClick={onNavigate} className="flex min-w-0 items-center gap-3 rounded px-2 py-2 hover:bg-white/10">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-orange-400 text-[14px] font-semibold text-black">{initial}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[14px]">{userEmail ?? "Account"}</span>
+            <span className="block text-[10.5px] capitalize text-white/45">{plan ?? "free"} plan</span>
+          </span>
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
+function loadSafeSidebarHistory() {
+  try {
+    return getSidebarHistory();
+  } catch {
+    return [];
+  }
+}
+
+function getSidebarHistory() {
+  return typeof window === "undefined"
+    ? []
+    : JSON.parse(window.localStorage.getItem("jeradin.chat.history.v1") ?? "[]") as Array<{ id: string; title: string }>;
 }
 
 function CapabilityIcon({ capability, className }: { capability: CapabilityKey; className?: string }) {

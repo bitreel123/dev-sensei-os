@@ -755,27 +755,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      deduct_credit:
-        | {
-            Args: { p_amount: number; p_env?: string; p_user_id: string }
-            Returns: {
-              balance: number
-              ok: boolean
-            }[]
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_env?: string
-              p_mode?: string
-              p_session_id?: string
-              p_user_id: string
-            }
-            Returns: {
-              balance: number
-              ok: boolean
-            }[]
-          }
+      deduct_credit: {
+        Args: {
+          p_amount: number
+          p_env?: string
+          p_mode?: string
+          p_session_id?: string
+          p_user_id: string
+        }
+        Returns: {
+          balance: number
+          ok: boolean
+        }[]
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

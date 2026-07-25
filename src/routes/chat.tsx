@@ -1444,7 +1444,117 @@ function detectFileLanguage(file?: string | null): string {
   return map[ext] ?? "typescript";
 }
 
+export function EditableUserMessage({
+  content,
+  onResend,
+  disabled,
+}: {
+  content: string;
+  onResend?: (newText: string) => void;
+  disabled?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(content);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (editing && textareaRef.current) {
+      const el = textareaRef.current;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    }
+  }, [editing]);
+
+  function cancel() {
+    setDraft(content);
+    setEditing(false);
+  }
+
+  function submit() {
+    const trimmed = draft.trim();
+    if (!trimmed || !onResend) return;
+    setEditing(false);
+    onResend(trimmed);
+  }
+
+  if (editing) {
+    return (
+      <div className="w-full max-w-[85%] rounded-2xl border border-orange-400/40 bg-white/[0.06] px-3 py-2 shadow-[0_0_0_1px_rgba(251,146,60,0.15)]">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-orange-300">
+            Editing message
+          </span>
+          <span className="font-mono text-[9.5px] text-white/40">⏎ send · Esc cancel</span>
+        </div>
+        <textarea
+          ref={textareaRef}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            const el = e.currentTarget;
+            el.style.height = "auto";
+            el.style.height = `${el.scrollHeight}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              cancel();
+            } else if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          rows={1}
+          className="w-full resize-none bg-transparent text-[15px] leading-6 text-white outline-none placeholder:text-white/35"
+        />
+        <div className="mt-2 flex items-center justify-end gap-2">
+          <button
+            onClick={cancel}
+            className="rounded-md border border-white/15 px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/70 hover:bg-white/10"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={submit}
+            disabled={!draft.trim()}
+            className="rounded-md bg-white px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.2em] text-black hover:bg-white/90 disabled:opacity-50"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group relative flex max-w-[85%] items-start gap-1.5">
+      <div className="rounded-2xl bg-white/[0.09] px-4 py-2.5 text-[15px] leading-6 text-white whitespace-pre-wrap break-words">
+        {content}
+      </div>
+      {onResend && !disabled && (
+        <button
+          onClick={() => {
+            setDraft(content);
+            setEditing(true);
+          }}
+          className="mt-1 shrink-0 rounded-md p-1 text-white/40 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100 focus:opacity-100"
+          aria-label="Edit message"
+          title="Edit message"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
+
 
   return (
     <button

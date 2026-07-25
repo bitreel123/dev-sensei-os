@@ -54,9 +54,10 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
             const createdAt = new Date(item.created_at).getTime();
             if (!item.id || !item.title || !Number.isFinite(createdAt)) continue;
             const existing = merged.get(item.id);
-            const modeLabel = item.mode === "repo"
+            const mode = typeof item.mode === "string" ? item.mode : "screen";
+            const modeLabel = mode === "repo"
               ? "GitHub"
-              : item.mode.charAt(0).toUpperCase() + item.mode.slice(1);
+              : mode.charAt(0).toUpperCase() + mode.slice(1);
             const title = item.title.toLowerCase().startsWith(`${modeLabel.toLowerCase()} ·`)
               ? item.title
               : `${modeLabel} · ${item.title}`;
@@ -104,9 +105,9 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
           </Link>
         )}
         <button
-          onClick={() => setCollapsed((v) => !v)}
+          onClick={() => mobile ? onNavigate?.() : setCollapsed((v) => !v)}
           className="p-1.5 rounded hover:bg-white/10 text-white/60 hover:text-white"
-          aria-label="Toggle sidebar"
+          aria-label={mobile ? "Close sidebar" : "Toggle sidebar"}
         >
           <PanelLeft className="h-4 w-4" />
         </button>

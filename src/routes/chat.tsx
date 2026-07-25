@@ -1619,7 +1619,7 @@ export function EditableUserMessage({
             setDraft(content);
             setEditing(true);
           }}
-          className="mt-1 shrink-0 rounded-md p-1 text-white/40 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100 focus:opacity-100"
+          className="mt-1 shrink-0 rounded-md p-1 text-white/60 transition-colors hover:bg-white/10 hover:text-white focus:text-white"
           aria-label="Edit message"
           title="Edit message"
         >

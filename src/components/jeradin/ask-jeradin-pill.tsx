@@ -485,7 +485,7 @@ function PillEditableUserMessage({
             setDraft(content);
             setEditing(true);
           }}
-          className="shrink-0 mt-1 rounded p-1 text-white/40 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/10 hover:text-white focus:opacity-100"
+          className="shrink-0 mt-1 rounded p-1 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
           aria-label="Edit"
           title="Edit"
         >

@@ -115,7 +115,9 @@ export const Route = createFileRoute("/api/intel/github/stream")({
                 tags: [repo],
               });
             } catch (e) {
-              console.warn("[github.stream] charge failed:", e instanceof Error ? e.message : e);
+              const message = e instanceof Error ? e.message : String(e);
+              console.error("[github.stream] charge failed:", message);
+              emit({ type: "error", message: `Billing failed: ${message}` });
             }
           }
 

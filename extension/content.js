@@ -57,6 +57,7 @@
   }
   function render() {
     if (!root) return;
+    root.querySelectorAll(":scope > :not(style)").forEach((element) => element.remove());
     if (!state.open) {
       root.innerHTML += `<button class="pill" id="jeradin-open"><i></i><b>J</b><span>ASK JERADIN${state.fix ? " — READY" : ""}</span></button>`;
       root.getElementById("jeradin-open")?.addEventListener("click", () => { state.open = true; render(); });

@@ -943,7 +943,9 @@ function ChatPage() {
                       result={analysisResult}
                       messages={overlayMessages}
                       sending={analyzing && overlayMessages.length > 0}
+                      onEditResend={(idx, newText) => void submitOverlayFollowUp(newText, { truncateAt: idx })}
                     />
+
                   </div>
                 ) : !analysisError && systemResult ? (
                   <IntelResultFrame title="System Intelligence" icon={<Network className="h-4 w-4 text-orange-400" />}>

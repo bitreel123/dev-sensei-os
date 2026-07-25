@@ -593,7 +593,7 @@ function ChatPage() {
     setOpenedCapabilityPanel(null);
     setAnalysisError(null);
 
-    if (capability === "knowledge" && text.length < 5) {
+    if (capability === "knowledge" && text.length < 5 && attachments.length === 0) {
       setKnowledgeEnabled(true);
       toast.success("Knowledge enabled — type your question in the chat box and press Send.");
       return;
@@ -624,9 +624,10 @@ function ChatPage() {
         const projectContext = attachedFiles.length
           ? attachedFiles.map((file) => `FILE: ${file.path}\n${file.content}`).join("\n\n---\n\n").slice(0, 120_000)
           : "";
+        const effectiveQuestion = text || "Analyze the attached code context and explain what it does, its risks, and recommended changes.";
         // Stream sections one-by-one so the UI paints as soon as each Claude call resolves.
         const accumulated: KnowledgeReport = {
-          question: text,
+          question: effectiveQuestion,
           laymanSummary: "",
           recommendedStack: [],
           resources: [],
@@ -658,12 +659,12 @@ function ChatPage() {
             throw new Error(event.message);
           }
         };
-        await streamIntel("/api/intel/knowledge/stream", { question: text || "Analyze the attached code context and explain what it does, its risks, and recommended changes.", projectContext, sessionId }, handleEvent);
+        await streamIntel("/api/intel/knowledge/stream", { question: effectiveQuestion, projectContext, sessionId }, handleEvent);
         if (sectionCount === 0) throw new Error("Knowledge analysis returned no sections. Please retry.");
         setKnowledgeEnabled(true);
-        const entry = upsertHistoryEntry(sessionId, `Knowledge · ${text.slice(0, 60)}`, {
+        const entry = upsertHistoryEntry(sessionId, `Knowledge · ${effectiveQuestion.slice(0, 60)}`, {
           mode: "knowledge",
-          knowledge: { report: accumulated, input: { question: text, projectContext } },
+          knowledge: { report: accumulated, input: { question: effectiveQuestion, projectContext } },
         });
         setCurrentEntryId(entry.id);
         navigate({ to: "/chat", search: { id: entry.id } });
@@ -880,6 +881,7 @@ function ChatPage() {
         onSelectRepo={chooseRepo}
         pendingPrompt={pendingPrompt}
         lastSubmittedPrompt={lastSubmittedPrompt}
+        onEditLastPrompt={(text) => void resendEditedPrompt(text)}
         onEditOverlayMessage={(idx, newText) => void submitOverlayFollowUp(newText, { truncateAt: idx })}
       />
 
@@ -1617,6 +1619,7 @@ function SharedEditablePrompt({ content, onResend, disabled }: { content: string
 }
 
 function SharePromptButton({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
   const shareUrl = typeof window === "undefined" ? "https://jeradin.com/chat" : window.location.href;
   const shareText = `${text}\n${shareUrl}`;
   async function share() {
@@ -1628,13 +1631,20 @@ function SharePromptButton({ text }: { text: string }) {
     toast.success("Conversation link copied");
   }
   return (
-    <div className="flex shrink-0 flex-col gap-1">
-      <button onClick={() => void share()} className="rounded-md p-1.5 text-white/45 hover:bg-white/10 hover:text-white" aria-label="Share conversation" title="Share to WhatsApp, Telegram, and more">
+    <div className="relative flex shrink-0 flex-col gap-1">
+      <button onClick={() => setOpen((value) => !value)} className="rounded-md p-1.5 text-white/45 hover:bg-white/10 hover:text-white" aria-label="Share conversation" title="Share to WhatsApp, Telegram, and more">
         <Share2 className="h-3.5 w-3.5" />
       </button>
       <button onClick={() => void navigator.clipboard.writeText(shareText).then(() => toast.success("Conversation link copied"))} className="rounded-md p-1.5 text-white/35 hover:bg-white/10 hover:text-white" aria-label="Copy conversation link" title="Copy link">
         <Copy className="h-3.5 w-3.5" />
       </button>
+      {open && (
+        <div className="absolute right-0 top-8 z-50 w-40 rounded-md border border-white/15 bg-neutral-950 p-1 text-[12px] shadow-2xl">
+          <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer" className="block rounded px-2.5 py-2 text-white/80 hover:bg-white/10">WhatsApp</a>
+          <a href={`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer" className="block rounded px-2.5 py-2 text-white/80 hover:bg-white/10">Telegram</a>
+          <button onClick={() => { setOpen(false); void share(); }} className="block w-full rounded px-2.5 py-2 text-left text-white/80 hover:bg-white/10">More apps…</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2127,6 +2137,7 @@ function MobileChat({
   onSelectRepo,
   pendingPrompt,
   lastSubmittedPrompt,
+  onEditLastPrompt,
   onEditOverlayMessage,
 
 }: {
@@ -2163,6 +2174,7 @@ function MobileChat({
   onSelectRepo: (repo: string) => void;
   pendingPrompt: string;
   lastSubmittedPrompt: string;
+  onEditLastPrompt: (text: string) => void;
   onEditOverlayMessage?: (index: number, newText: string) => void;
 }) {
 
@@ -2209,7 +2221,7 @@ function MobileChat({
       {/* Content area: result or empty state */}
       {analysisError ? (
         <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
-          {lastSubmittedPrompt && <div className="mb-4 mt-4"><SharedEditablePrompt content={lastSubmittedPrompt} disabled={analyzing} onResend={onEditOverlayMessage ? (text) => onEditOverlayMessage(0, text) : () => undefined} /></div>}
+          {lastSubmittedPrompt && <div className="mb-4 mt-4"><SharedEditablePrompt content={lastSubmittedPrompt} disabled={analyzing} onResend={onEditLastPrompt} /></div>}
           <AnalysisError message={analysisError} />
         </div>
       ) : analysisResult ? (

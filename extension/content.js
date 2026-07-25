@@ -91,7 +91,8 @@
     return true;
   });
 
-  if (location.hostname === "jeradin.com") {
+  const isJeradinApp = location.hostname === "jeradin.com" || location.hostname === "www.jeradin.com" || location.hostname.includes("f3f1273c-9023-417a-8f01-2102307dd572");
+  if (isJeradinApp) {
     push();
     window.addEventListener("storage", push);
     window.addEventListener("message", (event) => {

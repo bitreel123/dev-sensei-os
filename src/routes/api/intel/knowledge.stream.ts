@@ -29,7 +29,7 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
           return new Response("Invalid JSON body", { status: 400 });
         }
         const question = (body.question ?? "").trim();
-        const projectContext = (body.projectContext ?? "").slice(0, 3000);
+        const projectContext = (body.projectContext ?? "").slice(0, 60_000);
         const sessionId = typeof body.sessionId === "string" && /^[0-9a-f-]{36}$/i.test(body.sessionId) ? body.sessionId : undefined;
         if (question.length < 5) return new Response("Question must be at least 5 characters", { status: 400 });
 

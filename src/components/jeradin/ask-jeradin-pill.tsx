@@ -137,12 +137,13 @@ export function AskJeradinPill({ pending, onDismiss, onComplete }: Props) {
     }
   }
 
-  async function sendFollowUp() {
-    const text = chatInput.trim();
+  async function sendFollowUp(textOverride?: string, truncateAt?: number) {
+    const text = (textOverride ?? chatInput).trim();
     if (!text || sending || !analysis || !fix) return;
-    const next = [...messages, { role: "user" as const, content: text }];
+    const base = typeof truncateAt === "number" ? messages.slice(0, truncateAt) : messages;
+    const next = [...base, { role: "user" as const, content: text }];
     setMessages(next);
-    setChatInput("");
+    if (textOverride === undefined) setChatInput("");
     setSending(true);
     try {
       const res = await askFollowUp({ data: { analysis, fix, messages: next } });
@@ -153,6 +154,7 @@ export function AskJeradinPill({ pending, onDismiss, onComplete }: Props) {
       setSending(false);
     }
   }
+
 
   function handleMinimize() {
     setOpen(false);
@@ -321,16 +323,24 @@ export function AskJeradinPill({ pending, onDismiss, onComplete }: Props) {
                   <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50 px-1">
                     Follow up
                   </div>
-                  {messages.map((m, i) => (
-                    <div
-                      key={i}
-                      className={`text-[12.5px] leading-relaxed rounded-md px-2.5 py-1.5 ${
-                        m.role === "user" ? "bg-white/10 text-white" : "text-white/85"
-                      }`}
-                    >
-                      {m.content}
-                    </div>
-                  ))}
+                  {messages.map((m, i) =>
+                    m.role === "user" ? (
+                      <PillEditableUserMessage
+                        key={i}
+                        content={m.content}
+                        disabled={sending}
+                        onResend={(newText) => void sendFollowUp(newText, i)}
+                      />
+                    ) : (
+                      <div
+                        key={i}
+                        className="text-[12.5px] leading-relaxed rounded-md px-2.5 py-1.5 text-white/85 whitespace-pre-wrap break-words"
+                      >
+                        {m.content}
+                      </div>
+                    ),
+                  )}
+
                   {sending && (
                     <div className="flex items-center gap-2 px-2 text-[11.5px] text-white/60">
                       <Loader2 className="h-3 w-3 animate-spin text-orange-400" />
@@ -377,6 +387,112 @@ export function AskJeradinPill({ pending, onDismiss, onComplete }: Props) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PillEditableUserMessage({
+  content,
+  onResend,
+  disabled,
+}: {
+  content: string;
+  onResend: (newText: string) => void;
+  disabled?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(content);
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (editing && ref.current) {
+      ref.current.focus();
+      ref.current.setSelectionRange(ref.current.value.length, ref.current.value.length);
+      ref.current.style.height = "auto";
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
+    }
+  }, [editing]);
+
+  if (editing) {
+    return (
+      <div className="rounded-md border border-orange-400/40 bg-white/[0.05] px-2 py-1.5">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-orange-300">Editing</span>
+          <span className="font-mono text-[9px] text-white/40">⏎ send · Esc cancel</span>
+        </div>
+        <textarea
+          ref={ref}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            const el = e.currentTarget;
+            el.style.height = "auto";
+            el.style.height = `${el.scrollHeight}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              setDraft(content);
+              setEditing(false);
+            } else if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              const trimmed = draft.trim();
+              if (!trimmed) return;
+              setEditing(false);
+              onResend(trimmed);
+            }
+          }}
+          rows={1}
+          className="w-full resize-none bg-transparent text-[12.5px] leading-relaxed text-white outline-none"
+        />
+        <div className="mt-1.5 flex items-center justify-end gap-1.5">
+          <button
+            onClick={() => {
+              setDraft(content);
+              setEditing(false);
+            }}
+            className="rounded border border-white/15 px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.2em] text-white/70 hover:bg-white/10"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              const trimmed = draft.trim();
+              if (!trimmed) return;
+              setEditing(false);
+              onResend(trimmed);
+            }}
+            disabled={!draft.trim()}
+            className="rounded bg-white px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.2em] text-black hover:bg-white/90 disabled:opacity-50"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group relative flex items-start gap-1.5">
+      <div className="flex-1 min-w-0 text-[12.5px] leading-relaxed rounded-md bg-white/10 text-white px-2.5 py-1.5 whitespace-pre-wrap break-words">
+        {content}
+      </div>
+      {!disabled && (
+        <button
+          onClick={() => {
+            setDraft(content);
+            setEditing(true);
+          }}
+          className="shrink-0 mt-1 rounded p-1 text-white/40 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/10 hover:text-white focus:opacity-100"
+          aria-label="Edit"
+          title="Edit"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

@@ -457,6 +457,41 @@ function ChatPage() {
     });
   }
 
+  // Shared follow-up sender for the screen intel conversation.
+  // Passing `truncateAt` (and optional `replaceText`) is how ChatGPT-style
+  // "edit a previous prompt and resend" is implemented — we slice history
+  // to that index, replace the user turn, and regenerate the assistant reply.
+  async function submitOverlayFollowUp(
+    text: string,
+    opts?: { truncateAt?: number },
+  ) {
+    if (!analysisResult) return;
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const base =
+      typeof opts?.truncateAt === "number"
+        ? overlayMessages.slice(0, opts.truncateAt)
+        : overlayMessages;
+    const next: OverlayChatMessage[] = [...base, { role: "user", content: trimmed }];
+    setOverlayMessages(next);
+    setAnalyzing(true);
+    setAnalysisError(null);
+    try {
+      const { reply } = await askScreenFollowUp({
+        data: {
+          analysis: analysisResult.analysis as ScreenAnalysis & Record<string, unknown>,
+          fix: analysisResult.fix,
+          messages: next,
+        },
+      });
+      setOverlayMessages([...next, { role: "assistant", content: reply }]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to reply");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   async function send() {
     const selectedCapability = activeCapability ?? "screen";
 
@@ -468,27 +503,11 @@ function ChatPage() {
       !streamRef.current
     ) {
       const text = prompt.trim();
-      const next: OverlayChatMessage[] = [...overlayMessages, { role: "user", content: text }];
-      setOverlayMessages(next);
       setPrompt("");
-      setAnalyzing(true);
-      setAnalysisError(null);
-      try {
-        const { reply } = await askScreenFollowUp({
-          data: {
-            analysis: analysisResult.analysis as ScreenAnalysis & Record<string, unknown>,
-            fix: analysisResult.fix,
-            messages: next,
-          },
-        });
-        setOverlayMessages([...next, { role: "assistant", content: reply }]);
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Failed to reply");
-      } finally {
-        setAnalyzing(false);
-      }
+      await submitOverlayFollowUp(text);
       return;
     }
+
 
     if (selectedCapability !== "screen") {
       await runPromptCapability(selectedCapability);
@@ -838,7 +857,9 @@ function ChatPage() {
         onSelectRepo={chooseRepo}
         pendingPrompt={pendingPrompt}
         lastSubmittedPrompt={lastSubmittedPrompt}
+        onEditOverlayMessage={(idx, newText) => void submitOverlayFollowUp(newText, { truncateAt: idx })}
       />
+
 
 
       {/* ============= DESKTOP LAYOUT ============= */}
@@ -924,7 +945,9 @@ function ChatPage() {
                       result={analysisResult}
                       messages={overlayMessages}
                       sending={analyzing && overlayMessages.length > 0}
+                      onEditResend={(idx, newText) => void submitOverlayFollowUp(newText, { truncateAt: idx })}
                     />
+
                   </div>
                 ) : !analysisError && systemResult ? (
                   <IntelResultFrame title="System Intelligence" icon={<Network className="h-4 w-4 text-orange-400" />}>
@@ -1198,12 +1221,15 @@ function ScreenAnalysisConversation({
   result,
   messages,
   sending,
+  onEditResend,
 }: {
   result: { analysis: ScreenAnalysis; fix: FixSuggestion };
   messages: OverlayChatMessage[];
   sending: boolean;
+  onEditResend?: (index: number, newText: string) => void;
 }) {
   const { analysis, fix } = result;
+
   return (
     <div className="mx-auto max-w-[760px] space-y-8 text-[16px] leading-7 text-white/90">
       <article className="space-y-6">
@@ -1359,9 +1385,11 @@ function ScreenAnalysisConversation({
           {messages.map((message, i) => (
             <div key={i} className={message.role === "user" ? "flex justify-end" : "block"}>
               {message.role === "user" ? (
-                <div className="max-w-[72%] rounded-2xl bg-white/[0.09] px-4 py-2.5 text-[15px] leading-6 text-white">
-                  {message.content}
-                </div>
+                <EditableUserMessage
+                  content={message.content}
+                  disabled={sending || !onEditResend}
+                  onResend={onEditResend ? (t) => onEditResend(i, t) : undefined}
+                />
               ) : (
                 <div className="max-w-[760px] whitespace-pre-wrap text-[16px] leading-7 text-white/90">
                   {message.content}
@@ -1371,6 +1399,7 @@ function ScreenAnalysisConversation({
           ))}
         </div>
       )}
+
 
       {sending && (
         <div className="inline-flex items-center gap-2 text-[14px] text-white/55">
@@ -1419,7 +1448,118 @@ function detectFileLanguage(file?: string | null): string {
   return map[ext] ?? "typescript";
 }
 
+export function EditableUserMessage({
+  content,
+  onResend,
+  disabled,
+}: {
+  content: string;
+  onResend?: (newText: string) => void;
+  disabled?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(content);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (editing && textareaRef.current) {
+      const el = textareaRef.current;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    }
+  }, [editing]);
+
+  function cancel() {
+    setDraft(content);
+    setEditing(false);
+  }
+
+  function submit() {
+    const trimmed = draft.trim();
+    if (!trimmed || !onResend) return;
+    setEditing(false);
+    onResend(trimmed);
+  }
+
+  if (editing) {
+    return (
+      <div className="w-full max-w-[85%] rounded-2xl border border-orange-400/40 bg-white/[0.06] px-3 py-2 shadow-[0_0_0_1px_rgba(251,146,60,0.15)]">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-orange-300">
+            Editing message
+          </span>
+          <span className="font-mono text-[9.5px] text-white/40">⏎ send · Esc cancel</span>
+        </div>
+        <textarea
+          ref={textareaRef}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            const el = e.currentTarget;
+            el.style.height = "auto";
+            el.style.height = `${el.scrollHeight}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              cancel();
+            } else if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          rows={1}
+          className="w-full resize-none bg-transparent text-[15px] leading-6 text-white outline-none placeholder:text-white/35"
+        />
+        <div className="mt-2 flex items-center justify-end gap-2">
+          <button
+            onClick={cancel}
+            className="rounded-md border border-white/15 px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/70 hover:bg-white/10"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={submit}
+            disabled={!draft.trim()}
+            className="rounded-md bg-white px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.2em] text-black hover:bg-white/90 disabled:opacity-50"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group relative flex max-w-[85%] items-start gap-1.5">
+      <div className="rounded-2xl bg-white/[0.09] px-4 py-2.5 text-[15px] leading-6 text-white whitespace-pre-wrap break-words">
+        {content}
+      </div>
+      {onResend && !disabled && (
+        <button
+          onClick={() => {
+            setDraft(content);
+            setEditing(true);
+          }}
+          className="mt-1 shrink-0 rounded-md p-1 text-white/40 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100 focus:opacity-100"
+          aria-label="Edit message"
+          title="Edit message"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
+
+
   return (
     <button
       onClick={onClick}
@@ -1905,6 +2045,8 @@ function MobileChat({
   onSelectRepo,
   pendingPrompt,
   lastSubmittedPrompt,
+  onEditOverlayMessage,
+
 }: {
   user: { email?: string | null } | null;
   credits: { plan?: string | null; balance?: number | null } | null | undefined;
@@ -1939,7 +2081,9 @@ function MobileChat({
   onSelectRepo: (repo: string) => void;
   pendingPrompt: string;
   lastSubmittedPrompt: string;
+  onEditOverlayMessage?: (index: number, newText: string) => void;
 }) {
+
   const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [capabilitySheetOpen, setCapabilitySheetOpen] = useState(false);
@@ -1997,7 +2141,9 @@ function MobileChat({
               result={analysisResult}
               messages={overlayMessages}
               sending={analyzing && overlayMessages.length > 0}
+              onEditResend={onEditOverlayMessage}
             />
+
           </div>
         </div>
       ) : systemResult ? (

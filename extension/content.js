@@ -97,12 +97,13 @@
   function showError(message) { ensureOverlay(); state.error = message || "Analysis failed"; state.open = true; render(); }
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message?.type === "JERADIN_SHOW_OVERLAY") show();
+    if (message?.type === "JERADIN_SHOW_OVERLAY") show(message.payload);
     else if (message?.type === "JERADIN_OVERLAY_EVENT") {
       const event = message.event;
       if (event?.type === "stage") state.stages.set(event.id, event);
       if (event?.type === "section" && event.data?.analysis) state.analysis = event.data.analysis;
       if (event?.type === "section" && event.data?.fix) state.fix = event.data.fix;
+      if (event?.type === "done") { if (state.deepRunning) { state.deepRunning = false; state.deepRan = true; } }
       if (event?.type === "error") showError(event.message);
       else render();
     } else if (message?.type === "JERADIN_OVERLAY_ERROR") showError(message.message);

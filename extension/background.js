@@ -9,7 +9,10 @@ function isJeradinUrl(url) {
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   try {
     const tab = await chrome.tabs.get(tabId);
-    if (tab.url && !isJeradinUrl(tab.url) && !tab.url.startsWith("chrome://")) lastNonJeradinTabId = tabId;
+    if (tab.url && !isJeradinUrl(tab.url) && !tab.url.startsWith("chrome://")) {
+      lastNonJeradinTabId = tabId;
+      await chrome.storage.local.set({ lastNonJeradinTabId: tabId });
+    }
   } catch (_) {}
 });
 
@@ -24,6 +27,10 @@ async function sendToTab(tabId, message) {
 async function resolveTargetTab(senderTab) {
   const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (active?.id && !isJeradinUrl(active.url)) return active;
+  if (!lastNonJeradinTabId) {
+    const stored = await chrome.storage.local.get(["lastNonJeradinTabId"]);
+    lastNonJeradinTabId = stored.lastNonJeradinTabId || null;
+  }
   if (lastNonJeradinTabId) {
     try { return await chrome.tabs.get(lastNonJeradinTabId); } catch (_) {}
   }

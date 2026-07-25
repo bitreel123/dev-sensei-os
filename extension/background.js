@@ -3,7 +3,14 @@ const API_BASE = "https://jeradin.com";
 let lastNonJeradinTabId = null;
 
 function isJeradinUrl(url) {
-  try { return new URL(url || "").hostname === "jeradin.com"; } catch { return false; }
+  try {
+    const hostname = new URL(url || "").hostname;
+    return hostname === "jeradin.com" || hostname === "www.jeradin.com" || hostname.includes("f3f1273c-9023-417a-8f01-2102307dd572");
+  } catch { return false; }
+}
+
+function isInjectableTab(tab) {
+  return Boolean(tab?.id && tab.url && /^(https?|file):/i.test(tab.url));
 }
 
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
@@ -26,15 +33,25 @@ async function sendToTab(tabId, message) {
 
 async function resolveTargetTab(senderTab) {
   const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (active?.id && !isJeradinUrl(active.url)) return active;
+  const senderId = senderTab?.id;
+  if (isInjectableTab(active) && active.id !== senderId && !isJeradinUrl(active.url)) return active;
   if (!lastNonJeradinTabId) {
     const stored = await chrome.storage.local.get(["lastNonJeradinTabId"]);
     lastNonJeradinTabId = stored.lastNonJeradinTabId || null;
   }
-  if (lastNonJeradinTabId) {
-    try { return await chrome.tabs.get(lastNonJeradinTabId); } catch (_) {}
+  if (lastNonJeradinTabId && lastNonJeradinTabId !== senderId) {
+    try {
+      const remembered = await chrome.tabs.get(lastNonJeradinTabId);
+      if (isInjectableTab(remembered) && !isJeradinUrl(remembered.url)) return remembered;
+    } catch (_) {}
   }
-  return active?.id ? active : senderTab;
+  // Screen sharing does not activate the tab selected in Chrome's picker.
+  // Fall back to the most recently used injectable tab other than Jeradin.
+  const tabs = await chrome.tabs.query({ currentWindow: true });
+  const recent = tabs
+    .filter((tab) => isInjectableTab(tab) && tab.id !== senderId && !isJeradinUrl(tab.url))
+    .sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0))[0];
+  return recent || null;
 }
 
 async function streamAnalysis(tabId, payload) {
@@ -89,7 +106,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "JERADIN_ANALYZE_ACTIVE_TAB" && msg.payload?.imageBase64) {
     void (async () => {
       const target = await resolveTargetTab(sender.tab);
-      if (!target?.id) throw new Error("No browser tab is available for the overlay.");
+      if (!target?.id) throw new Error("Open the codebase tab once, then stop sharing again.");
+      lastNonJeradinTabId = target.id;
+      await chrome.storage.local.set({ lastNonJeradinTabId: target.id });
       await sendToTab(target.id, { type: "JERADIN_SHOW_OVERLAY", title: msg.payload.note || "Screen analysis" });
       void streamAnalysis(target.id, msg.payload);
       sendResponse({ ok: true, tabId: target.id });

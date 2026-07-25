@@ -69,10 +69,34 @@ export async function rememberIntel(
     tags: entry.tags ?? [],
     ...(entry.sessionId ? { id: entry.sessionId } : {}),
   };
-  const query = entry.sessionId
-    ? supabaseAdmin.from("intel_memory").upsert(row, { onConflict: "id" })
-    : supabaseAdmin.from("intel_memory").insert(row);
-  const { error } = await query;
+  // `intel_memory.id` exists in older projects without a unique constraint,
+  // so PostgREST upsert(onConflict: "id") fails silently. Update first and
+  // insert only when no row exists, while always scoping updates to the owner.
+  let error: { message: string } | null = null;
+  if (entry.sessionId) {
+    const { data: existing, error: lookupError } = await supabaseAdmin
+      .from("intel_memory")
+      .select("id")
+      .eq("id", entry.sessionId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (lookupError) {
+      error = lookupError;
+    } else if (existing) {
+      const result = await supabaseAdmin
+        .from("intel_memory")
+        .update(row)
+        .eq("id", entry.sessionId)
+        .eq("user_id", userId);
+      error = result.error;
+    } else {
+      const result = await supabaseAdmin.from("intel_memory").insert(row);
+      error = result.error;
+    }
+  } else {
+    const result = await supabaseAdmin.from("intel_memory").insert(row);
+    error = result.error;
+  }
   if (error) console.warn("[intel-memory] persist failed:", error.message);
 }
 

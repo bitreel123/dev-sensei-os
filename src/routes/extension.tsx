@@ -101,11 +101,11 @@ function ExtensionPage() {
             <Download className="h-3.5 w-3.5" /> Step 1 · Download
           </div>
           <a
-            href="/jeradin-extension.zip"
+            href="/jeradin-screen-intelligence-extension.zip"
             className="inline-flex items-center gap-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 text-sm font-medium"
             download
           >
-            <Download className="h-4 w-4" /> Download jeradin-extension.zip
+            <Download className="h-4 w-4" /> Install extension v1.4.0
           </a>
           <ol className="mt-4 text-[13.5px] text-white/70 space-y-1.5 leading-relaxed list-decimal pl-5">
             <li>Unzip the file.</li>

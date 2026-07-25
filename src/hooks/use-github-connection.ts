@@ -21,17 +21,24 @@ export function useGithubConnection(userId: string | null) {
     }
     let cancelled = false;
     setLoading(true);
-    supabase
-      .from("github_connections")
-      .select("user_id, github_id, login, avatar_url, scopes")
-      .eq("user_id", userId)
-      .maybeSingle()
-      .then(({ data, error }) => {
+    void (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("github_connections")
+          .select("user_id, github_id, login, avatar_url, scopes")
+          .eq("user_id", userId)
+          .maybeSingle();
         if (cancelled) return;
         if (error) console.error("[github-connection] lookup failed:", error.message);
         setConn((data as GithubConnection | null) ?? null);
         setLoading(false);
-      });
+      } catch (error) {
+        if (cancelled) return;
+        console.error("[github-connection] lookup failed:", error);
+        setConn(null);
+        setLoading(false);
+      }
+    })();
     return () => {
       cancelled = true;
     };

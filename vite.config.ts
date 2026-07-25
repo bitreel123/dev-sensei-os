@@ -15,5 +15,11 @@ export default defineConfig({
   },
   vite: {
     plugins: [mcpPlugin()],
+    // These packages contain their own split ESM chunks. Keeping them out of
+    // Vite's dev pre-bundle prevents stale/missing optimized chunk URLs after
+    // HMR or environment reloads.
+    optimizeDeps: {
+      exclude: ["streamdown", "@streamdown/cjk", "@streamdown/code", "@streamdown/math"],
+    },
   },
 });

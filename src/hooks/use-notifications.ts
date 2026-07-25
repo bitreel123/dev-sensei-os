@@ -49,13 +49,20 @@ export function useNotifications(limit = 30) {
   const refresh = useCallback(async () => {
     if (!user) { setItems([]); return; }
     setLoading(true);
-    const { data } = await supabase
-      .from("notifications" as never)
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(limit);
-    setItems((data as unknown as NotificationRow[]) ?? []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("notifications" as never)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) console.error("[notifications] lookup failed:", error);
+      setItems((data as unknown as NotificationRow[]) ?? []);
+    } catch (error) {
+      console.error("[notifications] lookup failed:", error);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
   }, [user, limit]);
 
   useEffect(() => { refresh(); }, [refresh]);

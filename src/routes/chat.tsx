@@ -5,7 +5,7 @@ import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost, ChevronDown } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost, ChevronDown, Share2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry, upsertHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
@@ -583,8 +583,8 @@ function ChatPage() {
     toast.message("Attach a screenshot or start Screen recording, then Send.");
   }
 
-  async function runPromptCapability(capability: Exclude<CapabilityKey, "screen">) {
-    const text = prompt.trim();
+  async function runPromptCapability(capability: Exclude<CapabilityKey, "screen">, textOverride?: string) {
+    const text = (textOverride ?? prompt).trim();
     setAnalysisResult(null);
     setSystemResult(null);
     setKnowledgeResult(null);
@@ -593,7 +593,7 @@ function ChatPage() {
     setOpenedCapabilityPanel(null);
     setAnalysisError(null);
 
-    if (capability === "knowledge" && text.length < 5) {
+    if (capability === "knowledge" && text.length < 5 && attachments.length === 0) {
       setKnowledgeEnabled(true);
       toast.success("Knowledge enabled — type your question in the chat box and press Send.");
       return;
@@ -620,9 +620,14 @@ function ChatPage() {
     const sessionId = currentEntryId ?? crypto.randomUUID();
     try {
       if (capability === "knowledge") {
+        const attachedFiles = await attachmentsToFileInputs(attachments);
+        const projectContext = attachedFiles.length
+          ? attachedFiles.map((file) => `FILE: ${file.path}\n${file.content}`).join("\n\n---\n\n").slice(0, 120_000)
+          : "";
+        const effectiveQuestion = text || "Analyze the attached code context and explain what it does, its risks, and recommended changes.";
         // Stream sections one-by-one so the UI paints as soon as each Claude call resolves.
         const accumulated: KnowledgeReport = {
-          question: text,
+          question: effectiveQuestion,
           laymanSummary: "",
           recommendedStack: [],
           resources: [],
@@ -654,12 +659,12 @@ function ChatPage() {
             throw new Error(event.message);
           }
         };
-        await streamIntel("/api/intel/knowledge/stream", { question: text, projectContext: "", sessionId }, handleEvent);
+        await streamIntel("/api/intel/knowledge/stream", { question: effectiveQuestion, projectContext, sessionId }, handleEvent);
         if (sectionCount === 0) throw new Error("Knowledge analysis returned no sections. Please retry.");
         setKnowledgeEnabled(true);
-        const entry = upsertHistoryEntry(sessionId, `Knowledge · ${text.slice(0, 60)}`, {
+        const entry = upsertHistoryEntry(sessionId, `Knowledge · ${effectiveQuestion.slice(0, 60)}`, {
           mode: "knowledge",
-          knowledge: { report: accumulated, input: { question: text, projectContext: "" } },
+          knowledge: { report: accumulated, input: { question: effectiveQuestion, projectContext } },
         });
         setCurrentEntryId(entry.id);
         navigate({ to: "/chat", search: { id: entry.id } });
@@ -808,6 +813,19 @@ function ChatPage() {
     }
   }
 
+  async function resendEditedPrompt(text: string) {
+    setLastSubmittedPrompt(text);
+    setPrompt(text);
+    if ((activeCapability ?? "knowledge") === "screen" && lastScreenshotBase64) {
+      await analyzeImageBase64(lastScreenshotBase64, text, text);
+      return;
+    }
+    const capability = activeCapability === "system" || activeCapability === "repo" || activeCapability === "knowledge"
+      ? activeCapability
+      : "knowledge";
+    await runPromptCapability(capability, text);
+  }
+
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-black text-white flex">
@@ -863,6 +881,7 @@ function ChatPage() {
         onSelectRepo={chooseRepo}
         pendingPrompt={pendingPrompt}
         lastSubmittedPrompt={lastSubmittedPrompt}
+        onEditLastPrompt={(text) => void resendEditedPrompt(text)}
         onEditOverlayMessage={(idx, newText) => void submitOverlayFollowUp(newText, { truncateAt: idx })}
       />
 
@@ -921,9 +940,7 @@ function ChatPage() {
             {(
               <>
                 {lastSubmittedPrompt && (analyzing || analysisResult || systemResult || knowledgeResult || repoResult || analysisError) && (
-                  <div className="ml-auto max-w-[78%] rounded-lg bg-white/[0.08] px-4 py-3 text-[13px] leading-relaxed text-white/90">
-                    {lastSubmittedPrompt}
-                  </div>
+                  <SharedEditablePrompt content={lastSubmittedPrompt} disabled={analyzing} onResend={(text) => void resendEditedPrompt(text)} />
                 )}
                 {analysisError && (
                   <AnalysisError message={analysisError} />
@@ -1138,7 +1155,7 @@ function requestExtensionOverlay(payload: PendingAsk): Promise<boolean> {
         sessionId: payload.sessionId,
       },
     }, window.location.origin);
-    window.setTimeout(() => finish(false), 900);
+    window.setTimeout(() => finish(false), 4000);
   });
 }
 
@@ -1587,6 +1604,46 @@ export function EditableUserMessage({
             <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
           </svg>
         </button>
+      )}
+    </div>
+  );
+}
+
+function SharedEditablePrompt({ content, onResend, disabled }: { content: string; onResend: (text: string) => void; disabled?: boolean }) {
+  return (
+    <div className="ml-auto flex max-w-[85%] items-start gap-1.5">
+      <EditableUserMessage content={content} onResend={onResend} disabled={disabled} />
+      <SharePromptButton text={content} />
+    </div>
+  );
+}
+
+function SharePromptButton({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const shareUrl = typeof window === "undefined" ? "https://jeradin.com/chat" : window.location.href;
+  const shareText = `${text}\n${shareUrl}`;
+  async function share() {
+    if (navigator.share) {
+      await navigator.share({ title: "Jeradin conversation", text, url: shareUrl }).catch(() => undefined);
+      return;
+    }
+    await navigator.clipboard.writeText(shareText);
+    toast.success("Conversation link copied");
+  }
+  return (
+    <div className="relative flex shrink-0 flex-col gap-1">
+      <button onClick={() => setOpen((value) => !value)} className="rounded-md p-1.5 text-white/45 hover:bg-white/10 hover:text-white" aria-label="Share conversation" title="Share to WhatsApp, Telegram, and more">
+        <Share2 className="h-3.5 w-3.5" />
+      </button>
+      <button onClick={() => void navigator.clipboard.writeText(shareText).then(() => toast.success("Conversation link copied"))} className="rounded-md p-1.5 text-white/35 hover:bg-white/10 hover:text-white" aria-label="Copy conversation link" title="Copy link">
+        <Copy className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-8 z-50 w-40 rounded-md border border-white/15 bg-neutral-950 p-1 text-[12px] shadow-2xl">
+          <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer" className="block rounded px-2.5 py-2 text-white/80 hover:bg-white/10">WhatsApp</a>
+          <a href={`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer" className="block rounded px-2.5 py-2 text-white/80 hover:bg-white/10">Telegram</a>
+          <button onClick={() => { setOpen(false); void share(); }} className="block w-full rounded px-2.5 py-2 text-left text-white/80 hover:bg-white/10">More apps…</button>
+        </div>
       )}
     </div>
   );
@@ -2080,6 +2137,7 @@ function MobileChat({
   onSelectRepo,
   pendingPrompt,
   lastSubmittedPrompt,
+  onEditLastPrompt,
   onEditOverlayMessage,
 
 }: {
@@ -2116,6 +2174,7 @@ function MobileChat({
   onSelectRepo: (repo: string) => void;
   pendingPrompt: string;
   lastSubmittedPrompt: string;
+  onEditLastPrompt: (text: string) => void;
   onEditOverlayMessage?: (index: number, newText: string) => void;
 }) {
 
@@ -2162,11 +2221,7 @@ function MobileChat({
       {/* Content area: result or empty state */}
       {analysisError ? (
         <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pb-3">
-          {lastSubmittedPrompt && (
-            <div className="ml-auto mb-4 mt-4 max-w-[85%] rounded-2xl bg-white/[0.08] px-4 py-3 text-[14px] leading-relaxed text-white/90">
-              {lastSubmittedPrompt}
-            </div>
-          )}
+          {lastSubmittedPrompt && <div className="mb-4 mt-4"><SharedEditablePrompt content={lastSubmittedPrompt} disabled={analyzing} onResend={onEditLastPrompt} /></div>}
           <AnalysisError message={analysisError} />
         </div>
       ) : analysisResult ? (

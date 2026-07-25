@@ -366,6 +366,39 @@ export type Database = {
           },
         ]
       }
+      credit_usage: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          environment: string
+          id: string
+          mode: string
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          environment?: string
+          id?: string
+          mode: string
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          environment?: string
+          id?: string
+          mode?: string
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -722,13 +755,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      deduct_credit: {
-        Args: { p_amount: number; p_env?: string; p_user_id: string }
-        Returns: {
-          balance: number
-          ok: boolean
-        }[]
-      }
+      deduct_credit:
+        | {
+            Args: { p_amount: number; p_env?: string; p_user_id: string }
+            Returns: {
+              balance: number
+              ok: boolean
+            }[]
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_env?: string
+              p_mode?: string
+              p_session_id?: string
+              p_user_id: string
+            }
+            Returns: {
+              balance: number
+              ok: boolean
+            }[]
+          }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

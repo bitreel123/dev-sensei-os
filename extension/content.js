@@ -2,7 +2,7 @@
 (function () {
   if (window.__jeradinContentInstalled) return;
   window.__jeradinContentInstalled = true;
-  const state = { analysis: null, fix: null, stages: new Map(), open: true };
+  const state = { analysis: null, fix: null, stages: new Map(), open: true, error: "" };
   let host = null;
   let root = null;
 
@@ -67,15 +67,15 @@
     const analysis = state.analysis, fix = state.fix;
     const errors = (analysis?.errors || []).map((e) => `<div class="error"><strong>${escapeHtml(e.message)}</strong>${e.file ? `<small>${escapeHtml(e.file)}${e.line ? `:${escapeHtml(e.line)}` : ""}</small>` : ""}</div>`).join("");
     const steps = (fix?.steps || []).map((s, i) => `<article class="step"><header><span>STEP ${i + 1}</span><code>${escapeHtml(s.file || "Suggested change")}</code></header><p>${escapeHtml(s.change)}</p>${s.codeAfter ? `<pre class="code"><code>${highlight(s.codeAfter)}</code></pre>` : ""}</article>`).join("");
-    root.innerHTML += `<div class="backdrop" id="jeradin-minimize"></div><aside class="sheet" role="dialog" aria-label="Ask Jeradin screen analysis"><header class="top"><div class="brand"><b>J</b><span>ASK JERADIN</span></div><div><button id="jeradin-collapse" title="Minimize">—</button><button id="jeradin-close" title="Close">×</button></div></header><main>${!analysis ? `<section class="stages">${stages || '<div class="stage running"><span>◌</span>Starting analysis</div>'}</section>` : ""}${analysis ? `<section><label>WHAT'S ON SCREEN</label><h2>${escapeHtml(analysis.summary || "Screen analysis")}</h2>${errors}<label>ROOT CAUSE</label><p>${escapeHtml(analysis.hypothesis || "")}</p></section>` : ""}${fix ? `<section><label>RECOMMENDED FIX</label><p>${escapeHtml(fix.plainExplanation || "")}</p><div class="steps">${steps}</div></section>` : ""}<div id="jeradin-error" class="fatal"></div></main><footer><span>${fix ? "READY" : "ANALYZING…"}</span><span>SCREEN INTELLIGENCE</span></footer></aside>`;
+    root.innerHTML += `<div class="backdrop" id="jeradin-minimize"></div><aside class="sheet" role="dialog" aria-label="Ask Jeradin screen analysis"><header class="top"><div class="brand"><b>J</b><span>ASK JERADIN</span></div><div><button id="jeradin-collapse" title="Minimize">—</button><button id="jeradin-close" title="Close">×</button></div></header><main>${!analysis ? `<section class="stages">${stages || '<div class="stage running"><span>◌</span>Starting analysis</div>'}</section>` : ""}${analysis ? `<section><label>WHAT'S ON SCREEN</label><h2>${escapeHtml(analysis.summary || "Screen analysis")}</h2>${errors}<label>ROOT CAUSE</label><p>${escapeHtml(analysis.hypothesis || "")}</p></section>` : ""}${fix ? `<section><label>RECOMMENDED FIX</label><p>${escapeHtml(fix.plainExplanation || "")}</p><div class="steps">${steps}</div></section>` : ""}<div class="fatal" style="display:${state.error ? "block" : "none"}">${escapeHtml(state.error)}</div></main><footer><span>${fix ? "READY" : state.error ? "FAILED" : "ANALYZING…"}</span><span>SCREEN INTELLIGENCE</span></footer></aside>`;
     root.getElementById("jeradin-minimize")?.addEventListener("click", minimize);
     root.getElementById("jeradin-collapse")?.addEventListener("click", minimize);
     root.getElementById("jeradin-close")?.addEventListener("click", close);
   }
-  function show() { ensureOverlay(); state.analysis = null; state.fix = null; state.stages.clear(); state.open = true; render(); }
+  function show() { ensureOverlay(); state.analysis = null; state.fix = null; state.error = ""; state.stages.clear(); state.open = true; render(); }
   function minimize() { state.open = false; render(); }
   function close() { host?.remove(); host = null; root = null; }
-  function showError(message) { ensureOverlay(); state.open = true; render(); const el = root.getElementById("jeradin-error"); if (el) { el.textContent = message || "Analysis failed"; el.style.display = "block"; } }
+  function showError(message) { ensureOverlay(); state.error = message || "Analysis failed"; state.open = true; render(); }
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "JERADIN_SHOW_OVERLAY") show();
@@ -85,7 +85,7 @@
       if (event?.type === "section" && event.data?.analysis) state.analysis = event.data.analysis;
       if (event?.type === "section" && event.data?.fix) state.fix = event.data.fix;
       if (event?.type === "error") showError(event.message);
-      render();
+      else render();
     } else if (message?.type === "JERADIN_OVERLAY_ERROR") showError(message.message);
     sendResponse({ ok: true });
     return true;
@@ -95,7 +95,13 @@
     push();
     window.addEventListener("storage", push);
     window.addEventListener("message", (event) => {
-      if (event.source === window && event.origin === location.origin && event.data?.type === "JERADIN_ANALYZE_ACTIVE_TAB" && event.data.payload?.imageBase64) chrome.runtime.sendMessage(event.data).catch(() => undefined);
+      if (event.source === window && event.origin === location.origin && event.data?.type === "JERADIN_ANALYZE_ACTIVE_TAB" && event.data.payload?.imageBase64) {
+        chrome.runtime.sendMessage(event.data).then((response) => {
+          window.postMessage({ type: "JERADIN_EXTENSION_ACK", requestId: event.data.requestId, ok: Boolean(response?.ok) }, location.origin);
+        }).catch(() => {
+          window.postMessage({ type: "JERADIN_EXTENSION_ACK", requestId: event.data.requestId, ok: false }, location.origin);
+        });
+      }
     });
     setTimeout(push, 1500);
     setTimeout(push, 5000);

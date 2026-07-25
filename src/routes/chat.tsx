@@ -364,22 +364,17 @@ function ChatPage() {
           // floating pill on top of whatever the user is doing, and wait for
           // them to tap it. The streaming analysis kicks off on tap.
           const note = prompt.trim();
-          setPendingAsk({
+          const askPayload = {
             imageBase64: base64,
             note,
             title: note || "Screen recording",
             sessionId: currentEntryId ?? crypto.randomUUID(),
-          });
-          // The extension listens for this same-origin event and opens the
-          // streaming Ask Jeradin sheet inside the tab being shared.
-          window.postMessage({
-            type: "JERADIN_ANALYZE_ACTIVE_TAB",
-            payload: {
-              imageBase64: base64,
-              note,
-              sessionId: currentEntryId ?? crypto.randomUUID(),
-            },
-          }, window.location.origin);
+          };
+          // Prefer the extension-injected sheet in the shared tab. If the
+          // extension is absent or cannot reach that tab, retain the in-app
+          // Ask Jeradin sheet as the fallback without running analysis twice.
+          const openedInSharedTab = await requestExtensionOverlay(askPayload);
+          if (!openedInSharedTab) setPendingAsk(askPayload);
           setLastScreenshotBase64(base64);
           setLastScreenshotNote(note);
         } catch (e) {

@@ -2498,9 +2498,14 @@ function loadSafeSidebarHistory() {
 }
 
 function getSidebarHistory() {
-  return typeof window === "undefined"
-    ? []
-    : JSON.parse(window.localStorage.getItem("jeradin.chat.history.v1") ?? "[]") as Array<{ id: string; title: string }>;
+  if (typeof window === "undefined") return [];
+  const parsed = JSON.parse(window.localStorage.getItem("jeradin.chat.history.v1") ?? "[]") as unknown;
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter((item): item is { id: string; title: string } => {
+    if (!item || typeof item !== "object") return false;
+    const candidate = item as { id?: unknown; title?: unknown };
+    return typeof candidate.id === "string" && typeof candidate.title === "string";
+  });
 }
 
 function CapabilityIcon({ capability, className }: { capability: CapabilityKey; className?: string }) {

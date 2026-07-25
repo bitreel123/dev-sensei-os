@@ -2427,9 +2427,21 @@ function MobileChat({
       {/* Sidebar drawer */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="p-0 w-[260px] bg-[#0a0a0a] border-white/10">
-          <ChatSidebar />
+          <DashboardBoundary
+            name="mobile-sidebar"
+            fallback={
+              <div className="p-4 text-[13px] text-white/70">
+                <Link to="/chat" search={{}} className="block py-2 hover:text-white">+ New chat</Link>
+                <Link to="/account" className="block py-2 hover:text-white">Account</Link>
+                <Link to="/pricing" className="block py-2 hover:text-white">Upgrade</Link>
+              </div>
+            }
+          >
+            <ChatSidebar />
+          </DashboardBoundary>
         </SheetContent>
       </Sheet>
+
     </div>
   );
 }

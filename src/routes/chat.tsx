@@ -457,6 +457,41 @@ function ChatPage() {
     });
   }
 
+  // Shared follow-up sender for the screen intel conversation.
+  // Passing `truncateAt` (and optional `replaceText`) is how ChatGPT-style
+  // "edit a previous prompt and resend" is implemented — we slice history
+  // to that index, replace the user turn, and regenerate the assistant reply.
+  async function submitOverlayFollowUp(
+    text: string,
+    opts?: { truncateAt?: number },
+  ) {
+    if (!analysisResult) return;
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const base =
+      typeof opts?.truncateAt === "number"
+        ? overlayMessages.slice(0, opts.truncateAt)
+        : overlayMessages;
+    const next: OverlayChatMessage[] = [...base, { role: "user", content: trimmed }];
+    setOverlayMessages(next);
+    setAnalyzing(true);
+    setAnalysisError(null);
+    try {
+      const { reply } = await askScreenFollowUp({
+        data: {
+          analysis: analysisResult.analysis as ScreenAnalysis & Record<string, unknown>,
+          fix: analysisResult.fix,
+          messages: next,
+        },
+      });
+      setOverlayMessages([...next, { role: "assistant", content: reply }]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to reply");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   async function send() {
     const selectedCapability = activeCapability ?? "screen";
 
@@ -468,27 +503,11 @@ function ChatPage() {
       !streamRef.current
     ) {
       const text = prompt.trim();
-      const next: OverlayChatMessage[] = [...overlayMessages, { role: "user", content: text }];
-      setOverlayMessages(next);
       setPrompt("");
-      setAnalyzing(true);
-      setAnalysisError(null);
-      try {
-        const { reply } = await askScreenFollowUp({
-          data: {
-            analysis: analysisResult.analysis as ScreenAnalysis & Record<string, unknown>,
-            fix: analysisResult.fix,
-            messages: next,
-          },
-        });
-        setOverlayMessages([...next, { role: "assistant", content: reply }]);
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Failed to reply");
-      } finally {
-        setAnalyzing(false);
-      }
+      await submitOverlayFollowUp(text);
       return;
     }
+
 
     if (selectedCapability !== "screen") {
       await runPromptCapability(selectedCapability);

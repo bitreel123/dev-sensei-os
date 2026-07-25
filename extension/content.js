@@ -2,7 +2,7 @@
 (function () {
   if (window.__jeradinContentInstalled) return;
   window.__jeradinContentInstalled = true;
-  const state = { analysis: null, fix: null, stages: new Map(), open: true, error: "" };
+  const state = { analysis: null, fix: null, stages: new Map(), open: true, error: "", payload: null, deepRan: false, deepRunning: false };
   let host = null;
   let root = null;
 

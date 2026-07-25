@@ -80,8 +80,7 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
           const localSignature = local.map(({ id, title, createdAt }) => `${id}:${title}:${createdAt}`).join("|");
           const nextSignature = next.map(({ id, title, createdAt }) => `${id}:${title}:${createdAt}`).join("|");
           if (nextSignature !== localSignature) saveHistory(next);
-        })
-        .catch(() => {
+        }, () => {
           if (!cancelled && sequence === refreshSequence) setHistory(local);
         });
     };

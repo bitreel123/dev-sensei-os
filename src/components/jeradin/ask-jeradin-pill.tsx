@@ -137,12 +137,13 @@ export function AskJeradinPill({ pending, onDismiss, onComplete }: Props) {
     }
   }
 
-  async function sendFollowUp() {
-    const text = chatInput.trim();
+  async function sendFollowUp(textOverride?: string, truncateAt?: number) {
+    const text = (textOverride ?? chatInput).trim();
     if (!text || sending || !analysis || !fix) return;
-    const next = [...messages, { role: "user" as const, content: text }];
+    const base = typeof truncateAt === "number" ? messages.slice(0, truncateAt) : messages;
+    const next = [...base, { role: "user" as const, content: text }];
     setMessages(next);
-    setChatInput("");
+    if (textOverride === undefined) setChatInput("");
     setSending(true);
     try {
       const res = await askFollowUp({ data: { analysis, fix, messages: next } });
@@ -153,6 +154,7 @@ export function AskJeradinPill({ pending, onDismiss, onComplete }: Props) {
       setSending(false);
     }
   }
+
 
   function handleMinimize() {
     setOpen(false);

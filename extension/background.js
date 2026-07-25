@@ -133,7 +133,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (!target?.id || isJeradinUrl(target.url)) throw new Error("No codebase tab was found. Open the tab you want Jeradin to analyze, then stop sharing again.");
       lastNonJeradinTabId = target.id;
       await chrome.storage.local.set({ lastNonJeradinTabId: target.id });
-      await sendToTab(target.id, { type: "JERADIN_SHOW_OVERLAY", title: msg.payload.note || "Screen analysis" });
+      await sendToTab(target.id, {
+        type: "JERADIN_SHOW_OVERLAY",
+        title: msg.payload.note || "Screen analysis",
+        payload: {
+          imageBase64: msg.payload.imageBase64,
+          note: msg.payload.note || "",
+          sessionId: msg.payload.sessionId,
+        },
+      });
       void streamAnalysis(target.id, msg.payload);
       sendResponse({ ok: true, tabId: target.id });
     })().catch((error) => sendResponse({ ok: false, error: error.message }));

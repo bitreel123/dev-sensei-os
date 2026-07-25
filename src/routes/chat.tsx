@@ -1179,7 +1179,7 @@ function requestExtensionOverlay(payload: PendingAsk): Promise<boolean> {
         targetTabTitle: payload.targetTabTitle,
       },
     }, window.location.origin);
-    window.setTimeout(() => finish(false), 4000);
+    window.setTimeout(() => finish(false), 8000);
   });
 }
 

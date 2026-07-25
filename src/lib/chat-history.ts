@@ -34,8 +34,16 @@ export function loadHistory(): ChatHistoryEntry[] {
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return [];
-    const arr = JSON.parse(raw) as ChatHistoryEntry[];
-    return Array.isArray(arr) ? arr : [];
+    const arr = JSON.parse(raw) as unknown;
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((item): item is ChatHistoryEntry => {
+      if (!item || typeof item !== "object") return false;
+      const entry = item as Partial<ChatHistoryEntry>;
+      return typeof entry.id === "string"
+        && typeof entry.title === "string"
+        && typeof entry.createdAt === "number"
+        && Number.isFinite(entry.createdAt);
+    });
   } catch {
     return [];
   }
@@ -43,7 +51,7 @@ export function loadHistory(): ChatHistoryEntry[] {
 
 export function saveHistory(items: ChatHistoryEntry[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(KEY, JSON.stringify(items.slice(0, 50)));
+  window.localStorage.setItem(KEY, JSON.stringify(items.slice(0, 100)));
   window.dispatchEvent(new Event(EVENT));
 }
 

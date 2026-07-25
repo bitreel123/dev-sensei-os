@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   loadHistory,
   removeHistoryEntry,
+  saveHistory,
   subscribeHistory,
   type ChatHistoryEntry,
 } from "@/lib/chat-history";
@@ -31,7 +32,9 @@ export function ChatSidebar() {
 
   useEffect(() => {
     let cancelled = false;
+    let refreshSequence = 0;
     const refresh = () => {
+      const sequence = ++refreshSequence;
       const local = loadHistory();
       if (!user?.id) {
         setHistory(local);
@@ -39,15 +42,27 @@ export function ChatSidebar() {
       }
       loadCloudHistory({ data: { limit: 100 } })
         .then(({ items }) => {
-          if (cancelled) return;
-          const localIds = new Set(local.map((item) => item.id));
-          const cloud = items
-            .filter((item) => !localIds.has(item.id))
-            .map((item) => ({ id: item.id, title: item.title, createdAt: +new Date(item.created_at), payload: null }));
-          setHistory([...local, ...cloud].sort((a, b) => b.createdAt - a.createdAt));
+          if (cancelled || sequence !== refreshSequence) return;
+          const merged = new Map(local.map((item) => [item.id, item]));
+          for (const item of items) {
+            const createdAt = new Date(item.created_at).getTime();
+            if (!item.id || !item.title || !Number.isFinite(createdAt)) continue;
+            const existing = merged.get(item.id);
+            merged.set(item.id, {
+              id: item.id,
+              title: item.title,
+              createdAt,
+              payload: existing?.payload ?? null,
+            });
+          }
+          const next = [...merged.values()].sort((a, b) => b.createdAt - a.createdAt);
+          setHistory(next);
+          const localSignature = local.map(({ id, title, createdAt }) => `${id}:${title}:${createdAt}`).join("|");
+          const nextSignature = next.map(({ id, title, createdAt }) => `${id}:${title}:${createdAt}`).join("|");
+          if (nextSignature !== localSignature) saveHistory(next);
         })
         .catch(() => {
-          if (!cancelled) setHistory(local);
+          if (!cancelled && sequence === refreshSequence) setHistory(local);
         });
     };
     refresh();
@@ -67,7 +82,7 @@ export function ChatSidebar() {
     <aside
       className={`${
         collapsed ? "w-[56px]" : "w-[240px]"
-      } shrink-0 border-r border-white/10 bg-[#0a0a0a] text-white flex flex-col transition-[width] duration-200`}
+      } h-full min-h-0 shrink-0 border-r border-white/10 bg-[#0a0a0a] text-white flex flex-col transition-[width] duration-200`}
     >
       <div className="flex items-center justify-between px-3 h-14 border-b border-white/10">
         {!collapsed && (
@@ -85,7 +100,7 @@ export function ChatSidebar() {
         </button>
       </div>
 
-      <div className="p-2 flex-1 overflow-y-auto">
+      <div className="p-2 flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <SideItem to="/chat" icon={<Plus className="h-4 w-4" />} label="New chat" collapsed={collapsed} active={pathname === "/chat"} />
         <SideItem to="/pricing" icon={<Sparkles className="h-4 w-4" />} label="Upgrade" collapsed={collapsed} />
 

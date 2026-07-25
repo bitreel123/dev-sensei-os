@@ -5,7 +5,7 @@ import { ChatSidebar } from "@/components/jeradin/chat-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { useGithubConnection, startGithubOAuth } from "@/hooks/use-github-connection";
-import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, Ghost, ChevronDown, Share2, Copy } from "lucide-react";
+import { Monitor, Square, Send, Paperclip, X, Network, BookOpen, Github, Sparkles, Loader2, AlertTriangle, Menu, User as UserIcon, Plus, Check, ChevronDown, Share2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { addHistoryEntry, updateHistoryEntry, getHistoryEntry, upsertHistoryEntry } from "@/lib/chat-history";
 import { analyzeScreenAndSuggestFix, type ScreenAnalysis, type FixSuggestion, type OverlayChatMessage } from "@/lib/screen-intel.functions";
@@ -2226,9 +2226,7 @@ function MobileChat({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <Link to="/account" className="p-2 -mr-2 text-white/80 hover:text-white" aria-label="Account">
-          <Ghost className="h-7 w-7" strokeWidth={1.7} />
-        </Link>
+        <div className="h-9 w-9" aria-hidden="true" />
       </div>
 
       {/* Upgrade banner */}
@@ -2426,7 +2424,7 @@ function MobileChat({
 
       {/* Sidebar drawer */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="p-0 w-[260px] bg-[#0a0a0a] border-white/10">
+        <SheetContent side="left" className="h-dvh p-0 w-[260px] bg-[#0a0a0a] border-white/10">
           <DashboardBoundary
             name="mobile-sidebar"
             fallback={

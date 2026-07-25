@@ -30,7 +30,7 @@ const platforms: Platform[] = [
     icon: Chrome,
     name: "Chrome Extension",
     sub: "Chrome · Edge · Brave · Arc",
-    file: "jeradin-extension-v1.5.0.zip",
+    file: "jeradin-extension-v1.6.0.zip",
     action: { type: "download", href: "/jeradin-extension.zip" },
     primary: true,
   },

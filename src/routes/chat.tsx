@@ -1445,6 +1445,7 @@ function detectFileLanguage(file?: string | null): string {
 }
 
 function ToolButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
+
   return (
     <button
       onClick={onClick}

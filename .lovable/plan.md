@@ -1,89 +1,35 @@
-## Goal
+## Fix Ask Jeradin cross-tab overlay
 
-Stop buffering full intelligence reports. Stream each section (Product Discovery, Market Research, Competitors, Architecture, Technology, Security, Development Plan, Learning, Launch, Knowledge Graph) independently, render as soon as ready, keep completed sections visible if one fails, and allow retrying only the failed section. Apply the same to System Intelligence (repo index → graph → deps → report) and GitHub/Repo Intelligence.
+### Confirmed problem
+The current Ask Jeradin sheet is mounted inside the `/chat` React page, so CSS can only display it in the Jeradin tab. The extension currently analyzes inside its popup and its content script only syncs the login session; it never injects an overlay into the Lovable editor or another shared tab.
 
-## Architecture
+### Implementation
+1. **Inject Ask Jeradin into the shared tab**
+   - Extend the browser extension content script with an isolated Shadow DOM overlay.
+   - Render the floating pill and attached responsive sheet directly inside the target tab, including Lovable codebase tabs.
+   - Support minimize, reopen, close, mobile bottom-sheet, and desktop side-sheet states without changing the host page.
 
-Replace single `createServerFn` "give me the whole report" with a streaming HTTP route per intelligence, emitting NDJSON events over a `ReadableStream`. Client consumes with `fetch` + `getReader()` and updates React state per event.
+2. **Bridge recording stop to the extension**
+   - On Screen Intelligence recording stop, send the captured frame, prompt, and session ID to the extension.
+   - Track the most recent non-Jeradin/shared tab so the overlay opens there even when Jeradin temporarily becomes active.
+   - Keep the existing in-app fallback when the extension is unavailable.
 
-### New server routes (raw HTTP, streaming)
+3. **Stream analysis into that tab**
+   - Have the extension service worker call the existing authenticated `/api/intel/screen/stream` endpoint.
+   - Forward each NDJSON stage and section to the injected overlay immediately: Thinking, Reading screen, Understanding code, Finding errors, and Generating fixes.
+   - Display authentication, unsupported-page, capture, and analysis failures inside the overlay.
 
-- `src/routes/api/intel/knowledge.stream.ts`
-- `src/routes/api/intel/system.stream.ts`
-- `src/routes/api/intel/github.stream.ts`
+4. **Update extension capture behavior**
+   - Change “Capture & Analyze” so it opens the injected overlay on the captured tab rather than displaying results only in the small extension popup.
+   - Expand host access so the overlay can work on normal web tabs; browser-internal pages remain unavailable due to browser security restrictions.
+   - Increment the extension version so users can confirm they installed the corrected package.
 
-Each route:
-1. Auth via Supabase bearer token (reuse `requireSupabaseAuth` pattern manually or via helper).
-2. Assert credits up front.
-3. Return `new Response(stream, { headers: { 'content-type': 'application/x-ndjson' } })`.
-4. Emit events:
-   - `{type:'status', stage, label}` — live progress line
-   - `{type:'section', key, data}` — one completed section
-   - `{type:'error', key?, message}` — section-scoped or fatal
-   - `{type:'done'}` — final; charges credits + persists memory
-5. Each section = its own small `generateText` call with a focused prompt + tight schema. Run independent sections in parallel (Promise.allSettled), emit as each resolves.
+5. **IDE-colored code everywhere**
+   - Preserve the existing Prism `oneDark` code cards for structured fix steps.
+   - Replace plain assistant follow-up rendering in the web chat, Screen Intelligence overlay, and Ask Jeradin pill with the installed AI Elements `MessageResponse`, which renders fenced code as highlighted, wrapped code blocks.
+   - Add a compact One Dark-style code renderer to the extension overlay so suggested `codeAfter` is never omitted or shown as uncolored prose.
 
-### Section pipeline (Knowledge)
-
-Stages emit in parallel groups:
-- Group A (fast, first): `productDiscovery`, `learning`, `laymanSummary`
-- Group B (evidence-dependent): fetch GitHub+npm evidence in parallel → then `marketIntelligence`, `competitors`, `resources`
-- Group C: `architecture`, `technologyChoices`, `security`, `systemDesign`
-- Group D: `developmentPlan`, `launch`, `graph`, `glossary`, `nextSteps`, `recommendedStack`
-
-Each `generateText` uses `maxOutputTokens ≤ 1500` and a mini system prompt scoped to that section — dramatically faster + never truncates.
-
-### System / GitHub Intelligence stages
-
-- System: `indexing` → `parsing` → `dependencies` → `architecture` → `risks` → `recommendations` → `summary`
-- GitHub: `repoMeta` → `fileTree` → `hotspots` → `dependencies` → `security` → `quality` → `summary`
-
-Each stage streams status then section payload.
-
-## Frontend
-
-### `src/lib/intel-stream.ts` (new)
-
-Helper `streamIntel(url, body, { onStatus, onSection, onError, onDone, signal })` that POSTs, reads NDJSON lines, dispatches typed events. Attaches Supabase bearer token.
-
-### `src/routes/chat.tsx`
-
-Replace `useServerFn(runKnowledgeIntelligence/…)` calls for these three modes with `streamIntel`. Maintain:
-- `progress: {stage, label, status}[]` — rendered as a live checklist ("✓ Product Discovery", "⏳ Gathering market data…")
-- `sections: Partial<KnowledgeReport>` — accumulate as events arrive; pass to existing `intel-reports` renderer so partial reports render incrementally
-- `failedSections: Set<string>` with a "Retry" button per failed section (POSTs `/api/intel/knowledge.stream` with `only:[key]`)
-
-Keep composer, capability buttons, and prompt bubble visible throughout (already the case).
-
-### `src/components/jeradin/intel-reports.tsx`
-
-Update to gracefully render partial reports (skip missing sections, show inline "Retry this section" button when `failedSections` includes the key).
-
-## Non-goals / constraints
-
-- Keep Claude Sonnet 4.5 model (no swap).
-- Do not add new routes/pages; results still appear in the existing dashboard.
-- Screen Intelligence stays as-is (already fast, single-shot); only add a progress checklist UI.
-- Preserve credit charging (once, at `done`) and memory persistence.
-
-## Files touched
-
-New:
-- `src/routes/api/intel/knowledge.stream.ts`
-- `src/routes/api/intel/system.stream.ts`
-- `src/routes/api/intel/github.stream.ts`
-- `src/lib/intel-stream.ts`
-- `src/lib/intel-sections.server.ts` (shared per-section generators)
-
-Modified:
-- `src/routes/chat.tsx` (streaming client + progress UI + retry)
-- `src/components/jeradin/intel-reports.tsx` (partial-report friendly + per-section retry)
-- `src/lib/intel-memory.server.ts` (expose `chargeOnly` / `rememberOnly` helpers)
-
-Legacy `runKnowledgeIntelligence/runSystemIntelligence/runRepoIntelligence` server fns stay as fallback until streaming is verified, then can be removed.
-
-## Verification
-
-- `tsgo` clean.
-- Live test with the fintech prompt: first section visible < 5s, remaining sections trickle in, no "incomplete response" error.
-- Kill one section mid-stream (throw) → other sections still render, Retry button re-runs only that section.
+6. **Verification**
+   - Validate extension message routing, session reuse, streaming events, minimize/reopen/close, and wrapped code suggestions.
+   - Test the flow by capturing a Lovable editor tab, stopping Screen Intelligence, and confirming the sheet appears over that editor rather than only in Jeradin.
+   - Verify desktop and mobile-sized layouts and confirm no visible scrollbars appear in the result surface.

@@ -22,6 +22,7 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { streamIntel, type IntelStreamEvent } from "@/lib/intel-stream";
 import { getIntelMemory, type MemoryEntry } from "@/lib/intel-memory.functions";
 import { AskJeradinPill, type PendingAsk } from "@/components/jeradin/ask-jeradin-pill";
+import { MessageResponse } from "@/components/ai-elements/message";
 
 
 
@@ -369,6 +370,16 @@ function ChatPage() {
             title: note || "Screen recording",
             sessionId: currentEntryId ?? crypto.randomUUID(),
           });
+          // The extension listens for this same-origin event and opens the
+          // streaming Ask Jeradin sheet inside the tab being shared.
+          window.postMessage({
+            type: "JERADIN_ANALYZE_ACTIVE_TAB",
+            payload: {
+              imageBase64: base64,
+              note,
+              sessionId: currentEntryId ?? crypto.randomUUID(),
+            },
+          }, window.location.origin);
           setLastScreenshotBase64(base64);
           setLastScreenshotNote(note);
         } catch (e) {
@@ -1391,9 +1402,9 @@ function ScreenAnalysisConversation({
                   onResend={onEditResend ? (t) => onEditResend(i, t) : undefined}
                 />
               ) : (
-                <div className="max-w-[760px] whitespace-pre-wrap text-[16px] leading-7 text-white/90">
+                <MessageResponse className="max-w-[760px] text-[16px] leading-7 text-white/90 [&_pre]:max-w-full [&_pre]:whitespace-pre-wrap [&_code]:break-words">
                   {message.content}
-                </div>
+                </MessageResponse>
               )}
             </div>
           ))}

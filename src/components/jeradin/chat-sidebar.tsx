@@ -1,6 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import {
   PanelLeft,
   Plus,
@@ -18,8 +17,9 @@ import {
   subscribeHistory,
   type ChatHistoryEntry,
 } from "@/lib/chat-history";
-import { deleteIntelMemory, listIntelMemory } from "@/lib/intel-memory.functions";
+import { deleteIntelMemory } from "@/lib/intel-memory.functions";
 import { useUserData } from "@/hooks/use-user-data";
+import { supabase } from "@/integrations/supabase/client";
 
 type ChatSidebarProps = {
   mobile?: boolean;
@@ -32,8 +32,6 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
   const { user } = useAuth();
   const { credits } = useUserData(user?.id ?? null);
   const { pathname } = useLocation();
-  const loadCloudHistory = useServerFn(listIntelMemory);
-  const removeCloudHistory = useServerFn(deleteIntelMemory);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,10 +43,19 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
         setHistory(local);
         return;
       }
-       loadCloudHistory({ data: { limit: 100 } })
-        .then((response) => {
+      supabase
+        .from("intel_memory")
+        .select("id, mode, title, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(100)
+        .then(({ data, error }) => {
           if (cancelled || sequence !== refreshSequence) return;
-          const items = Array.isArray(response?.items) ? response.items : [];
+          if (error) {
+            setHistory(local);
+            return;
+          }
+          const items = Array.isArray(data) ? data : [];
           const merged = new Map(local.map((item) => [item.id, item]));
           for (const item of items) {
             const createdAt = new Date(item.created_at).getTime();
@@ -73,8 +80,7 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
           const localSignature = local.map(({ id, title, createdAt }) => `${id}:${title}:${createdAt}`).join("|");
           const nextSignature = next.map(({ id, title, createdAt }) => `${id}:${title}:${createdAt}`).join("|");
           if (nextSignature !== localSignature) saveHistory(next);
-        })
-        .catch(() => {
+        }, () => {
           if (!cancelled && sequence === refreshSequence) setHistory(local);
         });
     };
@@ -87,7 +93,7 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
       unsubscribe();
       if (interval) window.clearInterval(interval);
     };
-  }, [loadCloudHistory, user?.id]);
+  }, [user?.id]);
 
   const initial = user?.email?.[0]?.toUpperCase() ?? "J";
 
@@ -147,7 +153,7 @@ export function ChatSidebar({ mobile = false, onNavigate }: ChatSidebarProps) {
               <button
                 onClick={() => {
                   removeHistoryEntry(h.id);
-                  void removeCloudHistory({ data: { id: h.id } }).catch(() => undefined);
+                  void deleteIntelMemory({ data: { id: h.id } }).catch(() => undefined);
                 }}
                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
                 aria-label="Delete"

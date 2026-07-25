@@ -330,10 +330,20 @@ function ChatPage() {
       return;
     }
     try {
+      type CaptureFocusController = {
+        setFocusBehavior: (behavior: "focus-captured-surface" | "no-focus-change") => void;
+      };
+      type CaptureFocusControllerConstructor = new () => CaptureFocusController;
+      const CaptureControllerClass = (window as typeof window & {
+        CaptureController?: CaptureFocusControllerConstructor;
+      }).CaptureController;
+      const captureController = CaptureControllerClass ? new CaptureControllerClass() : undefined;
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: 30 },
         audio: true,
+        ...(captureController ? { controller: captureController } : {}),
       });
+      captureController?.setFocusBehavior("focus-captured-surface");
       streamRef.current = stream;
       chunksRef.current = [];
 

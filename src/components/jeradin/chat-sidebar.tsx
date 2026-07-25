@@ -18,11 +18,13 @@ import {
   type ChatHistoryEntry,
 } from "@/lib/chat-history";
 import { deleteIntelMemory, listIntelMemory } from "@/lib/intel-memory.functions";
+import { useUserData } from "@/hooks/use-user-data";
 
 export function ChatSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [history, setHistory] = useState<ChatHistoryEntry[]>([]);
   const { user } = useAuth();
+  const { credits } = useUserData(user?.id ?? null);
   const { pathname } = useLocation();
   const loadCloudHistory = useServerFn(listIntelMemory);
   const removeCloudHistory = useServerFn(deleteIntelMemory);
@@ -139,7 +141,7 @@ export function ChatSidebar() {
               <div className="text-[13px] truncate">
                 {user?.email ?? "Account"}
               </div>
-              <div className="text-[10.5px] text-white/45">Free plan</div>
+              <div className="text-[10.5px] capitalize text-white/45">{credits?.plan ?? "free"} plan</div>
             </div>
           )}
           {!collapsed && <UserIcon className="h-3.5 w-3.5 text-white/40" />}

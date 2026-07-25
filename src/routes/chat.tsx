@@ -22,6 +22,7 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { streamIntel, type IntelStreamEvent } from "@/lib/intel-stream";
 import { getIntelMemory, type MemoryEntry } from "@/lib/intel-memory.functions";
 import { AskJeradinPill, type PendingAsk } from "@/components/jeradin/ask-jeradin-pill";
+import { MessageResponse } from "@/components/ai-elements/message";
 
 
 
@@ -363,12 +364,17 @@ function ChatPage() {
           // floating pill on top of whatever the user is doing, and wait for
           // them to tap it. The streaming analysis kicks off on tap.
           const note = prompt.trim();
-          setPendingAsk({
+          const askPayload = {
             imageBase64: base64,
             note,
             title: note || "Screen recording",
             sessionId: currentEntryId ?? crypto.randomUUID(),
-          });
+          };
+          // Prefer the extension-injected sheet in the shared tab. If the
+          // extension is absent or cannot reach that tab, retain the in-app
+          // Ask Jeradin sheet as the fallback without running analysis twice.
+          const openedInSharedTab = await requestExtensionOverlay(askPayload);
+          if (!openedInSharedTab) setPendingAsk(askPayload);
           setLastScreenshotBase64(base64);
           setLastScreenshotNote(note);
         } catch (e) {
@@ -1107,6 +1113,35 @@ function ChatPage() {
 
 
 
+function requestExtensionOverlay(payload: PendingAsk): Promise<boolean> {
+  return new Promise((resolve) => {
+    const requestId = crypto.randomUUID();
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener("message", onMessage);
+      resolve(ok);
+    };
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== window || event.origin !== window.location.origin) return;
+      if (event.data?.type !== "JERADIN_EXTENSION_ACK" || event.data.requestId !== requestId) return;
+      finish(Boolean(event.data.ok));
+    };
+    window.addEventListener("message", onMessage);
+    window.postMessage({
+      type: "JERADIN_ANALYZE_ACTIVE_TAB",
+      requestId,
+      payload: {
+        imageBase64: payload.imageBase64,
+        note: payload.note,
+        sessionId: payload.sessionId,
+      },
+    }, window.location.origin);
+    window.setTimeout(() => finish(false), 900);
+  });
+}
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1391,9 +1426,9 @@ function ScreenAnalysisConversation({
                   onResend={onEditResend ? (t) => onEditResend(i, t) : undefined}
                 />
               ) : (
-                <div className="max-w-[760px] whitespace-pre-wrap text-[16px] leading-7 text-white/90">
+                <MessageResponse className="max-w-[760px] text-[16px] leading-7 text-white/90 [&_pre]:max-w-full [&_pre]:whitespace-pre-wrap [&_code]:break-words">
                   {message.content}
-                </div>
+                </MessageResponse>
               )}
             </div>
           ))}

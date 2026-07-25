@@ -66,17 +66,15 @@ async function whoami(token) {
   return res.json();
 }
 
-async function captureAndAnalyze(token, note) {
+async function captureAndAnalyze(_token, note) {
   const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: "png" });
   const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
-  const res = await fetch(`${API_BASE}/api/public/extension/analyze`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ imageBase64: base64, note: note || "" }),
+  const response = await chrome.runtime.sendMessage({
+    type: "JERADIN_ANALYZE_ACTIVE_TAB",
+    payload: { imageBase64: base64, note: note || "", sessionId: crypto.randomUUID() },
   });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error || `Server returned ${res.status}`);
-  return body;
+  if (!response?.ok) throw new Error(response?.error || "Could not open Ask Jeradin on this tab");
+  return response;
 }
 
 function renderSignedIn(session) {
@@ -96,11 +94,11 @@ function renderSignedIn(session) {
     status.appendChild(s);
     const t0 = Date.now();
     try {
-      const { analysis, fix } = await captureAndAnalyze(session.access_token, note.value.trim());
+      await captureAndAnalyze(session.access_token, note.value.trim());
       const dt = ((Date.now() - t0) / 1000).toFixed(1);
       status.innerHTML = "";
-      status.appendChild(statusEl("ok", `Done in ${dt}s`));
-      renderResult(result, analysis, fix);
+      status.appendChild(statusEl("ok", `Ask Jeradin opened on this tab in ${dt}s`));
+      setTimeout(() => window.close(), 250);
     } catch (e) {
       status.innerHTML = "";
       status.appendChild(statusEl("err", e.message || "Analysis failed"));

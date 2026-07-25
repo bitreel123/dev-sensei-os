@@ -16,6 +16,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles, X, Check, AlertTriangle, Zap, Send, ChevronDown } from "lucide-react";
 import { streamIntel, type IntelStreamEvent } from "@/lib/intel-stream";
 import { AnalysisBody } from "@/components/jeradin/screen-intel-overlay";
+import { MessageResponse } from "@/components/ai-elements/message";
 import {
   analyzeScreenAndSuggestFix,
   chatAboutAnalysis,
@@ -332,12 +333,12 @@ export function AskJeradinPill({ pending, onDismiss, onComplete }: Props) {
                         onResend={(newText) => void sendFollowUp(newText, i)}
                       />
                     ) : (
-                      <div
+                      <MessageResponse
                         key={i}
-                        className="text-[12.5px] leading-relaxed rounded-md px-2.5 py-1.5 text-white/85 whitespace-pre-wrap break-words"
+                        className="text-[12.5px] leading-relaxed rounded-md px-2.5 py-1.5 text-white/85 [&_pre]:max-w-full [&_pre]:whitespace-pre-wrap [&_code]:break-words"
                       >
                         {m.content}
-                      </div>
+                      </MessageResponse>
                     ),
                   )}
 

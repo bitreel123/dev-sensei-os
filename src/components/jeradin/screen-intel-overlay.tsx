@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { MessageResponse } from "@/components/ai-elements/message";
 import { useServerFn } from "@tanstack/react-start";
 import {
   analyzeScreenAndSuggestFix,
@@ -387,9 +388,9 @@ export function ScreenIntelOverlay({
                     {m.content}
                   </div>
                 ) : (
-                  <div className="text-[12.5px] text-white/90 leading-relaxed whitespace-pre-wrap">
+                  <MessageResponse className="text-[12.5px] text-white/90 leading-relaxed [&_pre]:max-w-full [&_pre]:whitespace-pre-wrap [&_code]:break-words">
                     {m.content}
-                  </div>
+                  </MessageResponse>
                 )}
               </div>
             ))}

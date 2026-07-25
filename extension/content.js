@@ -67,12 +67,31 @@
     const analysis = state.analysis, fix = state.fix;
     const errors = (analysis?.errors || []).map((e) => `<div class="error"><strong>${escapeHtml(e.message)}</strong>${e.file ? `<small>${escapeHtml(e.file)}${e.line ? `:${escapeHtml(e.line)}` : ""}</small>` : ""}</div>`).join("");
     const steps = (fix?.steps || []).map((s, i) => `<article class="step"><header><span>STEP ${i + 1}</span><code>${escapeHtml(s.file || "Suggested change")}</code></header><p>${escapeHtml(s.change)}</p>${s.codeAfter ? `<pre class="code"><code>${highlight(s.codeAfter)}</code></pre>` : ""}</article>`).join("");
-    root.innerHTML += `<div class="backdrop" id="jeradin-minimize"></div><aside class="sheet" role="dialog" aria-label="Ask Jeradin screen analysis"><header class="top"><div class="brand"><b>J</b><span>ASK JERADIN</span></div><div><button id="jeradin-collapse" title="Minimize">—</button><button id="jeradin-close" title="Close">×</button></div></header><main>${!analysis ? `<section class="stages">${stages || '<div class="stage running"><span>◌</span>Starting analysis</div>'}</section>` : ""}${analysis ? `<section><label>WHAT'S ON SCREEN</label><h2>${escapeHtml(analysis.summary || "Screen analysis")}</h2>${errors}<label>ROOT CAUSE</label><p>${escapeHtml(analysis.hypothesis || "")}</p></section>` : ""}${fix ? `<section><label>RECOMMENDED FIX</label><p>${escapeHtml(fix.plainExplanation || "")}</p><div class="steps">${steps}</div></section>` : ""}<div class="fatal" style="display:${state.error ? "block" : "none"}">${escapeHtml(state.error)}</div></main><footer><span>${fix ? "READY" : state.error ? "FAILED" : "ANALYZING…"}</span><span>SCREEN INTELLIGENCE</span></footer></aside>`;
+    const deepBtn = state.payload && !state.deepRan
+      ? `<button id="jeradin-deep" style="margin-left:auto;padding:6px 12px;border:1px solid #fb923c;background:transparent;color:#fb923c;border-radius:6px;cursor:pointer;font:600 10px ui-monospace,monospace;letter-spacing:.15em" ${state.deepRunning ? "disabled" : ""}>${state.deepRunning ? "DEEP DIVING…" : "⚡ DEEP DIVE"}</button>`
+      : "";
+    root.innerHTML += `<div class="backdrop" id="jeradin-minimize"></div><aside class="sheet" role="dialog" aria-label="Ask Jeradin screen analysis"><header class="top"><div class="brand"><b>J</b><span>ASK JERADIN</span></div><div><button id="jeradin-collapse" title="Minimize">—</button><button id="jeradin-close" title="Close">×</button></div></header><main>${!analysis ? `<section class="stages">${stages || '<div class="stage running"><span>◌</span>Starting analysis</div>'}</section>` : ""}${analysis ? `<section><label>WHAT'S ON SCREEN</label><h2>${escapeHtml(analysis.summary || "Screen analysis")}</h2>${errors}<label>ROOT CAUSE</label><p>${escapeHtml(analysis.hypothesis || "")}</p></section>` : ""}${fix ? `<section><label>RECOMMENDED FIX</label><p>${escapeHtml(fix.plainExplanation || "")}</p><div class="steps">${steps}</div></section>` : ""}<div class="fatal" style="display:${state.error ? "block" : "none"}">${escapeHtml(state.error)}</div></main><footer><span>${state.deepRunning ? "DEEP DIVING…" : fix ? "READY" : state.error ? "FAILED" : "ANALYZING…"}</span>${deepBtn}<span>SCREEN INTELLIGENCE</span></footer></aside>`;
     root.getElementById("jeradin-minimize")?.addEventListener("click", minimize);
     root.getElementById("jeradin-collapse")?.addEventListener("click", minimize);
     root.getElementById("jeradin-close")?.addEventListener("click", close);
+    root.getElementById("jeradin-deep")?.addEventListener("click", deepDive);
   }
-  function show() { ensureOverlay(); state.analysis = null; state.fix = null; state.error = ""; state.stages.clear(); state.open = true; render(); }
+  function show(payload) {
+    ensureOverlay();
+    state.analysis = null; state.fix = null; state.error = ""; state.stages.clear();
+    state.open = true; state.deepRan = false; state.deepRunning = false;
+    if (payload) state.payload = payload;
+    render();
+  }
+  function deepDive() {
+    if (!state.payload || state.deepRunning) return;
+    state.deepRunning = true;
+    state.analysis = null; state.fix = null; state.stages.clear();
+    render();
+    chrome.runtime.sendMessage({ type: "JERADIN_DEEP_DIVE", payload: state.payload })
+      .then((r) => { if (!r?.ok) { state.deepRunning = false; showError(r?.error || "Deep dive failed"); } })
+      .catch((e) => { state.deepRunning = false; showError(e?.message || "Deep dive failed"); });
+  }
   function minimize() { state.open = false; render(); }
   function close() { host?.remove(); host = null; root = null; }
   function showError(message) { ensureOverlay(); state.error = message || "Analysis failed"; state.open = true; render(); }

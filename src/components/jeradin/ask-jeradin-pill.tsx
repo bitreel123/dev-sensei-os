@@ -30,6 +30,7 @@ export type PendingAsk = {
   note: string;
   title: string;
   sessionId: string;
+  targetTabTitle?: string;
 };
 
 type Props = {
@@ -335,7 +336,7 @@ export function AskJeradinPill({ pending, onDismiss, onComplete }: Props) {
                     ) : (
                       <MessageResponse
                         key={i}
-                        className="text-[12.5px] leading-relaxed rounded-md px-2.5 py-1.5 text-white/85 [&_pre]:max-w-full [&_pre]:whitespace-pre-wrap [&_code]:break-words"
+                        className="text-[12.5px] leading-relaxed rounded-md px-2.5 py-1.5 text-white/85 [&_pre]:max-w-full [&_pre]:whitespace-pre-wrap [&_pre]:!bg-code-editor [&_pre]:!text-code-editor-foreground [&_code]:break-words"
                       >
                         {m.content}
                       </MessageResponse>

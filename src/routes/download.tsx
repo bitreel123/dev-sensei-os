@@ -30,7 +30,7 @@ const platforms: Platform[] = [
     icon: Chrome,
     name: "Chrome Extension",
     sub: "Chrome · Edge · Brave · Arc",
-    file: "jeradin-extension-v1.4.0.zip",
+    file: "jeradin-extension-v1.5.0.zip",
     action: { type: "download", href: "/jeradin-extension.zip" },
     primary: true,
   },
@@ -73,7 +73,7 @@ function DownloadPage() {
         .then((blob) => {
           const a = document.createElement("a");
           a.href = URL.createObjectURL(blob);
-          a.download = "jeradin-extension-v1.4.0.zip";
+          a.download = "jeradin-extension-v1.5.0.zip";
           a.click();
           URL.revokeObjectURL(a.href);
         })

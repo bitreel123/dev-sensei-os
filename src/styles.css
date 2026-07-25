@@ -59,6 +59,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-code-editor: var(--code-editor);
+  --color-code-editor-foreground: var(--code-editor-foreground);
 }
 
 :root {
@@ -95,6 +97,8 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --code-editor: oklch(0.16 0.018 260);
+  --code-editor-foreground: oklch(0.86 0.02 250);
 }
 
 .dark {
@@ -130,6 +134,8 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --code-editor: oklch(0.13 0.018 260);
+  --code-editor-foreground: oklch(0.86 0.02 250);
 }
 
 @layer base {

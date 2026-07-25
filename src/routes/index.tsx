@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { motion } from "motion/react";
 import { SiteHeader } from "@/components/jeradin/header";
 import { SiteFooter } from "@/components/jeradin/footer";
@@ -41,11 +41,74 @@ function Landing() {
       <HermesFeatures />
       <Connector />
       <IntelligenceFeatures />
-
+      <QuestionsWorthAnswering />
       <JeradinPortal />
       <SiteFooter />
 
     </div>
+  );
+}
+
+const FAQ_ITEMS = [
+  {
+    question: "What does Jeradin help me understand?",
+    answer: "Jeradin turns a screen, codebase, repository, document, or business idea into a clear diagnosis and an actionable plan. It explains what is happening, why it matters, and what to do next without assuming you are deeply technical.",
+  },
+  {
+    question: "Can I use Jeradin if I am not a developer?",
+    answer: "Yes. Founders and non-technical builders can use Knowledge Intelligence to validate ideas, compare markets, shape pricing, plan an MVP, and understand the technical decisions needed to launch.",
+  },
+  {
+    question: "How does Screen Intelligence work?",
+    answer: "Record or capture the problem you can see. Jeradin reads the interface, identifies likely errors and affected code, then opens Ask Jeradin directly on the tab you were working in with a step-by-step fix and IDE-coloured code suggestions.",
+  },
+  {
+    question: "What is the difference between System and GitHub Intelligence?",
+    answer: "System Intelligence reviews the health and architecture of an entire codebase. GitHub Intelligence connects to a selected repository for evidence-based answers about files, regressions, risks, pull requests, and the safest implementation path.",
+  },
+  {
+    question: "Does Jeradin replace my coding tools?",
+    answer: "No. Jeradin works alongside the tools you already use. It provides the second layer of judgment: understanding the system, validating decisions, detecting hidden risk, and translating recommendations for every person on the team.",
+  },
+];
+
+function QuestionsWorthAnswering() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  return (
+    <section className="border-y border-black/10 bg-black/[0.025]">
+      <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
+        <div className="grid gap-10 md:grid-cols-[0.75fr_1.25fr] md:gap-16">
+          <div>
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-black/45">Jeradin, clearly</span>
+            <h2 className="mt-3 max-w-sm text-[36px] font-semibold leading-[1.02] text-black sm:text-[48px]">
+              Questions worth answering.
+            </h2>
+            <p className="mt-5 max-w-sm text-[14px] leading-relaxed text-black/60">
+              Built for vibe coders, developers, founders, and teams who need useful answers—not more technical noise.
+            </p>
+          </div>
+          <div className="space-y-2">
+            {FAQ_ITEMS.map((item, index) => {
+              const open = openIndex === index;
+              return (
+                <article key={item.question} className="border border-black/10 bg-white">
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    onClick={() => setOpenIndex(open ? null : index)}
+                    className="flex w-full items-center justify-between gap-5 px-5 py-5 text-left"
+                  >
+                    <span className="text-[14px] font-medium text-black sm:text-[15px]">{item.question}</span>
+                    <ChevronDown className={`h-4 w-4 shrink-0 text-black/45 transition-transform ${open ? "rotate-180" : ""}`} />
+                  </button>
+                  {open && <p className="px-5 pb-5 pr-12 text-[13.5px] leading-relaxed text-black/60">{item.answer}</p>}
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

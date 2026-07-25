@@ -857,7 +857,9 @@ function ChatPage() {
         onSelectRepo={chooseRepo}
         pendingPrompt={pendingPrompt}
         lastSubmittedPrompt={lastSubmittedPrompt}
+        onEditOverlayMessage={(idx, newText) => void submitOverlayFollowUp(newText, { truncateAt: idx })}
       />
+
 
 
       {/* ============= DESKTOP LAYOUT ============= */}

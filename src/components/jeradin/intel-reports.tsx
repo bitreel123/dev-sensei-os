@@ -322,12 +322,223 @@ export function KnowledgeReportBody({ report }: { report: KnowledgeReport }) {
   const sd = report.systemDesign;
   const rec = report.recommendation;
   const fk = report.founderKit;
+  const intent = (report as KnowledgeReport & { intent?: string }).intent;
   return (
     <div className="space-y-4 text-[13px] text-white/85 leading-relaxed">
       <div>
-        <SectionLabel>Question</SectionLabel>
+        <SectionLabel>Question{intent ? ` · ${intent.replace(/_/g, " ")}` : ""}</SectionLabel>
         <p className="text-white/70 italic">"{report.question}"</p>
       </div>
+
+      {report.apiComparison?.apis?.length ? (
+        <div>
+          <SectionLabel>APIs Comparison</SectionLabel>
+          {report.apiComparison.intro && (
+            <p className="text-white/70 mb-2 text-[12.5px]">{report.apiComparison.intro}</p>
+          )}
+          <div className="overflow-x-auto border border-white/10 rounded-lg">
+            <table className="w-full text-[11.5px] min-w-[720px]">
+              <thead className="bg-white/[0.03] text-white/50 uppercase tracking-wider text-[10px]">
+                <tr>
+                  {["API", "Countries", "Supports", "Pricing", "Auth", "Best for", "Docs"].map((h) => (
+                    <th key={h} className="text-left px-3 py-2 font-mono font-normal">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {report.apiComparison.apis.map((a, i) => (
+                  <tr key={i} className="border-t border-white/5 align-top">
+                    <td className="px-3 py-2">
+                      <div className="text-white font-medium">{a.name}</div>
+                      <div className="text-white/45 text-[10.5px]">{a.provider}</div>
+                    </td>
+                    <td className="px-3 py-2 text-white/75">{a.countries}</td>
+                    <td className="px-3 py-2 text-white/75">{a.supports}</td>
+                    <td className="px-3 py-2 text-white/75">{a.pricing}</td>
+                    <td className="px-3 py-2 text-white/75">{a.auth}</td>
+                    <td className="px-3 py-2 text-white/75">{a.best_for}</td>
+                    <td className="px-3 py-2">
+                      {a.docs_url ? (
+                        <a href={a.docs_url} target="_blank" rel="noreferrer" className="text-orange-300 hover:underline inline-flex items-center gap-1">
+                          Docs <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <span className="text-white/30">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-3 grid sm:grid-cols-2 gap-2">
+            {report.apiComparison.apis.map((a, i) => (
+              (a.pros?.length || a.cons?.length) ? (
+                <div key={i} className="border border-white/10 rounded p-2 text-[11.5px]">
+                  <div className="text-white/80 font-mono text-[11px] mb-1">{a.name}</div>
+                  {a.pros?.length ? (
+                    <div className="text-emerald-300/90">+ {a.pros.join(" · ")}</div>
+                  ) : null}
+                  {a.cons?.length ? (
+                    <div className="text-red-300/90 mt-0.5">− {a.cons.join(" · ")}</div>
+                  ) : null}
+                </div>
+              ) : null
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {report.apiRecommendation?.buckets?.length ? (
+        <div>
+          <SectionLabel>Which API should I choose?</SectionLabel>
+          <div className="grid md:grid-cols-2 gap-3">
+            {report.apiRecommendation.buckets.map((b, i) => (
+              <div key={i} className="border border-white/10 bg-white/[0.02] rounded-lg p-3">
+                <div className="text-white/90 font-medium text-[12.5px] mb-2">{b.useCase}</div>
+                <ul className="space-y-1">
+                  {b.picks?.map((p, j) => (
+                    <li key={j} className="text-[12px]">
+                      <span className="font-mono text-orange-300">{p.name}</span>
+                      <span className="text-white/60"> — {p.why}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {report.integrationFlow?.steps?.length ? (
+        <div>
+          <SectionLabel>Integration Flow</SectionLabel>
+          <ol className="space-y-1.5">
+            {report.integrationFlow.steps.map((s, i) => (
+              <li key={i} className="border-l-2 border-orange-400/40 pl-3">
+                <div className="text-white text-[12.5px]">
+                  <span className="font-mono text-white/40 mr-2">{String(i + 1).padStart(2, "0")}</span>
+                  {s.step}
+                </div>
+                {s.purpose && <div className="text-white/60 text-[11.5px]">{s.purpose}</div>}
+                {s.sample && (
+                  <pre className="mt-1 text-[10.5px] bg-black/40 border border-white/10 rounded px-2 py-1 overflow-x-auto text-white/80"><code>{s.sample}</code></pre>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+
+      {report.sampleCode?.snippets?.length ? (
+        <div>
+          <SectionLabel>Sample Code</SectionLabel>
+          <div className="space-y-2">
+            {report.sampleCode.snippets.map((s, i) => (
+              <div key={i} className="border border-white/10 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-1.5 bg-white/[0.03] text-[11px]">
+                  <span className="text-white/80">{s.title}</span>
+                  <span className="font-mono text-white/40 uppercase tracking-wider text-[9.5px]">{s.language}</span>
+                </div>
+                <pre className="text-[11px] bg-black/60 px-3 py-2 overflow-x-auto text-white/85"><code>{s.code}</code></pre>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {report.comparisonMatrix?.columns?.length ? (
+        <div>
+          <SectionLabel>Side-by-side</SectionLabel>
+          <div className="overflow-x-auto border border-white/10 rounded-lg">
+            <table className="w-full text-[11.5px]">
+              <thead className="bg-white/[0.03] text-white/50 uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th className="text-left px-3 py-2 font-mono font-normal">Attribute</th>
+                  {report.comparisonMatrix.columns.map((c) => (
+                    <th key={c} className="text-left px-3 py-2 font-mono font-normal text-white/80">{c}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {report.comparisonMatrix.rows.map((r, i) => (
+                  <tr key={i} className="border-t border-white/5">
+                    <td className="px-3 py-2 text-white/60">{r.attribute}</td>
+                    {r.values.map((v, j) => (
+                      <td key={j} className="px-3 py-2 text-white/85">{v}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {report.comparisonMatrix.verdict && (
+            <p className="mt-2 text-white/75 text-[12px] border-l-2 border-orange-400/50 pl-3">{report.comparisonMatrix.verdict}</p>
+          )}
+        </div>
+      ) : null}
+
+      {report.stepByStepBuild?.phases?.length ? (
+        <div>
+          <SectionLabel>Step-by-step Build</SectionLabel>
+          <div className="space-y-2">
+            {report.stepByStepBuild.phases.map((ph, i) => (
+              <div key={i} className="border border-white/10 rounded-lg p-3">
+                <div className="text-white font-medium text-[12.5px] mb-1">{ph.name}</div>
+                <ul className="list-disc pl-5 space-y-0.5 text-[12px] text-white/80">
+                  {ph.steps.map((s, j) => <li key={j}>{s}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {report.gotchas?.items?.length ? (
+        <div>
+          <SectionLabel>Gotchas & Pitfalls</SectionLabel>
+          <ul className="space-y-1.5">
+            {report.gotchas.items.map((g, i) => (
+              <li key={i} className="border border-white/10 rounded p-2 text-[12px]">
+                <span className="text-white font-medium">{g.title}</span>
+                <span className="text-white/65"> — {g.detail}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {report.analogies?.items?.length ? (
+        <div>
+          <SectionLabel>Analogies</SectionLabel>
+          <ul className="space-y-1 text-[12px]">
+            {report.analogies.items.map((a, i) => (
+              <li key={i}>
+                <span className="text-white">{a.analogy}</span>
+                <span className="text-white/55"> — {a.why}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {report.furtherReading?.items?.length ? (
+        <div>
+          <SectionLabel>Further Reading</SectionLabel>
+          <ul className="space-y-1 text-[12px]">
+            {report.furtherReading.items.map((r, i) => (
+              <li key={i}>
+                <a href={r.url} target="_blank" rel="noreferrer" className="text-orange-300 hover:underline inline-flex items-center gap-1">
+                  {r.title} <ExternalLink className="h-3 w-3" />
+                </a>
+                {r.note && <span className="text-white/60"> — {r.note}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+
 
       {/* TOP RECOMMENDATION — advisor pick, always visible */}
       {rec && (

@@ -153,8 +153,44 @@ export type KnowledgeFounderVerdict = {
   because: string[];          // fastest path to revenue, etc.
 };
 
+export type KnowledgeApiRow = {
+  name: string;
+  provider: string;
+  countries: string;
+  supports: string;
+  pricing: string;
+  auth: string;
+  docs_url: string;
+  best_for: string;
+  pros: string[];
+  cons: string[];
+};
+
+export type KnowledgeApiComparison = { intro?: string; apis: KnowledgeApiRow[] };
+export type KnowledgeApiRecommendation = {
+  buckets: Array<{ useCase: string; picks: Array<{ name: string; why: string }> }>;
+};
+export type KnowledgeIntegrationFlow = {
+  steps: Array<{ step: string; purpose: string; sample?: string | null }>;
+};
+export type KnowledgeSampleCode = {
+  snippets: Array<{ title: string; language: string; code: string }>;
+};
+export type KnowledgeComparisonMatrix = {
+  columns: string[];
+  rows: Array<{ attribute: string; values: string[] }>;
+  verdict?: string;
+};
+export type KnowledgeStepByStepBuild = {
+  phases: Array<{ name: string; steps: string[] }>;
+};
+export type KnowledgeGotchas = { items: Array<{ title: string; detail: string }> };
+export type KnowledgeAnalogies = { items: Array<{ analogy: string; why: string }> };
+export type KnowledgeFurtherReading = { items: Array<{ title: string; url: string; note: string }> };
+
 export type KnowledgeReport = {
   question: string;
+  intent?: string;
   laymanSummary: string;
   recommendation?: KnowledgeRecommendation;
   aiMoat?: KnowledgeAiMoat;
@@ -169,6 +205,17 @@ export type KnowledgeReport = {
   validationPlan?: KnowledgeValidationPlan;
   successProbability?: KnowledgeSuccessProbability;
   founderVerdict?: KnowledgeFounderVerdict;
+
+  // Dynamic sections
+  apiComparison?: KnowledgeApiComparison;
+  apiRecommendation?: KnowledgeApiRecommendation;
+  integrationFlow?: KnowledgeIntegrationFlow;
+  sampleCode?: KnowledgeSampleCode;
+  comparisonMatrix?: KnowledgeComparisonMatrix;
+  stepByStepBuild?: KnowledgeStepByStepBuild;
+  gotchas?: KnowledgeGotchas;
+  analogies?: KnowledgeAnalogies;
+  furtherReading?: KnowledgeFurtherReading;
 
 
   // Product Discovery

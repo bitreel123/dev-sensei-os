@@ -25,8 +25,8 @@ export type MemoryEntry = {
 
 // Per-mode credit cost (kept in one place so pricing + billing stay in sync).
 export const INTEL_COST: Record<IntelMode | "screen_deep", number> = {
-  screen: 1,
-  screen_deep: 3,
+  screen: 2,
+  screen_deep: 5,
   system: 5,
   knowledge: 5,
   repo: 5,

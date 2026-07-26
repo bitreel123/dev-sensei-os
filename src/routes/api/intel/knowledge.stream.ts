@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { verifyBearer, ndjsonStream, callClaudeJson, KNOWLEDGE_SECTIONS } = await import(
+        const { verifyBearer, ndjsonStream, callClaudeJson, KNOWLEDGE_SECTIONS, getKnowledgeSectionsForIntent, routeKnowledgeIntent } = await import(
           "@/lib/intel-sections.server"
         );
 

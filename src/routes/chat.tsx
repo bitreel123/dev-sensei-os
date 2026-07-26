@@ -670,6 +670,11 @@ function ChatPage() {
               }
               return [...prev, next];
             });
+          } else if (event.type === "meta") {
+            if (typeof event.intent === "string") {
+              (accumulated as KnowledgeReport & { intent?: string }).intent = event.intent;
+              setKnowledgeResult({ ...accumulated });
+            }
           } else if (event.type === "section") {
             const partial = event.data as Partial<KnowledgeReport>;
             Object.assign(accumulated, partial);

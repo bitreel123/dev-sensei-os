@@ -165,14 +165,14 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
                 title: `Knowledge · ${question.slice(0, 180)}`,
                 summary: typeof results.laymanSummary === "string" ? results.laymanSummary.slice(0, 800) : null,
                 payload: {
-                  report: results as unknown as JsonValue,
-                  input: { question, projectContext },
+                  report: { ...(results as Record<string, unknown>), intent } as unknown as JsonValue,
+                  input: { question, projectContext, intent, entities },
                   stack: Array.isArray(results.recommendedStack) ? (results.recommendedStack as string[]).slice(0, 8) : [],
                   competitors: Array.isArray(results.competitors)
                     ? (results.competitors as Array<{ name?: string }>).slice(0, 6).map((c) => c.name ?? "")
                     : [],
                 },
-                tags: Array.isArray(results.recommendedStack) ? (results.recommendedStack as string[]).slice(0, 5) : [],
+                tags: [intent, ...entities.slice(0, 4)],
               });
             } catch (e) {
               const message = e instanceof Error ? e.message : String(e);

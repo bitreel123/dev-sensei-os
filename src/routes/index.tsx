@@ -85,7 +85,7 @@ const FAQ_ITEMS = [
   },
   {
     question: "How do credits work?",
-    answer: "Credits are charged only after an Intelligence prompt successfully produces a useful result. Screen Intelligence costs 1 credit, a Screen Deep Dive costs 3, and Knowledge, System, or GitHub Intelligence costs 5 credits per completed prompt.",
+    answer: "Credits are charged only after an Intelligence prompt successfully produces a useful result. Screen Intelligence costs 2 credits, a Screen Deep Dive costs 5, and Knowledge, System, or GitHub Intelligence costs 5 credits per completed prompt.",
   },
 ];
 

@@ -344,7 +344,14 @@ function ChatPage() {
         audio: true,
         ...(captureController ? { controller: captureController } : {}),
       });
-      captureController?.setFocusBehavior("focus-captured-surface");
+      // setFocusBehavior only works when the captured surface is a tab or window.
+      // Picking "Entire Screen" makes displaySurface === "monitor", which throws.
+      try {
+        const surface = stream.getVideoTracks()[0]?.getSettings?.().displaySurface;
+        if (captureController && (surface === "browser" || surface === "window")) {
+          captureController.setFocusBehavior("focus-captured-surface");
+        }
+      } catch (_) { /* focus hint is best-effort */ }
       streamRef.current = stream;
       chunksRef.current = [];
 

@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { verifyBearer, ndjsonStream, callClaudeJson, KNOWLEDGE_SECTIONS } = await import(
+        const { verifyBearer, ndjsonStream, callClaudeJson, KNOWLEDGE_SECTIONS, getKnowledgeSectionsForIntent, routeKnowledgeIntent } = await import(
           "@/lib/intel-sections.server"
         );
 
@@ -43,11 +43,23 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
         }
 
         const only = Array.isArray(body.only) && body.only.length > 0 ? new Set(body.only) : null;
-        const sectionsToRun = only ? KNOWLEDGE_SECTIONS.filter((s) => only.has(s.id)) : KNOWLEDGE_SECTIONS;
 
         return ndjsonStream(async (emit) => {
           const startedAt = Date.now();
-          emit({ type: "stage", id: "start", label: "Understanding your idea", status: "running" });
+          emit({ type: "stage", id: "start", label: "Understanding your question", status: "running" });
+
+          // Route intent FIRST so the section list is tailored to what the user actually asked.
+          // If `only` is set (retry/follow-up on specific sections), skip routing.
+          let intent: string = "general";
+          let entities: string[] = [];
+          let sectionsToRun = KNOWLEDGE_SECTIONS.filter((s) => (only ? only.has(s.id) : false));
+          if (!only) {
+            const routed = await routeKnowledgeIntent({ apiKey: anthropicKey, question, projectContext });
+            intent = routed.intent;
+            entities = routed.entities;
+            sectionsToRun = getKnowledgeSectionsForIntent(routed.intent);
+            emit({ type: "meta", intent, entities });
+          }
 
           // Parallel context: memory + optional live evidence for market/resources sections.
           const needsLiveEvidence = /\b(current|latest|market|trend|competitor|startup|idea|package|library|model|dataset)\b/i.test(question);
@@ -153,14 +165,14 @@ export const Route = createFileRoute("/api/intel/knowledge/stream")({
                 title: `Knowledge · ${question.slice(0, 180)}`,
                 summary: typeof results.laymanSummary === "string" ? results.laymanSummary.slice(0, 800) : null,
                 payload: {
-                  report: results as unknown as JsonValue,
-                  input: { question, projectContext },
+                  report: { ...(results as Record<string, unknown>), intent } as unknown as JsonValue,
+                  input: { question, projectContext, intent, entities },
                   stack: Array.isArray(results.recommendedStack) ? (results.recommendedStack as string[]).slice(0, 8) : [],
                   competitors: Array.isArray(results.competitors)
                     ? (results.competitors as Array<{ name?: string }>).slice(0, 6).map((c) => c.name ?? "")
                     : [],
                 },
-                tags: Array.isArray(results.recommendedStack) ? (results.recommendedStack as string[]).slice(0, 5) : [],
+                tags: [intent, ...entities.slice(0, 4)],
               });
             } catch (e) {
               const message = e instanceof Error ? e.message : String(e);

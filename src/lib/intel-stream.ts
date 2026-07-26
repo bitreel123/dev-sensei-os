@@ -5,6 +5,7 @@ export type IntelStreamEvent =
   | { type: "stage"; id: string; label: string; status: "running" | "done" | "error"; message?: string }
   | { type: "section"; id: string; label: string; data: unknown }
   | { type: "section-error"; id: string; label: string; message: string }
+  | { type: "meta"; intent?: string; entities?: string[]; [k: string]: unknown }
   | { type: "done"; meta?: Record<string, unknown> }
   | { type: "error"; message: string };
 

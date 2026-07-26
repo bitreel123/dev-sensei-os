@@ -419,7 +419,320 @@ Return: { "founderVerdict": { "ifIWereYou": string (starts with "If I were start
       maxTokens: 500,
     }),
   },
+  // -------- Dynamic sections (used by the intent router below) --------
+  {
+    id: "apiComparison",
+    label: "APIs Comparison",
+    key: "apiComparison",
+    build: ({ question, evidence, memory }) => ({
+      system: `You are a senior integrations engineer producing a REAL comparison table of concrete, currently-available APIs / SDKs that answer the user's question. ${BASE_RULES}
+Only include APIs you are highly confident exist. Never invent providers. Prefer widely used, production-grade options. If the domain is niche, include fewer rows rather than fabricating.
+Return: { "apiComparison": {
+  "intro": string (1 short sentence framing the shortlist),
+  "apis": [{
+    "name": string,
+    "provider": string,
+    "countries": string (e.g. "160+", "US only", "EU + UK"),
+    "supports": string (comma-separated capabilities, e.g. "Bank transfers, FX, Payouts"),
+    "pricing": string (short — e.g. "Quote-based", "0.5% + $0.30", "Custom"),
+    "auth": string (e.g. "OAuth 2.0", "API key + HMAC"),
+    "docs_url": string (real https URL to official docs),
+    "best_for": string (one short phrase — e.g. "SMB cross-border", "Crypto rails"),
+    "pros": string[] (2-3 short bullets),
+    "cons": string[] (2-3 short bullets)
+  }] (4-6 rows)
+} }`,
+      user: `Question: ${question}${evidence}${memory}`,
+      maxTokens: 1800,
+    }),
+  },
+  {
+    id: "apiRecommendation",
+    label: "Which API should I choose?",
+    key: "apiRecommendation",
+    build: ({ question, memory }) => ({
+      system: `You are an integrations advisor. Group API recommendations by concrete use-case buckets tailored to the user's question. ${BASE_RULES}
+Return: { "apiRecommendation": {
+  "buckets": [{
+    "useCase": string (e.g. "If you're building a Wise competitor", "If you're building for Africa", "If you're building US ↔ Africa"),
+    "picks": [{ "name": string, "why": string (one short sentence) }] (2-4 picks per bucket)
+  }] (2-4 buckets)
+} }`,
+      user: `Question: ${question}${memory}`,
+      maxTokens: 900,
+    }),
+  },
+  {
+    id: "integrationFlow",
+    label: "Integration Flow",
+    key: "integrationFlow",
+    build: ({ question, memory }) => ({
+      system: `You describe the concrete integration flow a developer follows end-to-end. ${BASE_RULES}
+Return: { "integrationFlow": {
+  "steps": [{
+    "step": string (short imperative — e.g. "Authenticate", "Create Customer", "Verify KYC", "Create Quote", "Convert Currency", "Send Transfer", "Track Status", "Webhook", "Settlement"),
+    "purpose": string (one short sentence — what this step accomplishes),
+    "sample": string|null (optional — one short curl-style or SDK snippet, no fences, <= 160 chars)
+  }] (6-10 steps in real execution order)
+} }`,
+      user: `Question: ${question}${memory}`,
+      maxTokens: 1200,
+    }),
+  },
+  {
+    id: "sampleCode",
+    label: "Sample Code",
+    key: "sampleCode",
+    build: ({ question, memory }) => ({
+      system: `You provide minimal, correct sample code snippets a developer can copy. ${BASE_RULES}
+Use realistic APIs matching the question. Snippets must run conceptually — no placeholder pseudo-libraries.
+Return: { "sampleCode": {
+  "snippets": [{
+    "title": string (e.g. "Authenticate", "Create quote", "Send transfer", "Handle webhook"),
+    "language": string (one of "bash" | "javascript" | "typescript" | "python" | "go"),
+    "code": string (the snippet, no markdown fences, <= 900 chars)
+  }] (3-5 snippets)
+} }`,
+      user: `Question: ${question}${memory}`,
+      maxTokens: 1600,
+    }),
+  },
+  {
+    id: "comparisonMatrix",
+    label: "Side-by-side Comparison",
+    key: "comparisonMatrix",
+    build: ({ question, memory }) => ({
+      system: `You produce a generic side-by-side comparison matrix for the specific options named or implied in the question (libraries, models, frameworks, services). ${BASE_RULES}
+Return: { "comparisonMatrix": {
+  "columns": string[] (2-5 real option names, verbatim if the user named them),
+  "rows": [{ "attribute": string (e.g. "Pricing", "Ease of setup", "Community", "Perf"), "values": string[] (one per column, aligned; short) }] (5-9 rows),
+  "verdict": string (1-2 sentences — which to pick and why)
+} }`,
+      user: `Question: ${question}${memory}`,
+      maxTokens: 1200,
+    }),
+  },
+  {
+    id: "stepByStepBuild",
+    label: "Step-by-step Build",
+    key: "stepByStepBuild",
+    build: ({ question, memory }) => ({
+      system: `You lay out a concrete step-by-step build guide for the exact thing the user asked about. ${BASE_RULES}
+Return: { "stepByStepBuild": {
+  "phases": [{ "name": string, "steps": string[] (3-6 concrete imperative steps) }] (3-5 phases from setup to launch)
+} }`,
+      user: `Question: ${question}${memory}`,
+      maxTokens: 1100,
+    }),
+  },
+  {
+    id: "gotchas",
+    label: "Gotchas & Pitfalls",
+    key: "gotchas",
+    build: ({ question }) => ({
+      system: `You list common gotchas developers hit when building this. ${BASE_RULES}
+Return: { "gotchas": { "items": [{ "title": string, "detail": string (one short sentence — what breaks and how to avoid it) }] (4-7 items) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 700,
+    }),
+  },
+  {
+    id: "analogies",
+    label: "Analogies",
+    key: "analogies",
+    build: ({ question }) => ({
+      system: `You explain the concept with everyday analogies. ${BASE_RULES}
+Return: { "analogies": { "items": [{ "analogy": string (one sentence — "X is like ..."), "why": string (one sentence — why the analogy holds) }] (3-5 items) } }`,
+      user: `Question: ${question}`,
+      maxTokens: 500,
+    }),
+  },
+  {
+    id: "furtherReading",
+    label: "Further Reading",
+    key: "furtherReading",
+    build: ({ question, evidence }) => ({
+      system: `You curate a short list of authoritative reading. ${BASE_RULES}
+Return: { "furtherReading": { "items": [{ "title": string, "url": string (real https URL to official docs / well-known blog / paper), "note": string (one short sentence) }] (4-6 items) } }`,
+      user: `Question: ${question}${evidence}\nOnly cite real, well-known URLs — prefer official docs.`,
+      maxTokens: 600,
+    }),
+  },
 ];
+
+// ---------------- Knowledge Intent Router ----------------
+export type KnowledgeIntent =
+  | "api_discovery"
+  | "library_discovery"
+  | "startup_idea"
+  | "architecture_design"
+  | "how_to_build"
+  | "market_research"
+  | "concept_explainer"
+  | "comparison"
+  | "general";
+
+const INTENT_TO_SECTIONS: Record<KnowledgeIntent, string[]> = {
+  api_discovery: [
+    "intro",
+    "apiComparison",
+    "apiRecommendation",
+    "integrationFlow",
+    "sampleCode",
+    "architecture",
+    "gotchas",
+    "furtherReading",
+  ],
+  library_discovery: [
+    "intro",
+    "comparisonMatrix",
+    "sampleCode",
+    "gotchas",
+    "furtherReading",
+  ],
+  architecture_design: [
+    "intro",
+    "architecture",
+    "systemDesign",
+    "technologyChoices",
+    "security",
+    "gotchas",
+    "furtherReading",
+  ],
+  how_to_build: [
+    "intro",
+    "stepByStepBuild",
+    "technologyChoices",
+    "architecture",
+    "developmentPlan",
+    "gotchas",
+    "launch",
+  ],
+  market_research: [
+    "intro",
+    "marketIntelligence",
+    "competitors",
+    "marketTiming",
+    "marketValidation",
+    "furtherReading",
+  ],
+  concept_explainer: [
+    "intro",
+    "learning",
+    "analogies",
+    "sampleCode",
+    "furtherReading",
+    "glossary" /* handled via intro */,
+  ],
+  comparison: [
+    "intro",
+    "comparisonMatrix",
+    "sampleCode",
+    "furtherReading",
+  ],
+  startup_idea: [
+    "recommendation",
+    "aiMoat",
+    "marketValidation",
+    "intro",
+    "productDiscovery",
+    "marketIntelligence",
+    "competitors",
+    "architecture",
+    "technologyChoices",
+    "security",
+    "systemDesign",
+    "developmentPlan",
+    "learning",
+    "launch",
+    "founderKit",
+    "resources",
+    "graph",
+    "marketTiming",
+    "buildDifficulty",
+    "moatSuggestions",
+    "customerAcquisition",
+    "investorFit",
+    "biggestRisks",
+    "validationPlan",
+    "successProbability",
+    "founderVerdict",
+  ],
+  general: [
+    "intro",
+    "productDiscovery",
+    "technologyChoices",
+    "architecture",
+    "resources",
+  ],
+};
+
+export function getKnowledgeSectionsForIntent(intent: KnowledgeIntent): KnowledgeSectionSpec[] {
+  const wanted = INTENT_TO_SECTIONS[intent] ?? INTENT_TO_SECTIONS.general;
+  const byId = new Map(KNOWLEDGE_SECTIONS.map((s) => [s.id, s]));
+  const out: KnowledgeSectionSpec[] = [];
+  for (const id of wanted) {
+    const spec = byId.get(id);
+    if (spec && !out.includes(spec)) out.push(spec);
+  }
+  return out;
+}
+
+/**
+ * Classify the user's knowledge question into an intent using a tiny Claude
+ * call. Falls back to `general` on any error so a router hiccup never blocks
+ * the report.
+ */
+export async function routeKnowledgeIntent(opts: {
+  apiKey: string;
+  question: string;
+  projectContext?: string;
+}): Promise<{ intent: KnowledgeIntent; entities: string[] }> {
+  const system = `You classify a developer/founder's question into ONE intent for a dynamic report generator. Return STRICT JSON only.
+
+Intents (pick the SINGLE best fit):
+- api_discovery: "find/compare/recommend APIs, SDKs, providers for X" (fintech APIs, payment rails, auth providers, etc.)
+- library_discovery: "which library/package for X" (React charting lib, ORM, testing framework, etc.)
+- startup_idea: "give me a startup idea", "should I build X?", "is X a good business?"
+- architecture_design: "how should I architect X", "design a system for X"
+- how_to_build: "how do I build X", "walk me through building X"
+- market_research: "market size / trends / competitors for X", "who are the players in X"
+- concept_explainer: "explain X", "what is X", "how does X work"
+- comparison: "X vs Y", "compare X and Y"
+- general: anything else
+
+Return: { "intent": <one of above>, "entities": string[] (2-6 key nouns/products/tech extracted from the question) }`;
+  const user = `Question: ${opts.question}${opts.projectContext ? `\n\nContext: ${opts.projectContext.slice(0, 1000)}` : ""}`;
+  try {
+    const parsed = await callClaudeJson<{ intent?: string; entities?: string[] }>({
+      apiKey: opts.apiKey,
+      system,
+      user,
+      maxTokens: 200,
+      timeoutMs: 12_000,
+    });
+    const valid: KnowledgeIntent[] = [
+      "api_discovery",
+      "library_discovery",
+      "startup_idea",
+      "architecture_design",
+      "how_to_build",
+      "market_research",
+      "concept_explainer",
+      "comparison",
+      "general",
+    ];
+    const intent = (valid as string[]).includes(String(parsed.intent))
+      ? (parsed.intent as KnowledgeIntent)
+      : "general";
+    const entities = Array.isArray(parsed.entities)
+      ? parsed.entities.filter((e) => typeof e === "string").slice(0, 8)
+      : [];
+    return { intent, entities };
+  } catch {
+    return { intent: "general", entities: [] };
+  }
+}
 
 // ---------------- System Intelligence section prompts ----------------
 export type SystemSectionSpec = {

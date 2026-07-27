@@ -149,6 +149,8 @@ function ChatPage() {
       setKnowledgeResult(null);
       setRepoResult(null);
       setOverlayMessages(p.messages ?? []);
+      setLastScreenshotBase64(p.screenshotBase64 ?? null);
+      setLastScreenshotNote(p.screenshotNote ?? "");
       setOverlayOpen(true);
       setActiveCapability(p.mode ?? "screen");
       setCurrentEntryId(entryId);
@@ -163,6 +165,7 @@ function ChatPage() {
       setCurrentEntryId(entryId);
     }
   }
+
 
   function restoreCloudMemory(item: MemoryEntry) {
     const payload = item.payload && typeof item.payload === "object" && !Array.isArray(item.payload)

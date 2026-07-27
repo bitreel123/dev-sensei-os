@@ -11,6 +11,9 @@ export type ChatHistoryPayload = {
   analysis?: ScreenAnalysis;
   fix?: FixSuggestion;
   messages?: OverlayChatMessage[];
+  screenshotBase64?: string;
+  screenshotNote?: string;
+
   // system
   system?: { analysis: SystemAnalysis; filesAnalyzed: number; input: { source: "github" | "upload"; repo?: string; projectHint?: string } };
   // knowledge

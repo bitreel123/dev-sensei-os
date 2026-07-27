@@ -50,10 +50,18 @@ export async function chargeCredits(
     p_mode: mode,
     p_session_id: sessionId ?? undefined,
   });
-  if (error) throw new Error(`credit deduction failed: ${error.message}`);
+  if (error) {
+    console.error(`[credits] deduct_credit RPC failed user=${userId.slice(0, 8)} mode=${mode} amount=${amount}:`, error);
+    throw new Error(`credit deduction failed: ${error.message}`);
+  }
+  if (data == null) {
+    console.error(`[credits] deduct_credit returned null user=${userId.slice(0, 8)} mode=${mode} amount=${amount}`);
+    throw new Error("credit deduction returned no result");
+  }
   const row = Array.isArray(data) ? data[0] : data;
   return { ok: !!row?.ok, balance: Number(row?.balance ?? 0) };
 }
+
 
 /** Persist a memory entry so Jeradin "remembers" this session for the user.
  * When `sessionId` is provided (a UUID from the client), the row is upserted

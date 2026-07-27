@@ -353,17 +353,22 @@ export function ScreenIntelOverlay({
           <FileText className="h-3 w-3" />
           {didDeepDive ? "Deep Analysis" : "Analysis"}
         </div>
-        {screenshotBase64 && !didDeepDive && (
+        {!didDeepDive && (
           <button
             onClick={runDeepDive}
-            disabled={deepDiving}
-            title="Re-analyze with Claude + your connected GitHub repo for a project-wide report"
-            className="inline-flex items-center gap-1.5 rounded bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/40 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-orange-200 disabled:opacity-50"
+            disabled={deepDiving || !screenshotBase64}
+            title={
+              !screenshotBase64
+                ? "Re-record to enable deep dive on this session"
+                : "Re-analyze with Claude + your connected GitHub repo for a project-wide report"
+            }
+            className="inline-flex items-center gap-1.5 rounded bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/40 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-orange-200 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {deepDiving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
             {deepDiving ? "Deep diving…" : "Deep dive"}
           </button>
         )}
+
         <div className="ml-auto">
           <RepoPicker />
         </div>

@@ -149,6 +149,8 @@ function ChatPage() {
       setKnowledgeResult(null);
       setRepoResult(null);
       setOverlayMessages(p.messages ?? []);
+      setLastScreenshotBase64(p.screenshotBase64 ?? null);
+      setLastScreenshotNote(p.screenshotNote ?? "");
       setOverlayOpen(true);
       setActiveCapability(p.mode ?? "screen");
       setCurrentEntryId(entryId);
@@ -163,6 +165,7 @@ function ChatPage() {
       setCurrentEntryId(entryId);
     }
   }
+
 
   function restoreCloudMemory(item: MemoryEntry) {
     const payload = item.payload && typeof item.payload === "object" && !Array.isArray(item.payload)
@@ -228,9 +231,17 @@ function ChatPage() {
   useEffect(() => {
     if (!currentEntryId || !analysisResult) return;
     updateHistoryEntry(currentEntryId, {
-      payload: { mode: "screen", analysis: analysisResult.analysis, fix: analysisResult.fix, messages: overlayMessages },
+      payload: {
+        mode: "screen",
+        analysis: analysisResult.analysis,
+        fix: analysisResult.fix,
+        messages: overlayMessages,
+        screenshotBase64: lastScreenshotBase64 ?? undefined,
+        screenshotNote: lastScreenshotNote,
+      },
     });
-  }, [overlayMessages, currentEntryId, analysisResult]);
+  }, [overlayMessages, currentEntryId, analysisResult, lastScreenshotBase64, lastScreenshotNote]);
+
 
   async function analyzeImageBase64(base64: string, note: string, title: string) {
     setAnalyzing(true);

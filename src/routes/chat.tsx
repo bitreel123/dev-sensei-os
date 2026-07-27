@@ -228,9 +228,17 @@ function ChatPage() {
   useEffect(() => {
     if (!currentEntryId || !analysisResult) return;
     updateHistoryEntry(currentEntryId, {
-      payload: { mode: "screen", analysis: analysisResult.analysis, fix: analysisResult.fix, messages: overlayMessages },
+      payload: {
+        mode: "screen",
+        analysis: analysisResult.analysis,
+        fix: analysisResult.fix,
+        messages: overlayMessages,
+        screenshotBase64: lastScreenshotBase64 ?? undefined,
+        screenshotNote: lastScreenshotNote,
+      },
     });
-  }, [overlayMessages, currentEntryId, analysisResult]);
+  }, [overlayMessages, currentEntryId, analysisResult, lastScreenshotBase64, lastScreenshotNote]);
+
 
   async function analyzeImageBase64(base64: string, note: string, title: string) {
     setAnalyzing(true);

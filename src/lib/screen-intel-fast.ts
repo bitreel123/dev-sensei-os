@@ -382,11 +382,9 @@ async function callGeminiJson(
     .join("");
   if (!text) throw new Error(`Gemini ${model} returned no content`);
   try {
-    return JSON.parse(text);
+    return parseTolerantJson(text);
   } catch {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error(`Gemini ${model} returned unparseable JSON`);
-    return JSON.parse(m[0]);
+    throw new Error(`Gemini ${model} returned unparseable JSON`);
   }
 }
 

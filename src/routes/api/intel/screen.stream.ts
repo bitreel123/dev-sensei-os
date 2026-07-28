@@ -70,7 +70,7 @@ export const Route = createFileRoute("/api/intel/screen/stream")({
           emit({ type: "stage", id: "reading", label: "Reading screen", status: "done" });
 
           try {
-            const [{ runFastScreenIntel }, memories] = await Promise.all([
+            const [{ runProgressiveScreenIntel }, memories] = await Promise.all([
               import("@/lib/screen-intel-fast"),
               recallIntel(userId, "screen", 3),
             ]);
@@ -80,24 +80,35 @@ export const Route = createFileRoute("/api/intel/screen/stream")({
               ? `${note}${memoryPromptSuffix(memories)}`
               : note;
 
-            const result = await runFastScreenIntel(
+            let analysisPayload: unknown = null;
+            let fixPayload: unknown = null;
+
+            const result = await runProgressiveScreenIntel(
               geminiKey,
               imageBase64,
               noteWithMemory,
+              {
+                onAnalysis: (analysis) => {
+                  analysisPayload = analysis;
+                  emit({ type: "section", id: "analysis", label: "Analysis", data: { analysis } });
+                  emit({ type: "stage", id: "finding", label: "Finding errors", status: "done" });
+                },
+                onFix: (fix) => {
+                  fixPayload = fix;
+                  emit({ type: "section", id: "fix", label: "Fix", data: { fix } });
+                  emit({ type: "stage", id: "fixing", label: "Generating fixes", status: "done" });
+                },
+                onAnalysisError: (message) => {
+                  emit({ type: "section-error", id: "analysis", label: "Analysis", message });
+                  emit({ type: "stage", id: "finding", label: "Finding errors", status: "error", message });
+                },
+                onFixError: (message) => {
+                  emit({ type: "section-error", id: "fix", label: "Fix", message });
+                  emit({ type: "stage", id: "fixing", label: "Generating fixes", status: "error", message });
+                },
+              },
               mode === "deep" ? "smart" : undefined,
             );
-            emit({ type: "stage", id: "finding", label: "Finding errors", status: "done" });
-
-            // Stream the two big sections separately so the UI can render the
-            // analysis card before the fix plan lands on screen.
-            emit({
-              type: "section",
-              id: "analysis",
-              label: "Analysis",
-              data: { analysis: result.analysis },
-            });
-            emit({ type: "section", id: "fix", label: "Fix", data: { fix: result.fix } });
-            emit({ type: "stage", id: "fixing", label: "Generating fixes", status: "done" });
 
             try {
               await chargeAndRemember(userId, "screen", cost, {
@@ -105,8 +116,8 @@ export const Route = createFileRoute("/api/intel/screen/stream")({
                 title: result.analysis.summary?.slice(0, 200) || "Screen analysis",
                 summary: result.fix.plainExplanation?.slice(0, 800) ?? null,
                 payload: {
-                  analysis: result.analysis as unknown as JsonValue,
-                  fix: result.fix as unknown as JsonValue,
+                  analysis: (analysisPayload ?? result.analysis) as unknown as JsonValue,
+                  fix: (fixPayload ?? result.fix) as unknown as JsonValue,
                   tier: result.tier,
                 },
                 tags: result.analysis.category ? [result.analysis.category] : [],
@@ -123,9 +134,6 @@ export const Route = createFileRoute("/api/intel/screen/stream")({
             });
           } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
-            emit({ type: "section-error", id: "analysis", label: "Analysis", message });
-            emit({ type: "stage", id: "finding", label: "Finding errors", status: "error", message });
-            emit({ type: "stage", id: "fixing", label: "Generating fixes", status: "error", message });
             emit({ type: "error", message });
           }
         });

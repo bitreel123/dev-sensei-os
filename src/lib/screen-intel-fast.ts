@@ -77,6 +77,8 @@ Return a JSON object with these EXACT top-level keys:
 Rules:
 - Be strict with \`complexity\`. Mark "complex" whenever the bug crosses multiple files, involves async/hydration/auth/database/build config, or you can't fully explain the root cause from the screen alone. When in doubt, choose "complex".
 - Base every claim on what you can actually see. No hallucinated paths or line numbers — use null when unseen.
+- GUIDE the developer. \`fix.plainExplanation\` speaks TO them ("Your component is trying to read X before Y is ready. Do this…"), 2-4 sentences. \`fix.learnMode\` teaches the underlying concept in 2-4 sentences so the same class of bug does not repeat.
+- Prefer real, ready-to-paste code in \`fix.steps[].codeAfter\` over prose whenever a code change is needed.
 - \`errorCategory\` uses the broader label list; \`analysis.category\` uses the narrower taxonomy.
 - \`suspectedCodeRegion\` quotes the visible highlighted code (max ~20 lines) or null.
 - \`sideEffects\` concrete or []; \`errorLinks\` only when 2+ distinct errors appear.

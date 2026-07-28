@@ -161,11 +161,9 @@ async function callGeminiIntel(
   if (!text) throw new Error(`Gemini ${model} returned no content`);
 
   try {
-    return JSON.parse(text) as RawIntel;
+    return parseTolerantJson(text) as RawIntel;
   } catch {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error(`Gemini ${model} returned unparseable JSON`);
-    return JSON.parse(m[0]) as RawIntel;
+    throw new Error(`Gemini ${model} returned unparseable JSON`);
   }
 }
 

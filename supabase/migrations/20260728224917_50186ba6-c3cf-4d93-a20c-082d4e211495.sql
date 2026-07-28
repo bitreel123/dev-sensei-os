@@ -1,0 +1,1 @@
+UPDATE public.user_credits SET balance = 2000, updated_at = now() WHERE user_id = '518ca91b-fe1a-4f57-a6e1-e4a49ebf2158' AND environment = 'live';

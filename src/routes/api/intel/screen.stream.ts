@@ -83,55 +83,75 @@ export const Route = createFileRoute("/api/intel/screen/stream")({
             let analysisPayload: unknown = null;
             let fixPayload: unknown = null;
 
-            const result = await runProgressiveScreenIntel(
-              geminiKey,
-              imageBase64,
-              noteWithMemory,
-              {
-                onAnalysis: (analysis) => {
-                  analysisPayload = analysis;
-                  emit({ type: "section", id: "analysis", label: "Analysis", data: { analysis } });
-                  emit({ type: "stage", id: "finding", label: "Finding errors", status: "done" });
-                },
-                onFix: (fix) => {
-                  fixPayload = fix;
-                  emit({ type: "section", id: "fix", label: "Fix", data: { fix } });
-                  emit({ type: "stage", id: "fixing", label: "Generating fixes", status: "done" });
-                },
-                onAnalysisError: (message) => {
-                  emit({ type: "section-error", id: "analysis", label: "Analysis", message });
-                  emit({ type: "stage", id: "finding", label: "Finding errors", status: "error", message });
-                },
-                onFixError: (message) => {
-                  emit({ type: "section-error", id: "fix", label: "Fix", message });
-                  emit({ type: "stage", id: "fixing", label: "Generating fixes", status: "error", message });
-                },
-              },
-              mode === "deep" ? "smart" : undefined,
-            );
-
+            let result: Awaited<ReturnType<typeof runProgressiveScreenIntel>> | null = null;
+            let runError: unknown = null;
             try {
-              await chargeAndRemember(userId, "screen", cost, {
-                sessionId,
-                title: result.analysis.summary?.slice(0, 200) || "Screen analysis",
-                summary: result.fix.plainExplanation?.slice(0, 800) ?? null,
-                payload: {
-                  analysis: (analysisPayload ?? result.analysis) as unknown as JsonValue,
-                  fix: (fixPayload ?? result.fix) as unknown as JsonValue,
-                  tier: result.tier,
+              result = await runProgressiveScreenIntel(
+                geminiKey,
+                imageBase64,
+                noteWithMemory,
+                {
+                  onAnalysis: (analysis) => {
+                    analysisPayload = analysis;
+                    emit({ type: "section", id: "analysis", label: "Analysis", data: { analysis } });
+                    emit({ type: "stage", id: "finding", label: "Finding errors", status: "done" });
+                  },
+                  onFix: (fix) => {
+                    fixPayload = fix;
+                    emit({ type: "section", id: "fix", label: "Fix", data: { fix } });
+                    emit({ type: "stage", id: "fixing", label: "Generating fixes", status: "done" });
+                  },
+                  onAnalysisError: (message) => {
+                    emit({ type: "section-error", id: "analysis", label: "Analysis", message });
+                    emit({ type: "stage", id: "finding", label: "Finding errors", status: "error", message });
+                  },
+                  onFixError: (message) => {
+                    emit({ type: "section-error", id: "fix", label: "Fix", message });
+                    emit({ type: "stage", id: "fixing", label: "Generating fixes", status: "error", message });
+                  },
                 },
-                tags: result.analysis.category ? [result.analysis.category] : [],
-              });
+                mode === "deep" ? "smart" : undefined,
+              );
             } catch (e) {
-              const message = e instanceof Error ? e.message : String(e);
-              console.error("[screen.stream] charge failed:", message);
-              emit({ type: "error", message: `Billing failed: ${message}` });
+              runError = e;
             }
 
-            emit({
-              type: "done",
-              meta: { durationMs: Date.now() - startedAt, tier: result.tier, modelId: result.modelId },
-            });
+            // Charge whenever at least one section resolved — the user got value.
+            if (analysisPayload || fixPayload) {
+              try {
+                const a = (analysisPayload ?? result?.analysis ?? {}) as { summary?: string; category?: string };
+                const f = (fixPayload ?? result?.fix ?? {}) as { plainExplanation?: string };
+                await chargeAndRemember(userId, "screen", cost, {
+                  sessionId,
+                  title: a.summary?.slice(0, 200) || "Screen analysis",
+                  summary: f.plainExplanation?.slice(0, 800) ?? null,
+                  payload: {
+                    analysis: (analysisPayload ?? result?.analysis ?? null) as unknown as JsonValue,
+                    fix: (fixPayload ?? result?.fix ?? null) as unknown as JsonValue,
+                    tier: result?.tier ?? (mode === "deep" ? "smart" : "instant"),
+                  },
+                  tags: a.category ? [a.category] : [],
+                });
+              } catch (e) {
+                const message = e instanceof Error ? e.message : String(e);
+                console.error("[screen.stream] charge failed:", message);
+                emit({ type: "error", message: `Billing failed: ${message}` });
+              }
+            }
+
+            if (runError && !analysisPayload && !fixPayload) {
+              const message = runError instanceof Error ? runError.message : String(runError);
+              emit({ type: "error", message });
+            } else {
+              emit({
+                type: "done",
+                meta: {
+                  durationMs: Date.now() - startedAt,
+                  tier: result?.tier ?? (mode === "deep" ? "smart" : "instant"),
+                  modelId: result?.modelId ?? null,
+                },
+              });
+            }
           } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
             emit({ type: "error", message });

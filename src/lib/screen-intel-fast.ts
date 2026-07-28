@@ -13,7 +13,16 @@
 // `complexity` + `confidence` to decide, and the returned object
 // carries a `tier` field the UI can show as a badge.
 
+import { jsonrepair } from "jsonrepair";
 import { TAXONOMY_PROMPT, type Diagnosis, type FixPlan } from "./intel-shared";
+
+function parseTolerantJson(text: string): unknown {
+  try { return JSON.parse(text); } catch {}
+  const match = text.match(/\{[\s\S]*\}/);
+  const candidate = match ? match[0] : text;
+  try { return JSON.parse(candidate); } catch {}
+  return JSON.parse(jsonrepair(candidate));
+}
 
 const INSTANT_MODEL = "gemini-3.5-flash";        // fast triage + attempt
 const SMART_MODEL = "gemini-3-pro-preview";      // deep reasoning (opt-in only)

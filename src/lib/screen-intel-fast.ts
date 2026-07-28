@@ -263,3 +263,175 @@ export async function runAutoScreenIntel(
 
 /** Backwards-compat alias so existing callers keep working. */
 export const runFastScreenIntel = runAutoScreenIntel;
+
+// ---------------------------------------------------------------------------
+// Progressive streaming variant used by /api/intel/screen/stream.
+// Runs two Gemini Flash calls in parallel (analysis + fix) so each section
+// paints the moment it lands, matching the Knowledge / System intel UX.
+// ---------------------------------------------------------------------------
+
+const ANALYSIS_ONLY_PROMPT = `You are Jeradin's rapid screen analyst. Look at ONE screenshot of a developer's IDE, editor, browser devtools, or terminal and produce the ANALYSIS section only.
+
+${TAXONOMY_PROMPT}
+
+Return STRICT JSON:
+{
+  "category": "runtime"|"api"|"database"|"auth"|"env"|"dependencies"|"performance"|"logs"|"deployment"|"ui"|"unknown",
+  "severity": "error"|"warning"|"info",
+  "summary": string,
+  "evidence": [{ "source": string, "snippet": string }],
+  "suspectFiles": string[],
+  "hypothesis": string,
+  "stack": { "framework": string|null, "language": string|null, "database": string|null, "runtime": string|null, "buildTool": string|null },
+  "context": { "currentFile": string|null, "cursorLine": number|null, "workflow": string|null, "ide": string|null, "browser": string|null },
+  "affectedFunction": string|null,
+  "affectedDependency": string|null,
+  "editor": string|null,
+  "language": string|null,
+  "errors": [{ "message": string, "file": string|null, "line": number|null, "severity": "error"|"warning"|"info", "source": "console"|"network"|"code"|"ui" }],
+  "observedCodeSnippet": string|null
+}
+
+Rules: base everything on what's actually visible; null when unseen; no markdown or preamble.`;
+
+const FIX_ONLY_PROMPT = `You are Jeradin's rapid fix planner. Look at ONE screenshot of a developer's IDE/editor/devtools/terminal and produce a rich, human FIX section that GUIDES the developer.
+
+Return STRICT JSON:
+{
+  "errorTitle": string,
+  "errorCategory": string,
+  "confidence": number,
+  "confidenceExplanation": string,
+  "rootCause": string,
+  "whyItHappened": string,
+  "affectedFile": string|null,
+  "affectedComponent": string|null,
+  "suspectedCodeRegion": string|null,
+  "plainExplanation": string,
+  "technicalExplanation": string,
+  "primaryFix": string,
+  "alternativeFix": string|null,
+  "bestPractice": string|null,
+  "difficulty": "Easy"|"Medium"|"Hard",
+  "estimatedFixTime": string,
+  "sideEffects": string[],
+  "nextDebuggingStep": string,
+  "errorLinks": string|null,
+  "recommendedActions": string[],
+  "impact": [{ "area": string, "consequence": string }],
+  "steps": [{ "file": string, "change": string, "codeAfter": string|null }],
+  "references": [{ "title": string, "url": string }],
+  "learnMode": string,
+  "additionalNotes": string|null
+}
+
+Rules:
+- \`plainExplanation\` speaks TO the developer in plain English ("Your component is trying to read X before Y is ready. Do this…"), 2-4 sentences.
+- \`steps[].codeAfter\` must be the FULL corrected block, ready to paste, whenever a code change is required.
+- \`learnMode\` teaches the underlying concept in 2-4 sentences so the same class of bug does not repeat.
+- \`recommendedActions\` = 3-6 short imperative bullets.
+- \`nextDebuggingStep\` = what to try next if the primary fix does not work.
+- No hallucinated paths. Null when unseen. STRICT JSON only, no markdown or preamble.`;
+
+async function callGeminiJson(
+  geminiKey: string,
+  model: string,
+  systemPrompt: string,
+  imageBase64: string,
+  note?: string,
+): Promise<unknown> {
+  const cleaned = imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, "");
+  const userText = note?.trim()
+    ? `Developer note: ${note.trim()}\n\nAnalyze this screen frame and return the JSON.`
+    : "Analyze this screen frame and return the JSON.";
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: userText },
+              { inline_data: { mime_type: "image/png", data: cleaned } },
+            ],
+          },
+        ],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 12288, responseMimeType: "application/json" },
+      }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`Gemini ${model} failed [${res.status}]: ${(await res.text()).slice(0, 400)}`);
+  }
+  const json = await res.json();
+  const text = (json.candidates?.[0]?.content?.parts ?? [])
+    .map((p: { text?: string }) => p.text ?? "")
+    .join("");
+  if (!text) throw new Error(`Gemini ${model} returned no content`);
+  try {
+    return JSON.parse(text);
+  } catch {
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error(`Gemini ${model} returned unparseable JSON`);
+    return JSON.parse(m[0]);
+  }
+}
+
+export type ProgressiveCallbacks = {
+  onAnalysis: (analysis: FastScreenIntel["analysis"]) => void;
+  onFix: (fix: FixPlan) => void;
+  onAnalysisError?: (message: string) => void;
+  onFixError?: (message: string) => void;
+};
+
+/**
+ * Runs analysis + fix in parallel against one screenshot, invoking each
+ * callback the moment its section resolves. Returns the combined result.
+ */
+export async function runProgressiveScreenIntel(
+  geminiKey: string,
+  imageBase64: string,
+  note: string | undefined,
+  cb: ProgressiveCallbacks,
+  forceTier?: IntelTier,
+): Promise<FastScreenIntel> {
+  const started = Date.now();
+  const model = forceTier === "smart" ? SMART_MODEL : INSTANT_MODEL;
+
+  const analysisPromise = (async () => {
+    const raw = (await callGeminiJson(geminiKey, model, ANALYSIS_ONLY_PROMPT, imageBase64, note)) as Diagnosis &
+      Record<string, unknown>;
+    const norm = normalizeIntel({ analysis: raw, fix: {} as FixPlan }).analysis;
+    cb.onAnalysis(norm);
+    return norm;
+  })().catch((e) => {
+    const message = e instanceof Error ? e.message : String(e);
+    cb.onAnalysisError?.(message);
+    throw e;
+  });
+
+  const fixPromise = (async () => {
+    const raw = (await callGeminiJson(geminiKey, model, FIX_ONLY_PROMPT, imageBase64, note)) as FixPlan;
+    const norm = normalizeIntel({ analysis: {} as Diagnosis, fix: raw }).fix;
+    cb.onFix(norm);
+    return norm;
+  })().catch((e) => {
+    const message = e instanceof Error ? e.message : String(e);
+    cb.onFixError?.(message);
+    throw e;
+  });
+
+  const [analysis, fix] = await Promise.all([analysisPromise, fixPromise]);
+  return {
+    analysis,
+    fix,
+    tier: forceTier === "smart" ? "smart" : "instant",
+    modelId: model,
+    latencyMs: Date.now() - started,
+    escalated: false,
+  };
+}

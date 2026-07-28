@@ -12,7 +12,7 @@
   "mcp": {
     "server": {
       "name": "jeradin-mcp",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "title": "Jeradin"
     },
     "tools": [
@@ -104,6 +104,99 @@
           },
           "required": [
             "repo"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_intel_history",
+        "title": "List my Jeradin intelligence reports",
+        "description": "Return the signed-in user's recent Jeradin intelligence reports (Knowledge, Screen, System, GitHub). Use this to see past analyses.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "knowledge",
+                "screen",
+                "system",
+                "repo"
+              ],
+              "description": "Filter by intelligence type. Omit to return all."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Max rows (default 10)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_intel_report",
+        "title": "Get a Jeradin intelligence report",
+        "description": "Return the full payload of one Jeradin intelligence report by id (from list_intel_history). Includes the full analysis, fix plan, or knowledge sections.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The report id from list_intel_history."
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "run_knowledge_intel",
+        "title": "Run Knowledge Intelligence",
+        "description": "Ask Jeradin a knowledge/research question (startup ideas, API/library comparisons, architecture, market research, how-to). Returns an opinionated report. Costs 5 credits per call.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "question": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 2000,
+              "description": "The question or research prompt."
+            },
+            "projectContext": {
+              "type": "string",
+              "maxLength": 8000,
+              "description": "Optional extra context about the user's project."
+            }
+          },
+          "required": [
+            "question"
           ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"

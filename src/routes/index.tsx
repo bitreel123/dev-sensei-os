@@ -200,7 +200,7 @@ function Hero() {
           transition={{ duration: 1, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
           className="relative mx-auto mt-6 w-full max-w-[1600px] px-3 sm:px-6"
         >
-          <div className="overflow-hidden rounded-xl border border-black/10 bg-black shadow-[0_30px_80px_-30px_rgba(0,0,0,0.45)]">
+          <div className="overflow-hidden rounded-xl border border-white/10 bg-black shadow-[0_30px_80px_-30px_rgba(0,0,0,0.45)]">
             <video
               src="https://7fmuvik1thzhlkvi.public.blob.vercel-storage.com/Jeradin.mp4"
               autoPlay
@@ -254,19 +254,19 @@ function InstallTerminal() {
 
   return (
     <div className="w-full max-w-[440px] text-left">
-      <div className="mb-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-black/50">
+      <div className="mb-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-white/50">
         Install via terminal
       </div>
-      <div className="rounded-md border border-black/15 bg-white overflow-hidden">
-        <div className="flex items-center gap-1 border-b border-black/10 px-2 pt-2 font-mono text-[11px]">
+      <div className="rounded-md border border-white/15 bg-white/[0.04] overflow-hidden">
+        <div className="flex items-center gap-1 border-b border-white/10 px-2 pt-2 font-mono text-[11px]">
           {(["mac", "win"] as const).map((k) => (
             <button
               key={k}
               onClick={() => setOs(k)}
               className={`px-2.5 py-1 rounded-t-sm transition-colors ${
                 os === k
-                  ? "bg-black/[0.06] text-black"
-                  : "text-black/50 hover:text-black"
+                  ? "bg-white/[0.10] text-white"
+                  : "text-white/50 hover:text-white"
               }`}
             >
               {k === "mac" ? "macOS / Linux" : "Windows"}
@@ -274,12 +274,12 @@ function InstallTerminal() {
           ))}
         </div>
         <div className="flex items-center gap-2 px-3 py-2.5 font-mono text-[12px]">
-          <span className="text-black/45">{prefix}</span>
-          <span className="text-black truncate">{rest}</span>
+          <span className="text-white/45">{prefix}</span>
+          <span className="text-white truncate">{rest}</span>
           <button
             onClick={copy}
             aria-label="Copy command"
-            className="ml-auto rounded p-1 text-black/50 hover:text-black hover:bg-black/[0.06] transition-colors"
+            className="ml-auto rounded p-1 text-white/50 hover:text-white hover:bg-white/[0.10] transition-colors"
           >
             {copied ? (
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">

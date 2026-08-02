@@ -6,10 +6,11 @@ import { useEffect, useRef } from "react";
  * - Follows the mouse (parallax tilt + spin influence)
  * - Click & drag to spin manually
  */
-export function InteractiveGlobe({ className = "" }: { className?: string }) {
+export function InteractiveGlobe({ className = "", tone = "dark" }: { className?: string; tone?: "dark" | "light" }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const rgb = tone === "light" ? "255,255,255" : "0,0,0";
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -118,14 +119,14 @@ export function InteractiveGlobe({ className = "" }: { className?: string }) {
       const sinX = Math.sin(rotX);
 
       // Outer ring
-      ctx.strokeStyle = "rgba(0,0,0,0.08)";
+      ctx.strokeStyle = `rgba(${rgb},0.14)`;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.stroke();
 
       // Latitude/longitude faint grid via projected great circles
-      ctx.strokeStyle = "rgba(0,0,0,0.05)";
+      ctx.strokeStyle = `rgba(${rgb},0.09)`;
       for (let lat = -60; lat <= 60; lat += 30) {
         ctx.beginPath();
         const phi = (lat * Math.PI) / 180;
@@ -162,7 +163,7 @@ export function InteractiveGlobe({ className = "" }: { className?: string }) {
         const depth = (z2 + 1) / 2;
         const alpha = 0.15 + depth * 0.55;
         const size = 0.6 + depth * 1.2;
-        ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
+        ctx.fillStyle = `rgba(${rgb},${alpha.toFixed(3)})`;
         ctx.fillRect(px - size / 2, py - size / 2, size, size);
       }
 
@@ -179,11 +180,11 @@ export function InteractiveGlobe({ className = "" }: { className?: string }) {
         const pulse = (Math.sin(t * 0.04 + h) + 1) / 2;
         ctx.beginPath();
         ctx.arc(px, py, 1.6 + pulse * 1.4, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0,0,0,${0.7 + pulse * 0.3})`;
+        ctx.fillStyle = `rgba(${rgb},${0.7 + pulse * 0.3})`;
         ctx.fill();
         ctx.beginPath();
         ctx.arc(px, py, 4 + pulse * 6, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(0,0,0,${0.18 * (1 - pulse)})`;
+        ctx.strokeStyle = `rgba(${rgb},${0.18 * (1 - pulse)})`;
         ctx.stroke();
       }
 
@@ -198,7 +199,7 @@ export function InteractiveGlobe({ className = "" }: { className?: string }) {
       canvas.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointerup", onUp);
     };
-  }, []);
+  }, [tone]);
 
   return (
     <canvas

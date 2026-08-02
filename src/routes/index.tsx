@@ -37,7 +37,7 @@ export const Route = createFileRoute("/")({
 function Landing() {
   return (
     <div className="min-h-screen bg-white text-black selection:bg-black selection:text-white">
-      <SiteHeader />
+      <SiteHeader variant="dark" />
       <Hero />
       <HermesFeatures />
       <Connector />
@@ -130,10 +130,13 @@ function QuestionsWorthAnswering() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden pt-24 pb-16">
+    <section className="relative overflow-hidden bg-black text-white pt-24 pb-16">
       <div className="relative">
         {/* Interactive globe behind */}
-        <InteractiveGlobe className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[720px] w-[720px] md:h-[880px] md:w-[880px]" />
+        <InteractiveGlobe
+          tone="light"
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[1100px] w-[1100px] md:h-[1500px] md:w-[1500px] lg:h-[1800px] lg:w-[1800px]"
+        />
 
         <div className="relative mx-auto max-w-5xl px-6 pt-16 pb-16 text-center">
           <motion.div
@@ -142,12 +145,12 @@ function Hero() {
             transition={{ duration: 0.5 }}
             className="flex justify-center"
           >
-            <div className="scale-[0.85] origin-center">
+            <div className="scale-[0.85] origin-center text-white">
               <LogoWordmark />
             </div>
           </motion.div>
 
-          <h1 className="mt-5 font-serif text-[42px] sm:text-[64px] md:text-[78px] leading-[0.98] tracking-[-0.025em] font-medium text-black">
+          <h1 className="mt-5 font-serif text-[42px] sm:text-[64px] md:text-[78px] leading-[0.98] tracking-[-0.025em] font-medium text-white">
             <RisingLine text="The intelligence layer" delay={0.05} />
             <br />
             <RisingLine text="for modern builders." delay={0.25} />
@@ -157,7 +160,7 @@ function Hero() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.7 }}
-            className="mx-auto mt-6 max-w-xl text-[14.5px] text-black/70 leading-relaxed"
+            className="mx-auto mt-6 max-w-xl text-[14.5px] text-white/70 leading-relaxed"
           >
             Understand, build, debug and ship complex systems with one
             connected AI layer across software, infrastructure and data.
@@ -172,13 +175,13 @@ function Hero() {
             <div className="flex flex-wrap items-center justify-center gap-2.5">
               <Link
                 to="/download"
-                className="inline-flex items-center gap-2 bg-black px-4 py-2.5 text-[13px] font-medium text-white hover:bg-black/85 transition-colors"
+                className="inline-flex items-center gap-2 bg-white px-4 py-2.5 text-[13px] font-medium text-black hover:bg-white/85 transition-colors"
               >
                 <DownloadGlyph /> Download for Windows
               </Link>
               <Link
                 to="/download"
-                className="inline-flex items-center gap-2 border border-black/30 px-4 py-2.5 text-[11.5px] font-medium text-black hover:bg-black hover:text-white transition-colors"
+                className="inline-flex items-center gap-2 border border-white/35 px-4 py-2.5 text-[11.5px] font-medium text-white hover:bg-white hover:text-black transition-colors"
               >
                 Install as extension
               </Link>
@@ -197,7 +200,7 @@ function Hero() {
           transition={{ duration: 1, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
           className="relative mx-auto mt-6 w-full max-w-[1600px] px-3 sm:px-6"
         >
-          <div className="overflow-hidden rounded-xl border border-black/10 bg-black shadow-[0_30px_80px_-30px_rgba(0,0,0,0.45)]">
+          <div className="overflow-hidden rounded-xl border border-white/10 bg-black shadow-[0_30px_80px_-30px_rgba(0,0,0,0.45)]">
             <video
               src="https://7fmuvik1thzhlkvi.public.blob.vercel-storage.com/Jeradin.mp4"
               autoPlay
@@ -251,19 +254,19 @@ function InstallTerminal() {
 
   return (
     <div className="w-full max-w-[440px] text-left">
-      <div className="mb-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-black/50">
+      <div className="mb-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-white/50">
         Install via terminal
       </div>
-      <div className="rounded-md border border-black/15 bg-white overflow-hidden">
-        <div className="flex items-center gap-1 border-b border-black/10 px-2 pt-2 font-mono text-[11px]">
+      <div className="rounded-md border border-white/15 bg-white/[0.04] overflow-hidden">
+        <div className="flex items-center gap-1 border-b border-white/10 px-2 pt-2 font-mono text-[11px]">
           {(["mac", "win"] as const).map((k) => (
             <button
               key={k}
               onClick={() => setOs(k)}
               className={`px-2.5 py-1 rounded-t-sm transition-colors ${
                 os === k
-                  ? "bg-black/[0.06] text-black"
-                  : "text-black/50 hover:text-black"
+                  ? "bg-white/[0.10] text-white"
+                  : "text-white/50 hover:text-white"
               }`}
             >
               {k === "mac" ? "macOS / Linux" : "Windows"}
@@ -271,12 +274,12 @@ function InstallTerminal() {
           ))}
         </div>
         <div className="flex items-center gap-2 px-3 py-2.5 font-mono text-[12px]">
-          <span className="text-black/45">{prefix}</span>
-          <span className="text-black truncate">{rest}</span>
+          <span className="text-white/45">{prefix}</span>
+          <span className="text-white truncate">{rest}</span>
           <button
             onClick={copy}
             aria-label="Copy command"
-            className="ml-auto rounded p-1 text-black/50 hover:text-black hover:bg-black/[0.06] transition-colors"
+            className="ml-auto rounded p-1 text-white/50 hover:text-white hover:bg-white/[0.10] transition-colors"
           >
             {copied ? (
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">

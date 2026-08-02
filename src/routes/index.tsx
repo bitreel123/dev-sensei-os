@@ -189,10 +189,32 @@ function Hero() {
           </motion.div>
 
         </div>
+
+        {/* Large product video — full bleed */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
+          className="relative mx-auto mt-6 w-full max-w-[1600px] px-3 sm:px-6"
+        >
+          <div className="overflow-hidden rounded-xl border border-black/10 bg-black shadow-[0_30px_80px_-30px_rgba(0,0,0,0.45)]">
+            <video
+              src="https://7fmuvik1thzhlkvi.public.blob.vercel-storage.com/Jeradin.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-label="Jeradin product demo"
+              className="block h-auto w-full"
+            />
+          </div>
+        </motion.div>
       </div>
     </section>
   );
 }
+
 
 function RisingLine({ text, delay = 0 }: { text: string; delay?: number }) {
   return (

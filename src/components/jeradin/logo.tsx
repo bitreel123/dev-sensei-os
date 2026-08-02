@@ -50,7 +50,7 @@ export function LogoWordmark({ className = "" }: { className?: string }) {
   return (
     <div className={`inline-flex items-center gap-1.5 ${className}`}>
       <LogoMark className="h-[15px] w-[15px]" />
-      <span className="text-[13px] font-semibold tracking-tight text-black">
+      <span className="text-[13px] font-semibold tracking-tight">
         Jeradin
       </span>
     </div>

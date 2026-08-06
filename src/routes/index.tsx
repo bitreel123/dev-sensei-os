@@ -235,13 +235,9 @@ function RisingLine({ text, delay = 0 }: { text: string; delay?: number }) {
 }
 
 function InstallTerminal() {
-  const [os, setOs] = useState<"mac" | "win">("mac");
   const [copied, setCopied] = useState(false);
-  const cmd =
-    os === "mac"
-      ? "curl -fsSL https://get.jeradin.dev/install.sh | sh"
-      : "irm https://get.jeradin.dev/install.ps1 | iex";
-  const prefix = os === "mac" ? "curl" : "irm";
+  const cmd = "irm https://get.jeradin.dev/install.ps1 | iex";
+  const prefix = "irm";
   const rest = cmd.slice(prefix.length);
 
   const copy = async () => {
@@ -259,19 +255,7 @@ function InstallTerminal() {
       </div>
       <div className="rounded-md border border-white/15 bg-white/[0.04] overflow-hidden">
         <div className="flex items-center gap-1 border-b border-white/10 px-2 pt-2 font-mono text-[11px]">
-          {(["mac", "win"] as const).map((k) => (
-            <button
-              key={k}
-              onClick={() => setOs(k)}
-              className={`px-2.5 py-1 rounded-t-sm transition-colors ${
-                os === k
-                  ? "bg-white/[0.10] text-white"
-                  : "text-white/50 hover:text-white"
-              }`}
-            >
-              {k === "mac" ? "macOS / Linux" : "Windows"}
-            </button>
-          ))}
+          <span className="px-2.5 py-1 rounded-t-sm bg-white/[0.10] text-white">Windows</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-2.5 font-mono text-[12px]">
           <span className="text-white/45">{prefix}</span>
@@ -297,6 +281,7 @@ function InstallTerminal() {
     </div>
   );
 }
+
 
 function DownloadGlyph() {
 

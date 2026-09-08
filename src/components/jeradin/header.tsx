@@ -15,7 +15,7 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
     >
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-5">
         <div className="flex items-center gap-10">
-          <LogoLockup />
+          <LogoLockup variant={isDark ? "light" : "dark"} />
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <Link

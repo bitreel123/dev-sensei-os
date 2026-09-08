@@ -15,13 +15,15 @@ export function LogoMark({ className = "h-5 w-5" }: { className?: string }) {
 export function LogoLockup({
   href = "/",
   className = "",
+  variant = "dark",
 }: {
   href?: string;
   className?: string;
+  variant?: "dark" | "light";
 }) {
   return (
     <Link to={href} className={`flex items-center gap-2 ${className}`}>
-      <LogoMark className="h-[20px] w-[20px] object-contain dark:invert" />
+      <LogoMark className={`h-[20px] w-[20px] object-contain ${variant === "light" ? "invert" : ""}`} />
       <span className="text-[15px] font-semibold tracking-tight">Jeradin</span>
     </Link>
   );

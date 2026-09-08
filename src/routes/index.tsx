@@ -29,7 +29,14 @@ export const Route = createFileRoute("/")({
         content:
           "AI powered systems intelligence across software, AI, infrastructure, hardware and data.",
       },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://jeradin.com/__l5e/assets-v1/ddade698-c63e-4fd5-ba1a-6e0f47399049/jeradin-og.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Jeradin — One intelligence layer" },
+      { name: "twitter:description", content: "AI powered systems intelligence across software, AI, infrastructure, hardware and data." },
+      { name: "twitter:image", content: "https://jeradin.com/__l5e/assets-v1/ddade698-c63e-4fd5-ba1a-6e0f47399049/jeradin-og.png" },
     ],
+    links: [{ rel: "canonical", href: "https://jeradin.com/" }],
   }),
   component: Landing,
 });

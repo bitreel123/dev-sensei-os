@@ -88,8 +88,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "Jeradin — Read-only debugger for vibecoded apps" },
       { property: "og:description", content: "Jeradin watches your screen and tells you where vibecoded code breaks — without ever touching it." },
       { name: "twitter:description", content: "Jeradin watches your screen and tells you where vibecoded code breaks — without ever touching it." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4bb2a017-131d-49d1-8a1b-255d95d48e10/id-preview-adaa2af6--f3f1273c-9023-417a-8f01-2102307dd572.lovable.app-1781535165765.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4bb2a017-131d-49d1-8a1b-255d95d48e10/id-preview-adaa2af6--f3f1273c-9023-417a-8f01-2102307dd572.lovable.app-1781535165765.png" },
     ],
     links: [
       {

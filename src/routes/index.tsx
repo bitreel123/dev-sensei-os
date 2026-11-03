@@ -1,40 +1,30 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ChevronDown, Activity, Bug, FileText, Database, Microscope, Globe2 } from "lucide-react";
 import { motion } from "motion/react";
 import { SiteHeader } from "@/components/jeradin/header";
 import { SiteFooter } from "@/components/jeradin/footer";
 import { LogoWordmark } from "@/components/jeradin/logo";
-import { MorphVisual } from "@/components/jeradin/morph-visual";
 import { InteractiveGlobe } from "@/components/jeradin/interactive-globe";
-import { BrandLogo, ALL_BRANDS, BrandName } from "@/components/jeradin/brand-logos";
-import { HermesFeatures } from "@/components/jeradin/hermes-features";
-import { IntelligenceFeatures } from "@/components/jeradin/intelligence-features";
-import { JeradinPortal } from "@/components/jeradin/jeradin-portal";
 import { Button } from "@/components/ui/button";
+
+const OG = "https://jeradin.com/__l5e/assets-v1/ddade698-c63e-4fd5-ba1a-6e0f47399049/jeradin-og.png";
+const DESC =
+  "Jeradin is a virtual human platform for doctors, students and researchers. Rehearse procedures in 3D, see how diseases affect the body, and explore medical data and research in one place.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Jeradin — From idea to production. One intelligence layer." },
-      {
-        name: "description",
-        content:
-          "Jeradin is an AI powered systems intelligence platform helping developers, founders and engineers understand, build, debug, test and improve complex systems.",
-      },
-      { property: "og:title", content: "Jeradin — One intelligence layer" },
-      {
-        property: "og:description",
-        content:
-          "AI powered systems intelligence across software, AI, infrastructure, hardware and data.",
-      },
+      { title: "Jeradin | Virtual Human, Medical Data and Research Intelligence" },
+      { name: "description", content: DESC },
+      { property: "og:title", content: "Jeradin | The Virtual Human for Medicine and Research" },
+      { property: "og:description", content: DESC },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://jeradin.com/__l5e/assets-v1/ddade698-c63e-4fd5-ba1a-6e0f47399049/jeradin-og.png" },
+      { property: "og:image", content: OG },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Jeradin — One intelligence layer" },
-      { name: "twitter:description", content: "AI powered systems intelligence across software, AI, infrastructure, hardware and data." },
-      { name: "twitter:image", content: "https://jeradin.com/__l5e/assets-v1/ddade698-c63e-4fd5-ba1a-6e0f47399049/jeradin-og.png" },
+      { name: "twitter:title", content: "Jeradin | The Virtual Human for Medicine and Research" },
+      { name: "twitter:description", content: DESC },
+      { name: "twitter:image", content: OG },
     ],
     links: [{ rel: "canonical", href: "https://jeradin.com/" }],
   }),
@@ -43,466 +33,226 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-white text-black selection:bg-black selection:text-white">
+    <div className="min-h-screen bg-black text-white">
       <SiteHeader variant="dark" />
       <Hero />
-      <HermesFeatures />
-      <Connector />
-      <IntelligenceFeatures />
-      <QuestionsWorthAnswering />
-      <JeradinPortal />
+      <Pillars />
+      <DataSources />
+      <Audiences />
+      <HowItWorks />
+      <Faq />
+      <Cta />
       <SiteFooter />
-
     </div>
+  );
+}
+
+function Hero() {
+  return (
+    <section className="relative overflow-hidden pt-24 pb-24">
+      <InteractiveGlobe
+        tone="light"
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[1100px] w-[1100px] md:h-[1500px] md:w-[1500px]"
+      />
+      <div className="relative mx-auto max-w-5xl px-6 pt-16 text-center">
+        <div className="flex justify-center scale-[0.85]"><LogoWordmark /></div>
+        <motion.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="mt-5 font-serif text-[40px] sm:text-[62px] md:text-[76px] leading-[1] tracking-[-0.025em] font-medium"
+        >
+          The virtual human
+          <br />
+          for medicine and research.
+        </motion.h1>
+        <p className="mx-auto mt-6 max-w-2xl text-[15px] font-medium leading-relaxed text-white/75">
+          Rehearse a procedure on a 3D human before the real one. Search any disease or virus and watch where it
+          lives and how it spreads. See the research, medical data, news and public health signals behind it, then
+          download a full report.
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-2.5">
+          <Link to="/signup" search={{}} className="inline-flex items-center gap-2 bg-white px-5 py-3 text-[13px] font-semibold text-black hover:bg-white/85">
+            Explore the virtual human <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link to="/pricing" className="inline-flex items-center border border-white/35 px-5 py-3 text-[13px] font-semibold hover:bg-white hover:text-black">
+            See pricing
+          </Link>
+        </div>
+        <p className="mt-6 text-[11px] uppercase tracking-[0.18em] text-white/45">
+          Education, rehearsal and research tool. Not for live clinical decisions.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+const PILLARS = [
+  { icon: Activity, t: "3D procedure rehearsal", d: "Walk through an eye, liver, heart or brain procedure step by step on a labelled 3D body. See the landmarks, risk zones and tools before you ever touch a patient." },
+  { icon: Bug, t: "Disease and virus mapping", d: "Type “rhinovirus” or “hepatitis B” and the virtual human lights up the organs it affects, how it enters, how it spreads and what symptoms follow." },
+  { icon: Database, t: "Medical data intelligence", d: "Pull clinical trials, drug data, disease statistics and genetic information into one clear picture, linked to the exact body part it concerns." },
+  { icon: Microscope, t: "Research synthesis", d: "Ask a question and Jeradin reads dozens of papers for you, shows where they agree, where they disagree, and what still needs testing in the lab." },
+  { icon: Globe2, t: "Public health and social signals", d: "See outbreak news, public sentiment and SDG health indicators beside the science, so you understand the real world impact, not just the textbook." },
+  { icon: FileText, t: "Downloadable dossiers", d: "Export a labelled report with 3D captures, steps, data tables, citations and suggested lab work. Keep it, share it, or take it to your team." },
+];
+
+function Pillars() {
+  return (
+    <section className="border-t border-white/10">
+      <div className="mx-auto max-w-6xl px-6 py-20">
+        <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/50">What Jeradin does</span>
+        <h2 className="mt-3 max-w-3xl text-[32px] sm:text-[44px] font-semibold leading-[1.05] tracking-[-0.03em]">
+          One body. Every piece of medical knowledge mapped onto it.
+        </h2>
+        <div className="mt-12 grid gap-px bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
+          {PILLARS.map(({ icon: Icon, t, d }) => (
+            <div key={t} className="bg-black p-7">
+              <Icon className="h-5 w-5 text-white/80" />
+              <h3 className="mt-4 text-[17px] font-semibold">{t}</h3>
+              <p className="mt-2 text-[14px] font-medium leading-relaxed text-white/65">{d}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const SOURCES = [
+  ["PubMed and PMC", "Over 36 million research papers"],
+  ["ClinicalTrials.gov", "Global clinical trial records"],
+  ["Europe PMC", "Open access life science literature"],
+  ["openFDA", "Drug labels, side effects and recalls"],
+  ["WHO Global Health Observatory", "Country level health statistics"],
+  ["UN SDG data", "Health and wellbeing indicators"],
+  ["UniProt and PDB", "Proteins and molecular structures"],
+  ["NCBI Gene and ClinVar", "Genes and genetic variants"],
+  ["Disease outbreak news", "Live outbreak reports and public sentiment"],
+];
+
+function DataSources() {
+  return (
+    <section className="border-t border-white/10">
+      <div className="mx-auto max-w-6xl px-6 py-20 grid gap-10 md:grid-cols-12">
+        <div className="md:col-span-5">
+          <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/50">Built on trusted data</span>
+          <h2 className="mt-3 text-[30px] sm:text-[40px] font-semibold leading-[1.05] tracking-[-0.03em]">
+            Real sources. Real citations.
+          </h2>
+          <p className="mt-5 text-[14px] font-medium leading-relaxed text-white/65">
+            Every answer is grounded in open medical and scientific databases, and every claim links back to where it
+            came from. No guessing, no made up facts.
+          </p>
+        </div>
+        <div className="md:col-span-7 grid gap-px bg-white/10 sm:grid-cols-2">
+          {SOURCES.map(([n, d]) => (
+            <div key={n} className="bg-black p-5">
+              <div className="text-[14px] font-semibold">{n}</div>
+              <div className="mt-1 text-[12.5px] font-medium text-white/55">{d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const AUDIENCES = [
+  "Doctors and surgeons",
+  "Medical students and residents",
+  "Medical researchers",
+  "Biochemistry and biomedical researchers",
+  "Pharmacy professionals",
+  "Pharmaceutical and drug research companies",
+  "Universities and research institutions",
+  "Medical educators",
+];
+
+function Audiences() {
+  return (
+    <section className="border-t border-white/10">
+      <div className="mx-auto max-w-6xl px-6 py-20">
+        <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/50">Who it is for</span>
+        <h2 className="mt-3 text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em]">Made for people who study the human body.</h2>
+        <div className="mt-8 flex flex-wrap gap-2.5">
+          {AUDIENCES.map((a) => (
+            <span key={a} className="border border-white/20 px-4 py-2 text-[13px] font-semibold">{a}</span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const STEPS = [
+  ["Ask", "Type a procedure, disease, drug or research question in plain words."],
+  ["See", "The virtual human shows the exact body parts involved, with real labels."],
+  ["Understand", "Read the steps, data, research and public health picture side by side."],
+  ["Download", "Export a full dossier and decide what lab work to do next."],
+];
+
+function HowItWorks() {
+  return (
+    <section className="border-t border-white/10">
+      <div className="mx-auto max-w-6xl px-6 py-20">
+        <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/50">How it works</span>
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map(([t, d], i) => (
+            <div key={t} className="border-t border-white/25 pt-5">
+              <div className="font-mono text-[12px] text-white/45">0{i + 1}</div>
+              <div className="mt-2 text-[20px] font-semibold">{t}</div>
+              <p className="mt-2 text-[14px] font-medium text-white/65">{d}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
 const FAQ_ITEMS = [
-  {
-    question: "What is Jeradin?",
-    answer: "Jeradin turns a screen, codebase, repository, document, or business idea into a clear diagnosis and an actionable plan. It explains what is happening, why it matters, and what to do next without assuming you are deeply technical.",
-  },
-  {
-    question: "What does Jeradin actually do?",
-    answer: "Jeradin combines Screen, Knowledge, System, and GitHub Intelligence. It can diagnose what is visible on your screen, research and validate an idea, review an entire codebase, or answer repository-specific questions with evidence from the real files.",
-  },
-  {
-    question: "Can I use Jeradin if I am not a developer?",
-    answer: "Yes. Founders and non-technical builders can use Knowledge Intelligence to validate ideas, compare markets, shape pricing, plan an MVP, and understand the technical decisions needed to launch.",
-  },
-  {
-    question: "How does Screen Intelligence work?",
-    answer: "Record or capture the problem you can see. Jeradin reads the interface, identifies likely errors and affected code, then opens Ask Jeradin directly on the tab you were working in with a step-by-step fix and IDE-coloured code suggestions.",
-  },
-  {
-    question: "What is the difference between System and GitHub Intelligence?",
-    answer: "System Intelligence reviews the health and architecture of an entire codebase. GitHub Intelligence connects to a selected repository for evidence-based answers about files, regressions, risks, pull requests, and the safest implementation path.",
-  },
-  {
-    question: "Does Jeradin replace my coding tools?",
-    answer: "No. Jeradin works alongside the tools you already use. It provides the second layer of judgment: understanding the system, validating decisions, detecting hidden risk, and translating recommendations for every person on the team.",
-  },
-  {
-    question: "Can I use just one Intelligence capability?",
-    answer: "Yes. Use only the capability that fits the work in front of you. Each one works independently, while using them together gives Jeradin broader context across the idea, interface, system, and repository.",
-  },
-  {
-    question: "Who owns the code and ideas I analyze?",
-    answer: "You do. Jeradin analyzes your material to produce the requested result; it does not claim ownership of your code, documents, product ideas, or generated recommendations.",
-  },
-  {
-    question: "How do credits work?",
-    answer: "Credits are charged only after an Intelligence prompt successfully produces a useful result. Screen Intelligence costs 2 credits, a Screen Deep Dive costs 5, and Knowledge, System, or GitHub Intelligence costs 5 credits per completed prompt.",
-  },
+  { q: "What is Jeradin?", a: "Jeradin is a virtual human and medical intelligence platform. It combines a labelled 3D human body with medical data, research papers and public health information so you can learn, rehearse and research in one place." },
+  { q: "Is this used during real surgery?", a: "No. Jeradin is for learning, preparation and research. It helps you rehearse and understand a procedure beforehand. Real clinical decisions always stay with qualified professionals and your institution's protocols." },
+  { q: "Where does the medical data come from?", a: "From open, trusted sources such as PubMed, ClinicalTrials.gov, openFDA, WHO and UN SDG data, plus outbreak news. Every result shows its citations." },
+  { q: "Do you use real patient data?", a: "No. The virtual human is a standard anatomical model. You never need to upload patient records to use Jeradin." },
+  { q: "Can I download my research?", a: "Yes. Every result can be exported as a dossier with 3D captures, labels, steps, data tables and references." },
+  { q: "How does payment work?", a: "You can start free, then choose a monthly plan or buy credits. Credits are only used when a result is successfully generated." },
 ];
 
-function QuestionsWorthAnswering() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+function Faq() {
+  const [open, setOpen] = useState<number | null>(0);
   return (
-    <section className="border-y border-white/15 bg-black text-white">
-      <div className="mx-auto max-w-4xl px-6 py-20 md:py-24">
-        <div className="border-b border-white/20 pb-3 font-mono text-[11px] uppercase text-white/55">
-          Questions worth answering
-        </div>
-        <div>
-          {FAQ_ITEMS.map((item, index) => {
-            const open = openIndex === index;
-            return (
-              <article key={item.question} className="border-b border-white/20">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  aria-expanded={open}
-                  onClick={() => setOpenIndex(open ? null : index)}
-                  className="h-auto w-full justify-between rounded-none px-0 py-4 text-left text-white hover:bg-transparent hover:text-white"
-                >
-                  <span className="whitespace-normal text-[15px] font-medium sm:text-[16px]">{item.question}</span>
-                  <ChevronDown className={`h-4 w-4 shrink-0 text-white/55 transition-transform ${open ? "rotate-180" : ""}`} />
-                </Button>
-                {open && (
-                  <p className="max-w-3xl pb-6 pr-10 text-[14px] leading-7 text-white/60">
-                    {item.answer}
-                  </p>
-                )}
-              </article>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------ Hero ------------------------------ */
-
-function Hero() {
-  return (
-    <section className="relative overflow-hidden bg-black text-white pt-24 pb-16">
-      <div className="relative">
-        {/* Interactive globe behind */}
-        <InteractiveGlobe
-          tone="light"
-          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[1100px] w-[1100px] md:h-[1500px] md:w-[1500px] lg:h-[1800px] lg:w-[1800px]"
-        />
-
-        <div className="relative mx-auto max-w-5xl px-6 pt-16 pb-16 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex justify-center"
-          >
-            <div className="scale-[0.85] origin-center text-white">
-              <LogoWordmark />
-            </div>
-          </motion.div>
-
-          <h1 className="mt-5 font-serif text-[42px] sm:text-[64px] md:text-[78px] leading-[0.98] tracking-[-0.025em] font-medium text-white">
-            <RisingLine text="The intelligence layer" delay={0.05} />
-            <br />
-            <RisingLine text="for modern builders." delay={0.25} />
-          </h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.7 }}
-            className="mx-auto mt-6 max-w-xl text-[14.5px] text-white/70 leading-relaxed"
-          >
-            Understand, build, debug and ship complex systems with one
-            connected AI layer across software, infrastructure and data.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.9 }}
-            className="mt-8 flex flex-col items-center gap-5"
-          >
-            <div className="flex flex-wrap items-center justify-center gap-2.5">
-              <Link
-                to="/download"
-                className="inline-flex items-center gap-2 bg-white px-4 py-2.5 text-[13px] font-medium text-black hover:bg-white/85 transition-colors"
-              >
-                <DownloadGlyph /> Download for Windows
-              </Link>
-              <Link
-                to="/download"
-                className="inline-flex items-center gap-2 border border-white/35 px-4 py-2.5 text-[11.5px] font-medium text-white hover:bg-white hover:text-black transition-colors"
-              >
-                Install as extension
-              </Link>
-            </div>
-
-
-            <InstallTerminal />
-          </motion.div>
-
-        </div>
-
-        {/* Large product video — full bleed */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
-          className="relative mx-auto mt-6 w-full max-w-[1600px] px-3 sm:px-6"
-        >
-          <div className="overflow-hidden rounded-xl border border-white/10 bg-black shadow-[0_30px_80px_-30px_rgba(0,0,0,0.45)]">
-            <video
-              src="https://7fmuvik1thzhlkvi.public.blob.vercel-storage.com/Jeradin.mp4"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              aria-label="Jeradin product demo"
-              className="block h-auto w-full"
-            />
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-
-function RisingLine({ text, delay = 0 }: { text: string; delay?: number }) {
-  return (
-    <span className="inline-block overflow-hidden align-bottom">
-      <motion.span
-        className="inline-block"
-        initial={{ y: "108%" }}
-        animate={{ y: 0 }}
-        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay }}
-      >
-        {text}
-      </motion.span>
-    </span>
-  );
-}
-
-function InstallTerminal() {
-  const [copied, setCopied] = useState(false);
-  const cmd = "irm https://get.jeradin.dev/install.ps1 | iex";
-  const prefix = "irm";
-  const rest = cmd.slice(prefix.length);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(cmd);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1400);
-    } catch {}
-  };
-
-  return (
-    <div className="w-full max-w-[440px] text-left">
-      <div className="mb-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-white/50">
-        Install via terminal
-      </div>
-      <div className="rounded-md border border-white/15 bg-white/[0.04] overflow-hidden">
-        <div className="flex items-center gap-1 border-b border-white/10 px-2 pt-2 font-mono text-[11px]">
-          <span className="px-2.5 py-1 rounded-t-sm bg-white/[0.10] text-white">Windows</span>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-2.5 font-mono text-[12px]">
-          <span className="text-white/45">{prefix}</span>
-          <span className="text-white truncate">{rest}</span>
-          <button
-            onClick={copy}
-            aria-label="Copy command"
-            className="ml-auto rounded p-1 text-white/50 hover:text-white hover:bg-white/[0.10] transition-colors"
-          >
-            {copied ? (
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8.5 6.5 12 13 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            ) : (
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                <rect x="5" y="5" width="8" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M3 11V4a1 1 0 0 1 1-1h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-function DownloadGlyph() {
-
-  return (
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M8 2v9m0 0 3-3m-3 3L5 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M3 13h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-/* --------------------- The AI operating system + Mission --------------------- */
-
-function OperatingSystem() {
-  return (
-    <section className="mx-auto max-w-7xl px-6 pt-16 pb-20">
-      <div className="grid md:grid-cols-2 gap-12 items-end">
-        <motion.h2
-          initial={{ opacity: 0, y: 14 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="text-[36px] sm:text-[48px] leading-[1] tracking-[-0.035em] font-bold text-black"
-        >
-          The AI operating system for great builders.
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0, y: 14 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="text-[14.5px] text-black/70 leading-relaxed max-w-md md:justify-self-end"
-        >
-          Jeradin is an AI powered systems intelligence platform that helps
-          developers, founders, engineers, and teams understand, build, debug,
-          test, and improve complex systems across software, AI, infrastructure,
-          hardware and data.
-        </motion.p>
-      </div>
-
-      {/* Mission section — image-3 style */}
-      <div className="mt-24 border-t border-black/15 pt-10">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="flex items-center gap-3 font-mono text-[12px] text-black/70"
-        >
-          <span className="inline-flex h-6 w-6 items-center justify-center border border-black/40 text-[11px]">
-            1
-          </span>
-          <span className="inline-flex items-center border border-black/40 px-2 py-0.5 tracking-wide">
-            Mission
-          </span>
-        </motion.div>
-
-        <motion.h3
-          initial={{ opacity: 0, y: 18 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6 max-w-5xl text-[34px] sm:text-[44px] md:text-[54px] leading-[1.05] tracking-[-0.025em] font-medium text-black"
-        >
-          Engineering cycles are still measured in months and years. Complex
-          systems continue to grow faster than humans can understand them.
-        </motion.h3>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.15 }}
-          className="mt-10 max-w-xl bg-black text-white p-7"
-        >
-          <p className="text-[13.5px] leading-relaxed text-white/85">
-            Jeradin changes that. We embed an intelligence layer directly into
-            the way teams build — compressing the distance between an idea, a
-            working system, and what ships to production. Designed for the
-            engineers, founders and operators redefining what is possible.
-          </p>
-          <Link
-            to="/product"
-            className="mt-6 inline-flex items-center gap-3 border border-white/40 px-3.5 py-2 text-[12px] font-mono tracking-wide hover:bg-white hover:text-black transition-colors"
-          >
-            About Us <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-/* --------------------- Gigantic animated character --------------------- */
-
-function SystemVisual() {
-  return (
-    <section className="relative bg-black text-white overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 pt-20 pb-32">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          className="relative"
-        >
-          <MorphVisual />
-        </motion.div>
-
-      </div>
-    </section>
-  );
-}
-
-/* --------------------------- Connector --------------------------- */
-
-const WORKFLOWS = [
-  "Lovable integration",
-  "Replit workflow",
-  "Cursor workflow",
-  "Bolt workflows",
-  "Architecture suggestion",
-  "Deployment guidance",
-];
-
-function Connector() {
-  return (
-    <section className="bg-black text-white">
-      <div className="mx-auto max-w-6xl px-6 py-14 md:py-16">
-
-        <div className="grid md:grid-cols-12 gap-10 items-center">
-          <div className="md:col-span-6">
-            <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-white/50">
-              Universal connector
-            </span>
-            <h2 className="mt-3 text-[32px] sm:text-[42px] leading-[1.02] tracking-[-0.03em] font-semibold text-white">
-              One layer. Every tool.
-            </h2>
-            <p className="mt-5 text-[14px] text-white/65 leading-relaxed max-w-md">
-              Jeradin works alongside any AI coding tool to validate decisions,
-              detect mistakes, explain failures and keep projects moving from
-              ideas to production.
-            </p>
-
-            <Link
-              to="/docs"
-              className="mt-7 inline-flex items-center gap-1.5 text-[13px] font-medium text-white hover:underline underline-offset-4"
+    <section className="border-t border-white/10">
+      <div className="mx-auto max-w-4xl px-6 py-20">
+        <div className="border-b border-white/20 pb-3 font-mono text-[11px] uppercase text-white/55">Questions worth answering</div>
+        {FAQ_ITEMS.map((f, i) => (
+          <article key={f.q} className="border-b border-white/20">
+            <Button
+              variant="ghost"
+              aria-expanded={open === i}
+              onClick={() => setOpen(open === i ? null : i)}
+              className="h-auto w-full justify-between rounded-none px-0 py-4 text-left text-white hover:bg-transparent hover:text-white"
             >
-              Read the MCP docs <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-
-          <div className="md:col-span-6">
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 max-w-md md:ml-auto">
-              <div className="grid grid-cols-3 gap-2">
-                {ALL_BRANDS.map((b, i) => (
-                  <motion.div
-                    key={b}
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.35, delay: i * 0.04 }}
-                    className="group aspect-square rounded-lg border border-white/10 bg-white/[0.02] flex flex-col items-center justify-center gap-1.5 hover:border-white/40 hover:bg-white/[0.05] transition-colors cursor-pointer"
-                  >
-                    <BrandLogo brand={b} variant="light" className="h-5 w-5" />
-                    <span className="text-[10px] font-medium text-white/80">
-                      {BrandName(b)}
-                    </span>
-                  </motion.div>
-                ))}
-              </div>
-              <div className="mt-3 flex items-center justify-between px-1 text-[10px] font-mono text-white/40">
-                <span>jeradin.mcp · v0.1</span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-white/70 animate-pulse" />
-                  listening
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+              <span className="whitespace-normal text-[15px] font-semibold">{f.q}</span>
+              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open === i ? "rotate-180" : ""}`} />
+            </Button>
+            {open === i && <p className="pb-6 pr-10 text-[14px] font-medium leading-7 text-white/65">{f.a}</p>}
+          </article>
+        ))}
       </div>
     </section>
   );
 }
 
-
-/* --------------------------- CTA --------------------------- */
-
-function CTA() {
+function Cta() {
   return (
-    <section className="border-t border-black/10">
-      <div className="mx-auto max-w-5xl px-6 py-28 text-center">
-        <h2 className="text-[44px] sm:text-[72px] leading-[0.98] tracking-[-0.04em] font-bold text-black">
-          Ship without the loops.
-        </h2>
-        <p className="mx-auto mt-5 max-w-md text-[14px] text-black/70">
-          Free during beta. Windows, macOS, Linux and Web.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-          <Link
-            to="/download"
-            className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2.5 text-[13px] font-medium text-white hover:bg-black/85"
-          >
-            <DownloadGlyph /> Download Jeradin
-          </Link>
-          <Link
-            to="/signup"
-            search={{}}
-            className="inline-flex items-center gap-2 rounded-full bg-black/[0.04] px-4 py-2.5 text-[13px] font-medium text-black hover:bg-black/[0.08]"
-          >
-            Create an account
-          </Link>
-        </div>
+    <section className="border-t border-white/10">
+      <div className="mx-auto max-w-4xl px-6 py-24 text-center">
+        <h2 className="text-[38px] sm:text-[60px] font-bold leading-[1] tracking-[-0.04em]">Practise on the virtual human first.</h2>
+        <p className="mx-auto mt-5 max-w-md text-[14px] font-medium text-white/65">Start free. No patient data needed.</p>
+        <Link to="/signup" search={{}} className="mt-8 inline-flex items-center gap-2 bg-white px-5 py-3 text-[13px] font-semibold text-black hover:bg-white/85">
+          Get started free <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
     </section>
   );

@@ -141,9 +141,6 @@ const TIERS: Tier[] = [
     ],
     perks: ["Rollover up to 3 months", "Dedicated account manager"],
   },
-,
-    perks: ["Rollover cap up to 3 months", "Dedicated CSM"],
-  },
 ];
 
 type Cycle = "monthly" | "yearly";

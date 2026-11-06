@@ -50,7 +50,10 @@ const YEARLY_DISCOUNT = 0.2;
 const RANK: Record<PlanId, number> = { free: 0, basic: 1, pro: 2, elite: 3 };
 
 function normalizePlanId(plan: string | null | undefined): PlanId {
-  return plan ==const TIERS: Tier[] = [
+  return plan === "basic" || plan === "pro" || plan === "elite" ? plan : "free";
+}
+
+const TIERS: Tier[] = [
   {
     id: "free",
     name: "Free",

@@ -44,7 +44,7 @@ function PrivacyPage() {
         <h1 className="mt-3 text-[44px] sm:text-[56px] leading-[1.05] tracking-[-0.04em] font-medium">
           Privacy Policy
         </h1>
-        <p className="mt-4 text-[13px] text-black/50">Effective July 11, 2026</p>
+        <p className="mt-4 text-[13px] text-black/50">Effective November 6, 2026</p>
       </section>
 
       <section className="mx-auto max-w-3xl px-5 pb-16">
@@ -96,7 +96,8 @@ function PrivacyPage() {
             <li>
               <b>Content data</b> — screen recordings, screenshots, uploaded files, log files,
               stack traces, code snippets, prompts, chat history, and metadata about connected
-              repositories or MCP tools that you submit to the Service.
+              repositories, research queries, uploaded datasets, lab or clinical data, notes and
+              reports that you submit to the Service.
             </li>
             <li>
               <b>Usage data</b> — pages viewed, features used, actions taken, credit
@@ -200,6 +201,15 @@ function PrivacyPage() {
         </Section>
 
         <Section id="s8" n="8" title="AI training and model use">
+          <p>
+            <b>Health information.</b> Jeradin is a research and education platform, not a
+            healthcare provider. Please do not upload information that identifies a patient
+            (such as names, record numbers or images that show a face) unless you have the legal
+            right and consent to do so. If you describe your own symptoms or upload health data,
+            we use it only to produce your research results, we never sell it, and you can delete
+            it at any time. Public research data we show (for example from PubMed, ClinicalTrials.gov
+            or WHO) comes from its original public source.
+          </p>
           <p>
             Content you submit through a paid workspace, or that you mark as private, is not
             used to train third-party foundation models. We may use aggregated or de-identified

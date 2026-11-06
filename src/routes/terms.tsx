@@ -49,7 +49,7 @@ function TermsPage() {
         <h1 className="mt-3 text-[44px] sm:text-[56px] leading-[1.05] tracking-[-0.04em] font-medium">
           Terms of Service
         </h1>
-        <p className="mt-4 text-[13px] text-black/50">Effective July 11, 2026</p>
+        <p className="mt-4 text-[13px] text-black/50">Effective November 6, 2026</p>
       </section>
 
       <section className="mx-auto max-w-3xl px-5 pb-16">
@@ -95,13 +95,11 @@ function TermsPage() {
 
         <Section id="s2" n="2" title="The Service">
           <p>
-            Jeradin is an AI debugging assistant for software developers. It ingests information
-            you provide — including screen recordings, screenshots, error messages, stack traces,
-            log files, natural-language descriptions, and connected repository metadata — and
-            uses artificial-intelligence models to help you diagnose issues, understand code
-            behaviour, and propose fixes. The Service is provided on a subscription basis with
-            usage-based credits, and may be delivered through a web application, native desktop
-            apps, browser extensions, and Model Context Protocol (MCP) connectors.
+            Jeradin is a health research and education platform. It offers a 3D virtual human,
+            maps diseases, viruses and procedures onto the body, summarises medical research,
+            clinical trial, drug and public health data, lets you rehearse procedures virtually,
+            and creates downloadable research reports. The Service is provided on a subscription
+            basis with usage based credits.
           </p>
           <p>
             Features, models, quotas, and interfaces evolve over time. We may add, modify, or
@@ -109,6 +107,14 @@ function TermsPage() {
             functionality of your paid plan is preserved during your current billing period.
           </p>
         </Section>
+
+        <div className="rounded-lg border border-black/15 p-5 bg-black/[0.03]">
+          <b>Medical disclaimer.</b> Jeradin is for research, learning and preparation only. It
+          is not a medical device and does not diagnose, treat or give medical advice. Virtual
+          procedures are simulations and do not replace real training, supervision or clinical
+          judgement. Always confirm results with a qualified health professional and proper
+          laboratory work. In an emergency, contact your local emergency services.
+        </div>
 
         <Section id="s3" n="3" title="Eligibility and account">
           <p>

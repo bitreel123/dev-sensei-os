@@ -24,22 +24,34 @@ import { getIntelMemory, type MemoryEntry } from "@/lib/intel-memory.functions";
 import { AskJeradinPill, type PendingAsk } from "@/components/jeradin/ask-jeradin-pill";
 import { MessageResponse } from "@/components/ai-elements/message";
 import { DashboardBoundary } from "@/components/jeradin/dashboard-boundary";
+import { HealthDashboard } from "@/components/jeradin/health-dashboard";
 
 
 
 export const Route = createFileRoute("/chat")({
-  validateSearch: (s: Record<string, unknown>): { id?: string } => {
+  validateSearch: (s: Record<string, unknown>): { id?: string; view?: "assistant"; q?: string } => {
     const id = typeof s.id === "string" ? s.id : undefined;
-    return id ? { id } : {};
+    const view = s.view === "assistant" ? "assistant" as const : undefined;
+    const q = typeof s.q === "string" ? s.q : undefined;
+    return { ...(id ? { id } : {}), ...(view ? { view } : {}), ...(q ? { q } : {}) };
   },
   head: () => ({
     meta: [
-      { title: "New chat · Jeradin" },
-      { name: "description", content: "Start a new debugging session with screen capture." },
+      { title: "Health Research Dashboard · Jeradin" },
+      { name: "description", content: "Explore human anatomy, medical research sources and your saved evidence in Jeradin’s health intelligence workspace." },
+      { property: "og:title", content: "Health Research Dashboard · Jeradin" },
+      { property: "og:description", content: "A workspace for anatomy exploration, health data and research evidence." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: ChatPage,
+  component: DashboardPage,
 });
+
+function DashboardPage() {
+  const search = Route.useSearch();
+  return search.id || search.view === "assistant" ? <ChatPage /> : <HealthDashboard />;
+}
 
 type Attachment =
   | { kind: "recording"; url: string; blob: Blob }
@@ -51,7 +63,7 @@ function ChatPage() {
   const { credits } = useUserData(user?.id ?? null);
   const { connection: github } = useGithubConnection(user?.id ?? null);
   const search = Route.useSearch();
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(search.q ?? "");
   const [recording, setRecording] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [activeCapability, setActiveCapability] = useState<CapabilityKey | null>(null);

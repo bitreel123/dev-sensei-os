@@ -1,16 +1,18 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { LogoMark } from "@/components/jeradin/logo";
-import { DashboardMockup } from "@/components/jeradin/dashboard-mockup";
-import { Plug, Home, Bug, BookOpen, Settings, Search } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { HealthDashboard } from "@/components/jeradin/health-dashboard";
 
 export const Route = createFileRoute("/app")({
   head: () => ({
     meta: [
-      { title: "Workspace · Jeradin" },
-      { name: "description", content: "Your Jeradin debugging workspace." },
+      { title: "Medical Research Workspace · Jeradin" },
+      { name: "description", content: "Explore Jeradin’s virtual human anatomy preview, research sources and medical data workspace." },
+      { property: "og:title", content: "Medical Research Workspace · Jeradin" },
+      { property: "og:description", content: "Connect anatomy, public health research and your saved work in one workspace." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: AppPage,
+  component: HealthDashboard,
 });
 
 const nav = [

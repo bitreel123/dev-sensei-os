@@ -7,7 +7,7 @@ import { LogoMark } from "./logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { supabase } from "@/integrations/supabase/client";
-import anatomyImage from "@/assets/virtual-human-atlas.jpg";
+import anatomyImage from "@/assets/virtual-human-color.jpg";
 
 const features = [
   { title: "Virtual Human", icon: UserRound, description: "Explore anatomy, organs and body systems with clear labels. Map published disease findings onto an educational human model.", status: "Anatomy preview" },
@@ -17,11 +17,35 @@ const features = [
   { title: "Procedure Rehearsal", icon: FlaskConical, description: "Study anatomy and professionally reviewed procedure steps before physical training or lab work. Educational rehearsal, not surgical guidance.", status: "Simulation engine planned" },
   { title: "Research Reports", icon: FileText, description: "Collect sources, visual maps, research questions and evidence tables into downloadable research dossiers.", status: "Health report exports planned" },
 ];
-const organs = [
-  { name: "Brain", icon: Brain, position: "brain", system: "Nervous system", detail: "Coordinates movement, sensation, memory and many of the body’s functions." },
-  { name: "Lungs", icon: Activity, position: "lungs", system: "Respiratory system", detail: "Exchange oxygen and carbon dioxide between inhaled air and the bloodstream." },
-  { name: "Heart", icon: Heart, position: "heart", system: "Cardiovascular system", detail: "Pumps blood through the pulmonary and systemic circulations." },
-  { name: "Liver", icon: Layers, position: "liver", system: "Digestive system", detail: "Processes nutrients, produces bile and supports metabolism and detoxification." },
+type Part = { name: string; x: number; y: number; system: string; detail: string; kind: "Internal" | "External" };
+const organs: Part[] = [
+  { name: "Brain", x: 49.5, y: 4.5, kind: "Internal", system: "Nervous system", detail: "Controls thinking, memory, movement, senses and the body's automatic functions such as breathing." },
+  { name: "Skull", x: 44, y: 9.5, kind: "Internal", system: "Skeletal system", detail: "Bony case that protects the brain and gives shape to the face." },
+  { name: "Eyes", x: 54, y: 7.6, kind: "External", system: "Sensory system", detail: "Detect light and send images to the brain through the optic nerves." },
+  { name: "Trachea", x: 50, y: 15.6, kind: "Internal", system: "Respiratory system", detail: "The windpipe. Carries air from the throat down to the lungs." },
+  { name: "Clavicle", x: 37.8, y: 18.2, kind: "Internal", system: "Skeletal system", detail: "Collarbone. Connects the arm to the body and supports shoulder movement." },
+  { name: "Right lung", x: 41, y: 24, kind: "Internal", system: "Respiratory system", detail: "Takes in oxygen and removes carbon dioxide. The right lung has three lobes." },
+  { name: "Heart", x: 51.5, y: 24, kind: "Internal", system: "Cardiovascular system", detail: "Muscular pump that pushes blood through the lungs and the whole body." },
+  { name: "Left lung", x: 58, y: 23, kind: "Internal", system: "Respiratory system", detail: "Exchanges oxygen and carbon dioxide. It has two lobes, leaving room for the heart." },
+  { name: "Ribs", x: 62.5, y: 27, kind: "Internal", system: "Skeletal system", detail: "Twelve pairs of curved bones forming a cage that protects the heart and lungs." },
+  { name: "Humerus", x: 30, y: 28.6, kind: "Internal", system: "Skeletal system", detail: "Upper arm bone, from shoulder to elbow." },
+  { name: "Liver", x: 42, y: 30.5, kind: "Internal", system: "Digestive system", detail: "Largest internal organ. Processes nutrients, makes bile, stores energy and filters toxins." },
+  { name: "Gallbladder", x: 41.5, y: 33.8, kind: "Internal", system: "Digestive system", detail: "Small pouch that stores bile from the liver and releases it to digest fats." },
+  { name: "Stomach", x: 52, y: 32, kind: "Internal", system: "Digestive system", detail: "Mixes food with acid and enzymes to begin breaking down proteins." },
+  { name: "Spleen", x: 59.5, y: 32.8, kind: "Internal", system: "Lymphatic system", detail: "Filters blood, recycles old red blood cells and helps fight infection." },
+  { name: "Kidneys", x: 44.5, y: 35.6, kind: "Internal", system: "Urinary system", detail: "Two bean shaped organs that filter waste from blood and make urine." },
+  { name: "Aorta & vena cava", x: 50, y: 37, kind: "Internal", system: "Cardiovascular system", detail: "Main artery (red) carrying blood from the heart, and main vein (blue) returning it." },
+  { name: "Large intestine", x: 39.5, y: 41, kind: "Internal", system: "Digestive system", detail: "Absorbs water and salts and forms stool from leftover food." },
+  { name: "Small intestine", x: 51, y: 41.5, kind: "Internal", system: "Digestive system", detail: "Long coiled tube where most nutrients from food are absorbed into the blood." },
+  { name: "Arteries & veins", x: 70.5, y: 34, kind: "Internal", system: "Cardiovascular system", detail: "Arteries carry oxygen rich blood out; veins bring blood back to the heart." },
+  { name: "Pelvis", x: 58.5, y: 48.5, kind: "Internal", system: "Skeletal system", detail: "Bony ring at the hips that supports the spine and protects pelvic organs." },
+  { name: "Bladder", x: 49.5, y: 49, kind: "Internal", system: "Urinary system", detail: "Stretchy sac that stores urine until it is released." },
+  { name: "Hand", x: 18, y: 53, kind: "External", system: "Musculoskeletal system", detail: "27 bones each, allowing grip, touch and fine movement." },
+  { name: "Skin", x: 66, y: 57, kind: "External", system: "Integumentary system", detail: "The body's largest organ. Protects, controls temperature and senses touch." },
+  { name: "Femur", x: 39, y: 59, kind: "Internal", system: "Skeletal system", detail: "Thigh bone. The longest and strongest bone in the body." },
+  { name: "Knee", x: 58.6, y: 68.6, kind: "External", system: "Musculoskeletal system", detail: "Hinge joint between thigh and shin, protected by the kneecap (patella)." },
+  { name: "Tibia", x: 40, y: 80, kind: "Internal", system: "Skeletal system", detail: "Shin bone. Carries most of the body's weight in the lower leg." },
+  { name: "Foot", x: 61, y: 95, kind: "External", system: "Musculoskeletal system", detail: "26 bones each, supporting balance, standing and walking." },
 ];
 const sources = [
   { name: "PubMed", type: "Biomedical literature", url: "https://pubmed.ncbi.nlm.nih.gov/" },
@@ -38,7 +62,9 @@ export function HealthDashboard() {
   const [active, setActive] = useState("Home");
   const [sidebar, setSidebar] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [organ, setOrgan] = useState(organs[2]);
+  const [organ, setOrgan] = useState(organs[6]);
+  const [labels, setLabels] = useState(true);
+  const [info, setInfo] = useState(true);
   const [tab, setTab] = useState("Anatomy");
   const [zoom, setZoom] = useState(1);
   const [expanded, setExpanded] = useState(false);
@@ -66,8 +92,9 @@ export function HealthDashboard() {
   }
   const matchingReports = reports.filter(r => r.title.toLowerCase().includes(filter.toLowerCase()));
   const anatomy = (large = false) => <div className={`anatomy-stage ${large ? "anatomy-large" : ""}`}>
-    <div className="organ-tools">{organs.map(o => <Button key={o.name} variant={organ.name === o.name ? "default" : "ghost"} size="icon" title={o.name} aria-label={`Explore ${o.name}`} onClick={() => setOrgan(o)}><o.icon /></Button>)}</div>
-    <div className={`anatomy-art zoom-${zoom}`}><img src={anatomyImage} width={768} height={1152} alt="Monochrome educational human anatomy illustration showing internal organs" />{organs.map(o => <Button key={o.name} variant="outline" size="sm" className={`organ-label organ-${o.position} ${organ.name === o.name ? "organ-selected" : ""}`} onClick={() => setOrgan(o)}>{o.name}</Button>)}</div>
+    <div className="organ-tools"><Button size="sm" variant={labels ? "default" : "outline"} aria-pressed={labels} onClick={() => setLabels(v => !v)}>Labels {labels ? "on" : "off"}</Button><Button size="sm" variant={info ? "default" : "outline"} aria-pressed={info} onClick={() => setInfo(v => !v)}>Info {info ? "on" : "off"}</Button></div>
+    <div className={`anatomy-art zoom-${zoom}`}><img src={anatomyImage} width={768} height={1152} alt="Educational human anatomy illustration with organs in natural colours" />{organs.map(o => <button key={o.name} type="button" style={{ left: `${o.x}%`, top: `${o.y}%` }} className={`part-pin ${o.x < 50 ? "part-left" : ""} ${organ.name === o.name ? "part-selected" : ""}`} onClick={() => setOrgan(o)} aria-label={o.name}><span className="part-dot" />{labels && <span className="part-text">{o.name}</span>}</button>)}</div>
+    {info && <div className="part-info"><strong>{organ.name}</strong><small>{organ.kind} · {organ.system}</small><p>{organ.detail}</p></div>}
     <span className="anatomy-caption">ANTERIOR VIEW · ILLUSTRATED ATLAS</span>
     <div className="anatomy-controls"><Button size="icon-sm" variant="outline" aria-label="Zoom out" title="Zoom out" onClick={() => setZoom(z => Math.max(1, z - 1))} disabled={zoom === 1}><ZoomOut /></Button><Button size="icon-sm" variant="outline" aria-label="Zoom in" title="Zoom in" onClick={() => setZoom(z => Math.min(3, z + 1))} disabled={zoom === 3}><ZoomIn /></Button><Button size="icon-sm" variant="outline" aria-label="Expand anatomy" title="Expand anatomy" onClick={() => setExpanded(true)}><Maximize2 /></Button></div>
   </div>;

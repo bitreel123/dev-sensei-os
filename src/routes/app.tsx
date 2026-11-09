@@ -14,5 +14,3 @@ export const Route = createFileRoute("/app")({
   }),
   component: HealthDashboard,
 });
-
-const nav = [

@@ -1,5 +1,5 @@
 import { Canvas } from "@react-three/fiber";
-import { Html, OrbitControls, Environment, Lightformer } from "@react-three/drei";
+import { Html, OrbitControls } from "@react-three/drei";
 
 export type Part3D = { name: string; x: number; y: number; kind: "Internal" | "External" };
 
@@ -37,7 +37,7 @@ export default function VirtualHuman3D({ parts, selected, labels, onSelect }: { 
     <Canvas camera={{ position: [0, 0.3, 4.2], fov: 45 }} dpr={[1, 2]}>
       <color attach="background" args={["#0b0b0b"]} />
       <ambientLight intensity={0.5} /><directionalLight position={[2, 3, 4]} intensity={1.4} />
-      <Environment resolution={64}><Lightformer intensity={2} position={[0, 5, 0]} scale={[10, 10, 1]} /><Lightformer intensity={1} position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 1, 1]} /></Environment>
+
       <Body />
       {parts.map(p => {
         const [x, y] = pos(p); const s = SHAPES[p.name]; const active = p.name === selected;

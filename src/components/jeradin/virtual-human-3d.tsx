@@ -46,8 +46,8 @@ export default function VirtualHuman3D({ parts, selected, labels, onSelect }: { 
           {s && COLORS[p.name] ? <mesh scale={s} onClick={e => { e.stopPropagation(); onSelect(p.name); }}>
             <sphereGeometry args={[1, 24, 24]} /><meshStandardMaterial color={COLORS[p.name]} roughness={0.45} emissive={active ? COLORS[p.name] : "#000"} emissiveIntensity={active ? 0.6 : 0} />
           </mesh> : <mesh onClick={e => { e.stopPropagation(); onSelect(p.name); }}><sphereGeometry args={[0.025, 12, 12]} /><meshStandardMaterial color={active ? "#ffffff" : "#bbbbbb"} /></mesh>}
-          {labels && <Html distanceFactor={6} position={[0, 0, 0.12]} center zIndexRange={[10, 0]}>
-            <button type="button" onClick={() => onSelect(p.name)} className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] border ${active ? "bg-foreground text-background" : "bg-background/80 text-foreground"}`}>{p.name}</button>
+          {labels && <Html distanceFactor={2.2} position={[0, 0, 0.12]} center zIndexRange={[10, 0]}>
+            <button type="button" onClick={() => onSelect(p.name)} className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[9px] leading-none border ${active ? "bg-foreground text-background" : "bg-background/80 text-foreground"}`}>{p.name}</button>
           </Html>}
         </group>;
       })}

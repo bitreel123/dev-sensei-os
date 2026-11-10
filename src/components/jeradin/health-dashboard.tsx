@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { ClientOnly, Link, useNavigate } from "@tanstack/react-router";
 import { Activity, ArrowRight, BookOpen, Brain, ChevronDown, Database, FileText, FlaskConical, Heart, History, House, Layers, Maximize2, Menu, Microscope, Network, Plus, Search, Send, Settings, ShieldCheck, UserRound, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -7,7 +7,7 @@ import { LogoMark } from "./logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { supabase } from "@/integrations/supabase/client";
-import anatomyImage from "@/assets/virtual-human-color.jpg";
+const VirtualHuman3D = lazy(() => import("./virtual-human-3d"));
 
 const features = [
   { title: "Virtual Human", icon: UserRound, description: "Explore anatomy, organs and body systems with clear labels. Map published disease findings onto an educational human model.", status: "Anatomy preview" },
@@ -93,9 +93,9 @@ export function HealthDashboard() {
   const matchingReports = reports.filter(r => r.title.toLowerCase().includes(filter.toLowerCase()));
   const anatomy = (large = false) => <div className={`anatomy-stage ${large ? "anatomy-large" : ""}`}>
     <div className="organ-tools"><Button size="sm" variant={labels ? "default" : "outline"} aria-pressed={labels} onClick={() => setLabels(v => !v)}>Labels {labels ? "on" : "off"}</Button><Button size="sm" variant={info ? "default" : "outline"} aria-pressed={info} onClick={() => setInfo(v => !v)}>Info {info ? "on" : "off"}</Button></div>
-    <div className={`anatomy-art zoom-${zoom}`}><img src={anatomyImage} width={768} height={1152} alt="Educational human anatomy illustration with organs in natural colours" />{organs.map(o => <button key={o.name} type="button" style={{ left: `${o.x}%`, top: `${o.y}%` }} className={`part-pin ${o.x < 50 ? "part-left" : ""} ${organ.name === o.name ? "part-selected" : ""}`} onClick={() => setOrgan(o)} aria-label={o.name}><span className="part-dot" />{labels && <span className="part-text">{o.name}</span>}</button>)}</div>
+    <div className="anatomy-art" style={{ width: "100%" }}><ClientOnly fallback={null}><Suspense fallback={null}><VirtualHuman3D parts={organs} selected={organ.name} labels={labels} onSelect={n => { const f = organs.find(o => o.name === n); if (f) setOrgan(f); }} /></Suspense></ClientOnly></div>
     {info && <div className="part-info"><strong>{organ.name}</strong><small>{organ.kind} · {organ.system}</small><p>{organ.detail}</p></div>}
-    <span className="anatomy-caption">ANTERIOR VIEW · ILLUSTRATED ATLAS</span>
+    <span className="anatomy-caption">3D MODEL · DRAG TO ROTATE</span>
     <div className="anatomy-controls"><Button size="icon-sm" variant="outline" aria-label="Zoom out" title="Zoom out" onClick={() => setZoom(z => Math.max(1, z - 1))} disabled={zoom === 1}><ZoomOut /></Button><Button size="icon-sm" variant="outline" aria-label="Zoom in" title="Zoom in" onClick={() => setZoom(z => Math.min(3, z + 1))} disabled={zoom === 3}><ZoomIn /></Button><Button size="icon-sm" variant="outline" aria-label="Expand anatomy" title="Expand anatomy" onClick={() => setExpanded(true)}><Maximize2 /></Button></div>
   </div>;
   return <div className={`health-dashboard ${collapsed ? "nav-collapsed" : ""}`}>

@@ -235,13 +235,13 @@
 
 /* The public research experience has its own sand / ink / sage palette. */
 .jeradin-landing {
-  --background: oklch(0.94 0.018 83); --foreground: oklch(0.22 0.015 100);
+  --background: oklch(1 0 0); --foreground: oklch(0.22 0.015 100);
   --primary: oklch(0.25 0.016 110); --primary-foreground: oklch(0.98 0.008 85);
   --secondary: oklch(0.90 0.023 83); --secondary-foreground: var(--foreground);
   --muted: oklch(0.90 0.023 83); --muted-foreground: oklch(0.45 0.015 85);
   --accent: oklch(0.89 0.022 83); --accent-foreground: var(--foreground);
   --border: oklch(0.79 0.022 83); --input: var(--border); --ring: oklch(0.48 0.044 150);
-  --landing-paper: oklch(0.97 0.011 85); --landing-sage: oklch(0.48 0.044 150);
+  --landing-paper: oklch(0.985 0.003 85); --landing-sage: oklch(0.48 0.044 150);
   --landing-dark: oklch(0.24 0.018 120); --landing-dark-text: oklch(0.95 0.016 85);
   --landing-dark-muted: oklch(0.75 0.02 90); --landing-shadow: 0 24px 70px color-mix(in oklab, var(--foreground) 9%, transparent);
   color:var(--foreground); background:var(--background); font-family:"Manrope",Arial,sans-serif; letter-spacing:0; overflow:clip;
@@ -305,3 +305,60 @@
 @media(max-width:760px){.landing-desktop-nav,.landing-login{display:none;}.landing-menu{display:inline-flex;}.landing-header-inner{height:72px;padding:0 20px;}.landing-brand{font-size:25px;}.landing-nav-cta{height:34px;font-size:10px;}.landing-mobile-nav{display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;gap:0;padding:16px 24px;background:var(--landing-paper);border-bottom:1px solid var(--border);box-shadow:var(--landing-shadow);}.landing-mobile-nav a{font-size:14px;padding:13px 0;}.landing-hero{height:740px;min-height:0;}.landing-hero-content{padding:120px 20px 0;}.landing-announcement{font-size:9px;gap:7px;padding:9px 11px;}.hero-kicker{margin-top:34px;font-size:9px;}.landing-hero h1{font-size:48px;line-height:1.06;margin-top:18px;}.landing-hero-description{font-size:13px;line-height:1.8;max-width:390px;}.desktop-break{display:none;}.landing-hero-actions{gap:9px;margin-top:25px;}.landing-hero-actions a{padding:0 16px;font-size:11px;height:43px;}.landing-hero-image{object-position:50% center;}.landing-type-scene{width:96%;left:2%;bottom:74px;height:75px;}.landing-hero-bottom{left:20px;right:20px;font-size:7px;gap:15px;}.landing-hero-bottom>span{max-width:170px;line-height:1.8;}.landing-hero-bottom a{gap:9px;white-space:nowrap;}.landing-container{padding:0 23px;}.landing-source-band{padding:27px 0 21px;}.landing-source-band .landing-container>div{justify-content:center;gap:20px 25px;}.landing-source-band a{font-size:16px;}.landing-source-band small{font-size:8px;}.landing-platform-section{padding:65px 0 30px;}.jeradin-landing h2{font-size:37px;}.landing-pillar-grid{margin-top:35px;}.landing-pillar-grid>div{padding:28px 20px 28px 0;}.landing-pillar-grid>div+div{padding-left:20px;padding-right:0;}.landing-pillar-grid h3{font-size:20px;}.landing-pillar-grid p{font-size:11px;line-height:1.9;}.landing-pillar-grid a{font-size:10px;gap:8px;}.pillar-index{right:9px;top:29px;}.landing-section{padding:64px 0;}.landing-section-heading{display:block;margin-bottom:35px;}.landing-section-heading>p{margin-top:24px;}.landing-evidence-layout{grid-template-columns:1fr;gap:32px;}.landing-evidence-copy h3{font-size:25px;max-width:380px;}.landing-tabs{margin-bottom:25px;}.landing-tabs button{font-size:11px;padding:12px;}.landing-evidence-display{max-width:550px;width:100%;}.landing-anatomy-section{padding:55px 0;}.landing-anatomy-layout{grid-template-columns:1fr;gap:40px;}.landing-anatomy-visual{max-width:480px;width:100%;margin:auto;}.landing-anatomy-copy{max-width:520px;}.landing-organ-detail{min-height:155px;}.landing-pipeline{grid-template-columns:1fr 1fr;gap:35px 25px;}.landing-pipeline h3{margin-top:18px;font-size:22px;}.landing-faq-layout{grid-template-columns:1fr;gap:30px;}.landing-closing{min-height:350px;padding:65px 20px 80px;}.landing-closing h2{font-size:40px;}.landing-footer{padding:40px 0 23px;}.landing-footer-top{grid-template-columns:1fr 1fr;gap:35px;}.landing-footer-top>div:first-child{grid-column:1/-1;}.landing-footer-bottom{flex-wrap:wrap;gap:16px;margin-top:35px;line-height:1.7;}.landing-footer-bottom span:nth-child(2){width:100%;order:3;}}
 @media(max-width:390px){.landing-hero h1{font-size:42px;}.landing-hero-actions{flex-direction:column;align-items:center;}.landing-hero-actions a{width:220px;}.landing-announcement{font-size:8px;}.landing-pillar-grid{grid-template-columns:1fr;}.landing-pillar-grid>div+div{border-left:0;border-top:1px solid var(--border);padding-left:0;}.landing-hero{height:760px;}.landing-tabs button{padding:10px 8px;font-size:10px;}.jeradin-landing h2{font-size:33px;}}
 @media(prefers-reduced-motion:reduce){.jeradin-landing *{animation:none !important;transition:none !important;scroll-behavior:auto !important;}}
+
+/* Fine-grain surfaces and editorial motion stay local to Jeradin's public page. */
+.landing-grain{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:40;opacity:.3;}
+.landing-scroll-progress{position:fixed;top:0;left:0;right:0;height:3px;background:var(--landing-sage);transform-origin:left;z-index:50;}
+.landing-hero{background:var(--background);}
+.landing-hero-image{opacity:.52;animation:biomedical-drift 13s ease-in-out infinite alternate;transform-origin:center 70%;}
+.hero-kicker{margin-top:30px;}
+.landing-hero h1{animation:hero-enter 1.1s ease both;}
+.landing-type-scene{opacity:.75;height:140px;bottom:63px;}
+.landing-manifesto{padding:30px 0 100px;max-width:1000px;text-align:left;}
+.landing-manifesto h2{font-size:60px;line-height:1.2;margin-top:30px;}
+.manifesto-caption{max-width:560px;margin:32px 0 0 auto;font-size:16px;line-height:1.9;color:var(--muted-foreground);}
+.platform-story{text-align:left;max-width:850px;padding:70px 0 45px;border-top:1px solid var(--border);}
+.platform-story>p:not(.landing-kicker){font-size:16px;line-height:1.95;color:var(--muted-foreground);max-width:700px;margin-top:25px;}
+.story-link{display:flex;gap:20px;align-items:center;margin-top:28px;font-size:13px;}
+.landing-evidence-copy>div>p{font-size:14px;}
+.evidence-illustration{position:relative;aspect-ratio:600/430;width:100%;min-width:0;}
+.evidence-illustration svg{width:100%;height:100%;overflow:visible;}
+.evidence-orbits{fill:none;stroke:var(--border);stroke-width:1;transform-origin:center;animation:orbit-turn 45s linear infinite;}
+.evidence-core{fill:var(--landing-paper);stroke:var(--landing-sage);stroke-width:1;}
+.evidence-heartbeat{stroke:var(--landing-sage);fill:none;stroke-width:2;stroke-dasharray:120;animation:evidence-pulse 4s ease-in-out infinite;}
+.evidence-traveller{fill:var(--landing-sage);}
+.evidence-caption{position:absolute;background:var(--background);padding:8px 12px;font-size:12px;line-height:1.5;max-width:45%;}
+.caption-one{top:16%;left:0;}.caption-two{top:45%;right:0;}.caption-three{bottom:15%;left:10%;}
+.evidence-illustration-footer{position:absolute;bottom:0;left:0;right:0;text-align:center;font:8px "JetBrains Mono",monospace;color:var(--muted-foreground);}
+.anatomy-breathing-art{position:relative;aspect-ratio:1;overflow:hidden;}
+.anatomy-breathing-art>img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;animation:anatomy-breathe 5s ease-in-out infinite;}
+.anatomy-scan{position:absolute;left:26%;right:26%;height:1px;top:15%;background:var(--landing-sage);opacity:.3;animation:anatomy-scan 8s ease-in-out infinite;pointer-events:none;}
+.anatomy-focus{position:absolute;width:30px;height:30px;border:1px solid var(--landing-sage);border-radius:50%;top:34%;left:49%;animation:organ-pulse 2.2s ease-out infinite;pointer-events:none;}
+.focus-brain{top:7%;left:47%;}.focus-lungs{top:30%;left:42%;}.focus-heart{top:36%;left:51%;}.focus-liver{top:46%;left:42%;}.focus-kidneys{top:51%;left:54%;}.focus-trachea{top:24%;left:48%;}.focus-ribs{top:34%;left:36%;}.focus-stomach{top:47%;left:54%;}.focus-intestines{top:58%;left:47%;}.focus-pelvis{top:76%;left:47%;}.focus-arteries{top:60%;left:58%;}
+.anatomy-label{font-size:9px;animation:label-enter .6s ease both;}
+.label-brain{left:68%;top:8%;}.label-trachea{left:3%;top:23%;}.label-lungs{left:72%;top:29%;}.label-ribs{left:1%;top:36%;}.label-heart{left:72%;top:41%;}.label-liver{left:3%;top:48%;}.label-stomach{left:70%;top:52%;}.label-kidneys{left:1%;top:59%;}.label-intestines{left:66%;top:64%;}.label-arteries{left:1%;top:71%;}.label-pelvis{left:65%;top:78%;}
+.label-trachea::before,.label-ribs::before,.label-kidneys::before,.label-arteries::before{left:auto;right:-35px;}
+.landing-organ-detail{min-height:185px;}
+.landing-use-case{background:var(--background);}
+.use-case-story{display:grid;grid-template-columns:1fr 1.1fr;gap:90px;margin-top:60px;padding-top:35px;border-top:1px solid var(--border);}
+.story-overline{font:9px "JetBrains Mono",monospace;color:var(--landing-sage);}
+.use-case-story h3{font-size:30px;line-height:1.35;margin-top:25px;}
+.use-case-story p{font-size:15px;line-height:1.95;color:var(--muted-foreground);margin-bottom:22px;}
+.landing-pipeline-section h2{margin-top:25px;}
+.landing-research-chapters{margin-top:65px;}
+.research-chapter{display:grid;grid-template-columns:60px 1fr 50px;gap:35px;border-top:1px solid color-mix(in oklab,var(--landing-dark-text) 25%,transparent);padding:40px 0;}
+.chapter-number{font:12px "JetBrains Mono",monospace;color:var(--landing-dark-muted);padding-top:8px;}
+.research-chapter h3{font-size:30px;line-height:1.3;margin-bottom:22px;}
+.research-chapter p{font-size:15px;line-height:1.95;color:var(--landing-dark-muted);max-width:730px;margin-top:16px;}
+.chapter-arrow{margin-top:4px;}
+.landing-closing>img{animation:biomedical-drift 15s ease-in-out infinite alternate;}
+@keyframes biomedical-drift{from{transform:scale(1.02) translateX(-.5%);}to{transform:scale(1.12) translateX(1%);}}
+@keyframes hero-enter{from{opacity:0;transform:translateY(25px);}to{opacity:1;transform:translateY(0);}}
+@keyframes orbit-turn{to{transform:rotate(360deg);}}
+@keyframes evidence-pulse{0%,100%{stroke-dashoffset:120;}40%,70%{stroke-dashoffset:0;}}
+@keyframes anatomy-breathe{0%,100%{transform:scale(1);}50%{transform:scale(1.025);}}
+@keyframes anatomy-scan{0%,100%{top:15%;opacity:0;}15%,85%{opacity:.3;}50%{top:83%;}}
+@keyframes organ-pulse{from{transform:scale(.6);opacity:.8;}to{transform:scale(1.8);opacity:0;}}
+@keyframes label-enter{from{opacity:0;translate:0 8px;}to{opacity:1;translate:0 0;}}
+@media(max-width:760px){.landing-manifesto{padding:0 0 60px;}.landing-manifesto h2{font-size:38px;}.manifesto-caption{margin-top:25px;font-size:14px;}.platform-story{padding:45px 0 20px;}.platform-story>p:not(.landing-kicker){font-size:14px;}.landing-type-scene{height:90px;bottom:65px;}.hero-kicker{margin-top:16px;}.use-case-story{grid-template-columns:1fr;gap:28px;margin-top:35px;}.use-case-story h3{font-size:26px;}.use-case-story p{font-size:14px;}.research-chapter{grid-template-columns:30px 1fr;gap:18px;padding:30px 0;}.chapter-arrow{display:none;}.research-chapter h3{font-size:25px;}.research-chapter p{font-size:14px;}.evidence-caption{font-size:10px;padding:6px;}.landing-anatomy-labels{inset:39px 0 27px;}.anatomy-label{font-size:8px;padding:0 6px;height:23px;}.anatomy-label::before{width:20px;left:-20px;}.label-liver::before,.label-trachea::before,.label-ribs::before,.label-kidneys::before,.label-arteries::before{left:auto;right:-20px;}.landing-organ-detail{min-height:190px;}}
+@media(max-width:390px){.landing-manifesto h2{font-size:34px;}.landing-hero{height:620px;}.landing-hero-content{padding-top:106px;}.landing-hero-description{font-size:13px;}.landing-type-scene{height:65px;bottom:65px;}}

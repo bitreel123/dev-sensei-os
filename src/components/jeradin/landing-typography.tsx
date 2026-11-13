@@ -27,9 +27,9 @@ function Words({ reduced, onReady }: { reduced: boolean; onReady: () => void }) 
     if (!group.current || reduced) return;
     const t = state.clock.elapsedTime;
     const dt = Math.min(delta, 0.05);
-    group.current.rotation.y += (state.pointer.x * 0.14 - group.current.rotation.y) * dt * 3;
-    group.current.rotation.x = -0.06 + Math.sin(t * 0.35) * 0.035;
-    group.current.position.y = Math.sin(t * 0.45) * 0.09;
+    group.current.rotation.y += (state.pointer.x * 0.2 + Math.sin(t * .7) * .14 - group.current.rotation.y) * dt * 3;
+    group.current.rotation.x = Math.sin(t * .6) * .1;
+    group.current.position.y = Math.sin(t * .85) * .2;
   });
   return <group ref={group}><mesh><planeGeometry args={[12.5, 1.5625]} /><meshBasicMaterial map={texture} transparent opacity={0.8} depthWrite={false} /></mesh></group>;
 }

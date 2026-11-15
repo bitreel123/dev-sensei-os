@@ -10,6 +10,8 @@ export const Route = createFileRoute("/refunds")({
       { property: "og:title", content: "Refund Policy · Jeradin" },
       { property: "og:description", content: "Jeradin's 30-day money-back guarantee, how to request a refund, and cancellation." },
       { property: "og:url", content: "https://jeradin.com/refunds" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [{ rel: "canonical", href: "https://jeradin.com/refunds" }],
   }),

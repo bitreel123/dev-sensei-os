@@ -23,6 +23,8 @@ export const Route = createFileRoute("/extension")({
         property: "og:description",
         content: "Instant screen intelligence for developers, right in your browser.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ExtensionPage,

@@ -15,6 +15,8 @@ export const Route = createFileRoute("/workflow")({
       },
       { property: "og:title", content: "Workflow · Jeradin" },
       { property: "og:description", content: "The debugging loop that keeps you shipping." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: WorkflowPage,

@@ -12,6 +12,8 @@ export const Route = createFileRoute("/support")({
       { name: "description", content: "Get help with Jeradin. Contact our team at support@jeradin.com — we read every message." },
       { property: "og:title", content: "Support · Jeradin" },
       { property: "og:description", content: "Contact the Jeradin team. We reply within one business day." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: SupportPage,

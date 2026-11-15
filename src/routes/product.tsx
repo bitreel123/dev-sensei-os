@@ -19,6 +19,8 @@ export const Route = createFileRoute("/product")({
         property: "og:description",
         content: "A read-only debugger that watches, understands and explains — in 2 to 5 seconds.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ProductPage,

@@ -10,6 +10,8 @@ export const Route = createFileRoute("/privacy")({
       { property: "og:title", content: "Privacy Policy · Jeradin" },
       { property: "og:description", content: "How Jeradin collects, uses, shares and protects your personal data." },
       { property: "og:url", content: "https://jeradin.com/privacy" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [{ rel: "canonical", href: "https://jeradin.com/privacy" }],
   }),

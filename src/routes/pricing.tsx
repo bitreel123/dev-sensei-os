@@ -28,6 +28,8 @@ export const Route = createFileRoute("/pricing")({
         property: "og:description",
         content: "Plans for the Jeradin virtual human and health research intelligence platform.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: PricingPage,

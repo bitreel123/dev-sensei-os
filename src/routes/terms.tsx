@@ -10,6 +10,8 @@ export const Route = createFileRoute("/terms")({
       { property: "og:title", content: "Terms of Service · Jeradin" },
       { property: "og:description", content: "The terms that govern your access to and use of Jeradin." },
       { property: "og:url", content: "https://jeradin.com/terms" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [{ rel: "canonical", href: "https://jeradin.com/terms" }],
   }),

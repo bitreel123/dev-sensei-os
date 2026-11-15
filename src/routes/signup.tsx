@@ -16,6 +16,10 @@ export const Route = createFileRoute("/signup")({
     meta: [
       { title: "Create your Jeradin account" },
       { name: "description", content: "Get 5 free credits. No card required." },
+      { property: "og:title", content: "Create your Jeradin account" },
+      { property: "og:description", content: "Get 5 free credits. No card required." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   validateSearch: (s: Record<string, unknown>): { next?: string } => { const n = safeNext(s.next); return n ? { next: n } : {}; },

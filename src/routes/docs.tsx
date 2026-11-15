@@ -11,6 +11,8 @@ export const Route = createFileRoute("/docs")({
       { name: "description", content: "Install Jeradin, pair the extension, connect MCP, and read about the debugging engine. Technical documentation for developers." },
       { property: "og:title", content: "Docs · Jeradin" },
       { property: "og:description", content: "Quickstart, extension setup, MCP, engine internals, and support." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: DocsPage,

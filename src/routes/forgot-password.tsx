@@ -10,6 +10,10 @@ export const Route = createFileRoute("/forgot-password")({
     meta: [
       { title: "Reset password · Jeradin" },
       { name: "description", content: "Reset your Jeradin account password." },
+      { property: "og:title", content: "Reset password · Jeradin" },
+      { property: "og:description", content: "Reset your Jeradin account password." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ForgotPasswordPage,

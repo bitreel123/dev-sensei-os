@@ -20,6 +20,10 @@ export const Route = createFileRoute("/account")({
     meta: [
       { title: "Account · Jeradin" },
       { name: "description", content: "Your Jeradin account, credits, and billing." },
+      { property: "og:title", content: "Account · Jeradin" },
+      { property: "og:description", content: "Your Jeradin account, credits, and billing." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AccountPage,

@@ -16,6 +16,10 @@ export const Route = createFileRoute("/login")({
     meta: [
       { title: "Sign in · Jeradin" },
       { name: "description", content: "Sign in to your Jeradin workspace." },
+      { property: "og:title", content: "Sign in · Jeradin" },
+      { property: "og:description", content: "Sign in to your Jeradin workspace." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   validateSearch: (s: Record<string, unknown>): { next?: string } => { const n = safeNext(s.next); return n ? { next: n } : {}; },

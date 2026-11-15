@@ -11,6 +11,8 @@ export const Route = createFileRoute("/download")({
       { name: "description", content: "Install Jeradin as a Chrome extension, launch the web app, or grab the desktop build for Windows, macOS and Linux." },
       { property: "og:title", content: "Download Jeradin" },
       { property: "og:description", content: "Get Jeradin on every platform — free during beta." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: DownloadPage,

@@ -18,7 +18,19 @@ function DNA({ reduced, pointer, onReady }: { reduced: boolean; pointer: React.R
     }
     const root = document.querySelector(".jeradin-landing");
     const tokens = getComputedStyle(root ?? document.documentElement);
-    return { dots: new Float32Array(dots), bonds: new Float32Array(bonds), ink: new Color(tokens.getPropertyValue("--foreground").trim()), sage: new Color(tokens.getPropertyValue("--landing-sage").trim()) };
+    // Canvas resolves modern CSS colors to sRGB; Three.js does not parse OKLCH.
+    const swatch = document.createElement("canvas");
+    swatch.width = 1; swatch.height = 1;
+    const context = swatch.getContext("2d", { willReadFrequently: true });
+    const resolveToken = (name: string) => {
+      if (!context) return new Color();
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = tokens.getPropertyValue(name).trim();
+      context.fillRect(0, 0, 1, 1);
+      const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+      return new Color().setRGB(r / 255, g / 255, b / 255, "srgb");
+    };
+    return { dots: new Float32Array(dots), bonds: new Float32Array(bonds), ink: resolveToken("--foreground"), sage: resolveToken("--landing-sage") };
   }, []);
   const frames = useRef(0);
   useFrame((state, delta) => {

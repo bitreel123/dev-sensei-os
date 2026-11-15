@@ -6,7 +6,7 @@ export function ScrollStatement() {
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 85%", "end 45%"] });
   const words = "Health information is everywhere. Understanding is what moves us forward.".split(" ");
-  return <div ref={ref} className="landing-manifesto"><p className="landing-kicker">THE REASON WE EXIST</p><h2>{words.map((word, i) => <StatementWord key={i} word={word} progress={scrollYProgress} start={i / words.length} reduced={!!reduced} />)}</h2><p className="manifesto-caption">Jeradin is building the connective layer between biomedical knowledge and the human body. So a question can become a clearer research direction—not another pile of information.</p></div>;
+  return <div ref={ref} className="landing-manifesto"><p className="landing-kicker">THE REASON WE EXIST</p><h2>{words.map((word, i) => <StatementWord key={i} word={word} progress={scrollYProgress} start={i / words.length} reduced={!!reduced} />)}</h2><p className="manifesto-caption">Connecting health evidence to human understanding.</p></div>;
 }
 function StatementWord({ word, progress, start, reduced }: { word: string; progress: import("motion/react").MotionValue<number>; start: number; reduced: boolean }) {
   const opacity = useTransform(progress, [start, Math.min(1, start + .15)], [.2, 1]);

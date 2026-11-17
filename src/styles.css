@@ -241,9 +241,10 @@
   --muted: oklch(0.90 0.023 83); --muted-foreground: oklch(0.45 0.015 85);
   --accent: oklch(0.89 0.022 83); --accent-foreground: var(--foreground);
   --border: oklch(0.79 0.022 83); --input: var(--border); --ring: oklch(0.48 0.044 150);
-  --landing-paper: oklch(0.985 0.003 85); --landing-sage: oklch(0.48 0.044 150);
-  --landing-dark: oklch(0.24 0.018 120); --landing-dark-text: oklch(0.95 0.016 85);
-  --landing-dark-muted: oklch(0.75 0.02 90); --landing-shadow: 0 24px 70px color-mix(in oklab, var(--foreground) 9%, transparent);
+  --landing-paper: var(--background); --landing-sage: oklch(0.48 0.044 150);
+  --landing-molecule: oklch(0.38 0.035 155); --landing-signal: oklch(0.64 0.085 75);
+  --landing-dark: var(--background); --landing-dark-text: var(--foreground);
+  --landing-dark-muted: var(--muted-foreground); --landing-shadow: 0 24px 70px color-mix(in oklab, var(--foreground) 9%, transparent);
   color:var(--foreground); background:var(--background); font-family:"Manrope",Arial,sans-serif; letter-spacing:0; overflow:clip;
 }
 .jeradin-landing * { letter-spacing:0; }
@@ -307,7 +308,7 @@
 @media(prefers-reduced-motion:reduce){.jeradin-landing *{animation:none !important;transition:none !important;scroll-behavior:auto !important;}}
 
 /* Fine-grain surfaces and editorial motion stay local to Jeradin's public page. */
-.landing-grain{position:fixed;inset:0;width:100%;height:100%;background-repeat:repeat;background-size:256px 256px;pointer-events:none;z-index:40;opacity:.3;}
+.landing-grain{position:fixed;inset:0;width:100%;height:100%;background-repeat:repeat;background-size:256px 256px;pointer-events:none;z-index:40;opacity:.075;}
 .landing-scroll-progress{position:fixed;top:0;left:0;right:0;height:3px;background:var(--landing-sage);transform-origin:left;z-index:50;}
 .landing-hero{background:var(--background);}
 .landing-hero-image{opacity:.3;animation:biomedical-drift 13s ease-in-out infinite alternate;transform-origin:center 70%;}
@@ -351,7 +352,7 @@
 .research-chapter h3{font-size:30px;line-height:1.3;margin-bottom:22px;}
 .research-chapter p{font-size:15px;line-height:1.95;color:var(--landing-dark-muted);max-width:730px;margin-top:16px;}
 .chapter-arrow{margin-top:4px;}
-.landing-closing>img{animation:biomedical-drift 15s ease-in-out infinite alternate;}
+.landing-closing>img{display:none;}
 @keyframes biomedical-drift{from{transform:scale(1.02) translateX(-.5%);}to{transform:scale(1.12) translateX(1%);}}
 @keyframes hero-enter{from{opacity:0;transform:translateY(25px);}to{opacity:1;transform:translateY(0);}}
 @keyframes orbit-turn{to{transform:rotate(360deg);}}
@@ -363,3 +364,11 @@
 @media(max-width:760px){.landing-manifesto{padding:0 0 60px;}.landing-manifesto h2{font-size:38px;}.manifesto-caption{margin-top:25px;font-size:14px;}.platform-story{padding:45px 0 20px;}.platform-story>p:not(.landing-kicker){font-size:14px;}.landing-type-scene{height:90px;bottom:65px;}.hero-kicker{margin-top:16px;}.use-case-story{grid-template-columns:1fr;gap:28px;margin-top:35px;}.use-case-story h3{font-size:26px;}.use-case-story p{font-size:14px;}.research-chapter{grid-template-columns:30px 1fr;gap:18px;padding:30px 0;}.chapter-arrow{display:none;}.research-chapter h3{font-size:25px;}.research-chapter p{font-size:14px;}.evidence-caption{font-size:10px;padding:6px;}.landing-anatomy-labels{inset:39px 0 27px;}.anatomy-label{font-size:8px;padding:0 6px;height:23px;}.anatomy-label::before{width:20px;left:-20px;}.label-liver::before,.label-trachea::before,.label-ribs::before,.label-kidneys::before,.label-arteries::before{left:auto;right:-20px;}.landing-organ-detail{min-height:190px;}}
 @media(max-width:760px){.landing-type-scene{height:195px;bottom:55px;}.landing-hero{height:720px;}.landing-manifesto{padding-top:0;}.platform-story>p:not(.landing-kicker),.use-case-story p,.research-chapter p{line-height:1.75;}.landing-research-chapters{margin-top:40px;}}
 @media(max-width:390px){.landing-manifesto h2{font-size:34px;}.landing-hero{height:710px;}.landing-hero-content{padding-top:106px;}.landing-hero-description{font-size:13px;}.landing-type-scene{height:165px;bottom:55px;}}
+
+/* A full-width molecular sculpture, never a framed preview. */
+.landing-type-scene{left:0;width:100%;height:310px;bottom:44px;opacity:1;pointer-events:none;}
+.landing-type-scene canvas{display:block;}
+.landing-header{background:var(--background);}
+@media(min-width:1600px){.landing-type-scene{height:330px;bottom:45px;}}
+@media(max-width:760px){.landing-type-scene{height:215px;bottom:43px;}}
+@media(max-width:390px){.landing-type-scene{height:187px;bottom:43px;}}

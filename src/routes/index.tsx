@@ -42,7 +42,6 @@ function Hero() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   return <section className="landing-hero">
-    <img src={biomedicalImage} alt="Microscopic biological structures and interconnected cell membranes" width={1920} height={1088} className="landing-hero-image" fetchPriority="high" />
     <div className="landing-hero-content"><Reveal>
 
       <p className="landing-kicker hero-kicker">JERADIN / BIOMEDICAL INTELLIGENCE</p>

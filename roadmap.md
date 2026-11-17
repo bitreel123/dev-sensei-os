@@ -5,6 +5,8 @@
 - [x] Verify desktop and mobile presentation and explain which health tools remain planned.
 
 ## Landing page redesign
+- [ ] Make all landing surfaces white and upgrade the hero to an interactive molecular ribbon scene.
+- [ ] Verify the white hero, animation, navigation and reduced motion on desktop and mobile.
 - [x] Shorten body copy to concise editorial headlines and supporting sentences.
 - [x] Replace the subtle hero typography with a visibly rotating, pointer-responsive DNA illustration.
 - [x] Verify the revised hero and landing controls on desktop, mobile and reduced motion.

@@ -1,150 +1,145 @@
-import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, useGLTF } from "@react-three/drei";
-import { Box3, BufferGeometry, Color, CubicBezierCurve3, Group, InstancedMesh, MathUtils, Mesh, MeshBasicMaterial, MeshStandardMaterial, CanvasTexture, SRGBColorSpace, Object3D, OrthographicCamera, Vector3 } from "three";
-import skullAsset from "@/assets/models/human-skull.glb.asset.json";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { BufferAttribute, BufferGeometry, CanvasTexture, Color, MathUtils, Mesh, MeshBasicMaterial, NormalBlending, OrthographicCamera, Points, PointsMaterial, SRGBColorSpace, TextureLoader, Vector3 } from "three";
+import humanAsset from "@/assets/network-human.png.asset.json";
 
-type Interaction = { x: number; y: number; scroll: number; pressed: boolean };
-function resolveColors() {
-  const root = document.querySelector(".jeradin-landing");
-  const tokens = getComputedStyle(root ?? document.documentElement);
-  const canvas = document.createElement("canvas"); canvas.width = 1; canvas.height = 1;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  const resolve = (name: string) => {
-    if (!context) return new Color();
-    context.clearRect(0, 0, 1, 1); context.fillStyle = tokens.getPropertyValue(name).trim(); context.fillRect(0, 0, 1, 1);
-    const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
-    return new Color().setRGB(r / 255, g / 255, b / 255, "srgb");
-  };
-  return { wire: resolve("--landing-wire"), ink: resolve("--foreground"), sage: resolve("--landing-sage"), paper: resolve("--background"), signal: resolve("--landing-signal") };
+// Timing constants (seconds)
+const FORM_SECONDS = 3.2, IMAGE_FADE = 1.4, PARTICLES = 2600, STREAM = 140;
+const ASPECT = 736 / 920;
+
+function inkColor() {
+  const root = document.querySelector(".jeradin-landing") ?? document.documentElement;
+  const c = document.createElement("canvas"); c.width = c.height = 1;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return new Color();
+  ctx.fillStyle = getComputedStyle(root).getPropertyValue("--foreground").trim(); ctx.fillRect(0, 0, 1, 1);
+  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+  return new Color().setRGB(r / 255, g / 255, b / 255, "srgb");
 }
 
-function SkullModel({ colors, onReady }: { colors: ReturnType<typeof resolveColors>; onReady: () => void }) {
-  const { scene } = useGLTF(skullAsset.url);
-  const model = useMemo(() => {
-    const clone = scene.clone(true);
-    const bounds = new Box3().setFromObject(clone);
-    const center = bounds.getCenter(new Vector3());
-    const height = bounds.getSize(new Vector3()).y;
-    clone.position.sub(center); clone.scale.setScalar(2.7 / height);
-    clone.position.multiplyScalar(2.7 / height);
-    const meshes: Mesh[] = [];
-    clone.traverse(object => { if (object instanceof Mesh) meshes.push(object); });
-    meshes.forEach(object => {
-        object.material = new MeshBasicMaterial({ color: colors.wire, wireframe: true, transparent: true, opacity: .28 });
-        const surface = new Mesh(object.geometry, new MeshBasicMaterial({ color: colors.paper, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }));
-        object.add(surface);
-    });
-    return clone;
-  }, [scene, colors]);
-  useEffect(() => { const frame = requestAnimationFrame(onReady); return () => cancelAnimationFrame(frame); }, [onReady]);
-  useEffect(() => () => model.traverse(object => { if (object instanceof Mesh) { const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach(material => material.dispose()); } }), [model]);
-  return <primitive object={model} />;
-}
-function SkullScene({ reduced, input, onReady }: { reduced: boolean; input: RefObject<Interaction>; onReady: () => void }) {
-  const sculpture = useRef<Group>(null), packets = useRef<InstancedMesh>(null);
-  const time = useRef(0);
+function HumanScene({ reduced, onReady }: { reduced: boolean; onReady: () => void }) {
+  const texture = useLoader(TextureLoader, humanAsset.url);
   const { size, camera } = useThree();
-  const colors = useMemo(resolveColors, []);
+  const ink = useMemo(inkColor, []);
   const mobile = size.width < 760;
-  const width = size.width / size.height * 12;
-  const origin = useMemo(() => new Vector3(0, 1.35, 0), []);
-  const paperWidth = Math.min(2.4, width * .16);
-  const paperHeight = mobile ? 1.65 : 2.1;
-  const routes = useMemo(() => Array.from({ length: 6 }, (_, i) => {
-    const side = i < 3 ? -1 : 1;
-    const row = i % 3;
-    const end = new Vector3(side * width * .34, 3.75 - row * 3.5, -.6);
-    const start = origin.clone().add(new Vector3(side * .75, .7 - row * .6, -.3));
-    const curve = new CubicBezierCurve3(start, start.clone().add(new Vector3(side * width * .15, 1, .5)), end.clone().add(new Vector3(-side * width * .15, .5, .5)), end);
-    return { curve, geometry: new BufferGeometry().setFromPoints(curve.getPoints(64)), end };
-  }), [origin, width]);
+  const viewW = size.width / size.height * 12;
+  const height = Math.min(10.2, viewW / ASPECT * .98);
+  const width = height * ASPECT;
+  const center = useMemo(() => new Vector3(0, .75, 0), [mobile, viewW]);
+  const image = useRef<Mesh>(null), cloud = useRef<Points>(null), stream = useRef<Points>(null), time = useRef(0);
   const messages = useRef<Array<Mesh | null>>([]);
-  const textures = useMemo(() => ["Better data. Better information.", "A world of reliable health evidence.", "Information for important decisions."].map(message => {
-    const canvas = document.createElement("canvas"); canvas.width = 1024; canvas.height = 160;
-    const context = canvas.getContext("2d");
-    if (context) {
-      context.font = "500 42px Manrope, Arial, sans-serif"; context.textAlign = "center"; context.textBaseline = "middle";
-      context.fillStyle = colors.ink.getStyle(); context.fillText(message, 512, 80, 970);
+
+  // Sample dark pixels of the artwork as particle targets.
+  const { targets, starts } = useMemo(() => {
+    texture.colorSpace = SRGBColorSpace;
+    const img = texture.image as HTMLImageElement;
+    const c = document.createElement("canvas"); c.width = 184; c.height = 230;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    const pts: number[] = [];
+    if (ctx) {
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      const data = ctx.getImageData(0, 0, c.width, c.height).data;
+      for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
+        const i = (y * c.width + x) * 4;
+        if (data[i + 3] > 120 && data[i] < 120) pts.push(x / c.width, y / c.height);
+      }
     }
-    const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; return texture;
-  }), [colors]);
-  useEffect(() => () => textures.forEach(texture => texture.dispose()), [textures]);
-  const dummy = useMemo(() => new Object3D(), []);
+    const targets = new Float32Array(PARTICLES * 3), starts = new Float32Array(PARTICLES * 3);
+    const count = pts.length / 2 || 1;
+    for (let i = 0; i < PARTICLES; i++) {
+      const k = Math.floor(Math.random() * count) * 2;
+      targets[i * 3] = ((pts[k] ?? .5) - .5) * width; targets[i * 3 + 1] = (.5 - (pts[k + 1] ?? .5)) * height; targets[i * 3 + 2] = 0;
+      const a = Math.random() * Math.PI * 2, r = 6 + Math.random() * 10;
+      starts[i * 3] = Math.cos(a) * r; starts[i * 3 + 1] = Math.sin(a) * r * .7; starts[i * 3 + 2] = (Math.random() - .5) * 8;
+    }
+    return { targets, starts };
+  }, [texture, width, height]);
+
+  const cloudGeo = useMemo(() => { const g = new BufferGeometry(); g.setAttribute("position", new BufferAttribute(starts.slice(), 3)); return g; }, [starts]);
+  const streamSeeds = useMemo(() => Array.from({ length: STREAM }, () => ({ off: Math.random(), speed: .05 + Math.random() * .08, angle: -.9 + Math.random() * 1.5, spread: Math.random() })), []);
+  const streamGeo = useMemo(() => { const g = new BufferGeometry(); g.setAttribute("position", new BufferAttribute(new Float32Array(STREAM * 3), 3)); return g; }, []);
+  useEffect(() => () => { cloudGeo.dispose(); streamGeo.dispose(); }, [cloudGeo, streamGeo]);
+
+  const textures = useMemo(() => ["Better data. Better information.", "A world of reliable health evidence.", "Information for important decisions."].map(text => {
+    const c = document.createElement("canvas"); c.width = 1024; c.height = 160;
+    const ctx = c.getContext("2d");
+    if (ctx) { ctx.font = "500 44px Manrope, Arial, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = ink.getStyle(); ctx.fillText(text, 512, 80, 980); }
+    const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return t;
+  }), [ink]);
+  useEffect(() => () => textures.forEach(t => t.dispose()), [textures]);
+
+  useEffect(() => { if (camera instanceof OrthographicCamera) { camera.zoom = size.height / 12; camera.updateProjectionMatrix(); } }, [camera, size]);
+  useEffect(() => { const f = requestAnimationFrame(onReady); return () => cancelAnimationFrame(f); }, [onReady]);
   useEffect(() => {
     if (!import.meta.env.DEV) return;
-    const host = window as unknown as { __jeradinHero?: { setTime: (seconds: number) => void } };
-    host.__jeradinHero = { setTime: seconds => { time.current = Math.max(0, seconds); } };
+    const host = window as unknown as { __jeradinHero?: { setTime: (s: number) => void } };
+    host.__jeradinHero = { setTime: s => { time.current = Math.max(0, s); } };
     return () => { delete host.__jeradinHero; };
   }, []);
-  useEffect(() => {
-    if (camera instanceof OrthographicCamera) { camera.zoom = size.height / 12; camera.updateProjectionMatrix(); }
-  }, [camera, size]);
-  useEffect(() => () => routes.forEach(route => route.geometry.dispose()), [routes]);
+
+  // Hand position in image space (from the artwork) — source of the outgoing data stream.
+  const hand = useMemo(() => new Vector3((.76 - .5) * width, (.5 - .45) * height, .2), [width, height]);
+
   useFrame((_, delta) => {
-    const dt = Math.min(delta, .05);
-    if (!reduced) time.current += dt;
-    const t = time.current;
+    if (!reduced) time.current += Math.min(delta, .05);
+    const t = reduced ? 60 : time.current;
+    const form = MathUtils.smootherstep(t, 0, FORM_SECONDS);
+    const reveal = MathUtils.smoothstep(t, FORM_SECONDS * .7, FORM_SECONDS * .7 + IMAGE_FADE);
+
     const hero = document.querySelector(".landing-hero");
     if (hero) {
       const phase = t % 10 / 10;
-      const opacity = reduced ? 1 : phase < .75 ? 1 : phase < .88 ? 1 - MathUtils.smoothstep(phase, .75, .88) : MathUtils.smoothstep(phase, .9, 1);
-      hero.querySelectorAll<HTMLElement>("h1, .landing-hero-description").forEach(element => { element.style.opacity = String(opacity); });
+      const o = reduced ? 1 : phase < .75 ? 1 : phase < .88 ? 1 - MathUtils.smoothstep(phase, .75, .88) : MathUtils.smoothstep(phase, .9, 1);
+      hero.querySelectorAll<HTMLElement>("h1, .landing-hero-description").forEach(el => { el.style.opacity = String(o); });
     }
-    if (sculpture.current) {
-      const blend = reduced ? 1 : 1 - Math.exp(-dt * 4);
-      sculpture.current.rotation.y = MathUtils.lerp(sculpture.current.rotation.y, -.36 + (reduced ? 0 : Math.sin(t * .28) * .2 + input.current.x * .35), blend);
-      sculpture.current.rotation.x = MathUtils.lerp(sculpture.current.rotation.x, .07 + (reduced ? 0 : input.current.y * .12), blend);
-      sculpture.current.position.y = origin.y + (reduced ? 0 : Math.sin(t * .7) * .12 - input.current.scroll * .4);
-      const scale = mobile ? 1.75 : 1.35;
-      sculpture.current.scale.setScalar(scale * (!reduced && input.current.pressed ? 1.03 : 1));
+    if (image.current) {
+      const m = image.current.material as MeshBasicMaterial; m.opacity = reveal;
+      image.current.position.set(0, Math.sin(t * .6) * .08, 0);
+      image.current.scale.setScalar(.96 + reveal * .04 + Math.sin(t * .5) * .006);
     }
-    messages.current.forEach((mesh, index) => {
-      if (!mesh || !(mesh.material instanceof MeshBasicMaterial)) return;
-      const cycle = t / 4.8;
-      const phase = cycle % 1;
-      const active = Math.floor(cycle) % 3 === index;
-      mesh.material.opacity = reduced ? 0 : active ? Math.min(1, phase / .18, (1 - phase) / .22) : 0;
-      mesh.position.y = -5.15 + (active ? (1 - Math.min(1, phase / .18)) * -.12 : 0);
-    });
-    if (packets.current) {
-      for (let i = 0; i < 24; i++) {
-        const route = routes[i % routes.length];
-        const phase = (Math.floor(i / 6) / 4 + t * .14 + i * .023) % 1;
-        dummy.position.copy(route.curve.getPoint(phase));
-        dummy.rotation.set(0, 0, Math.sin(i + t * .4) * .4);
-        dummy.scale.setScalar(.045 + Math.sin(phase * Math.PI) * .035);
-        dummy.updateMatrix(); packets.current.setMatrixAt(i, dummy.matrix);
+    if (cloud.current) {
+      const pos = cloudGeo.attributes.position as BufferAttribute; const arr = pos.array as Float32Array;
+      for (let i = 0; i < PARTICLES; i++) {
+        const j = i * 3, wobble = (1 - form) * .4 + .03;
+        arr[j] = MathUtils.lerp(starts[j], targets[j], form) + Math.sin(t * 1.3 + i) * wobble;
+        arr[j + 1] = MathUtils.lerp(starts[j + 1], targets[j + 1], form) + Math.cos(t * 1.1 + i * .7) * wobble + Math.sin(t * .6) * .08;
+        arr[j + 2] = MathUtils.lerp(starts[j + 2], 0, form);
       }
-      packets.current.instanceMatrix.needsUpdate = true;
+      pos.needsUpdate = true;
+      (cloud.current.material as PointsMaterial).opacity = .9 - reveal * .65;
     }
+    if (stream.current) {
+      const arr = (streamGeo.attributes.position as BufferAttribute).array as Float32Array;
+      streamSeeds.forEach((s, i) => {
+        const p = (s.off + t * s.speed) % 1, d = p * (mobile ? 5 : 8);
+        arr[i * 3] = hand.x + Math.cos(s.angle) * d; arr[i * 3 + 1] = hand.y + Math.sin(s.angle) * d + Math.sin(t + i) * .15 * p; arr[i * 3 + 2] = s.spread;
+      });
+      (streamGeo.attributes.position as BufferAttribute).needsUpdate = true;
+      (stream.current.material as PointsMaterial).opacity = reveal * .8;
+    }
+    messages.current.forEach((mesh, i) => {
+      if (!mesh) return;
+      const cycle = t / 4.8, phase = cycle % 1, active = Math.floor(cycle) % 3 === i;
+      (mesh.material as MeshBasicMaterial).opacity = reduced ? 0 : active ? Math.min(1, phase / .18, (1 - phase) / .22) * reveal : 0;
+      mesh.position.y = -5.45 + (active ? (1 - Math.min(1, phase / .18)) * -.12 : 0);
+    });
   });
+
+  const msgW = Math.min(viewW * .9, 13);
   return <>
-    <ambientLight intensity={1.4} />
-    <directionalLight position={[-4, 6, 10]} intensity={3} color={colors.paper} />
-    <directionalLight position={[5, -2, 6]} intensity={1.2} color={colors.sage} />
-    <Environment resolution={64}><Lightformer intensity={2} position={[0, 5, 5]} scale={[15, 4, 1]} color={colors.paper} /><Lightformer intensity={1} position={[-4, 0, 4]} scale={[3, 12, 1]} color={colors.sage} /></Environment>
-    <group ref={sculpture} position={origin} rotation={[.07, -.36, -.04]}><Suspense fallback={null}><SkullModel colors={colors} onReady={onReady} /></Suspense></group>
-    {routes.map((route, i) => <group key={i}>
-      <lineSegments geometry={route.geometry}><lineBasicMaterial color={colors.sage} transparent opacity={.3} /></lineSegments>
-      <group position={route.end} rotation={[0, 0, i < 3 ? .025 : -.025]}>
-        <mesh position={[0, 0, -.02]}><planeGeometry args={[paperWidth + .035, paperHeight + .035]} /><meshBasicMaterial color={colors.sage} transparent opacity={.35} /></mesh>
-        <mesh><planeGeometry args={[paperWidth, paperHeight]} /><meshBasicMaterial color={colors.paper} /></mesh>
-        {[0, 1, 2, 3, 4].map(row => <mesh key={row} position={[-paperWidth * .04, paperHeight * .32 - row * paperHeight * .12, .02]}><planeGeometry args={[paperWidth * (row === 0 ? .5 : .72), row === 0 ? .065 : .035]} /><meshBasicMaterial color={row === 0 ? colors.ink : colors.sage} transparent opacity={row === 0 ? .7 : .3} /></mesh>)}
-        <mesh position={[-paperWidth * .15, -paperHeight * .32, .02]}><planeGeometry args={[paperWidth * .43, .04]} /><meshBasicMaterial color={colors.signal} transparent opacity={.75} /></mesh>
-        <mesh position={[paperWidth * .3, -paperHeight * .32, .02]}><circleGeometry args={[.08, 12]} /><meshBasicMaterial color={colors.sage} /></mesh>
-      </group>
-    </group>)}
-    <instancedMesh ref={packets} args={[undefined, undefined, 24]} frustumCulled={false}><boxGeometry args={[1, 1, .3]} /><meshStandardMaterial color={colors.signal} metalness={.25} roughness={.3} /></instancedMesh>
-    {textures.map((texture, i) => <mesh key={i} ref={mesh => { messages.current[i] = mesh; }} position={[0, -5.15, 2]}>
-      <planeGeometry args={[Math.min(width * .92, 15), Math.min(width * .92, 15) * 160 / 1024]} />
-      <meshBasicMaterial map={texture} transparent opacity={0} depthWrite={false} />
+    <group position={center}>
+      <mesh ref={image}><planeGeometry args={[width, height]} /><meshBasicMaterial map={texture} transparent opacity={0} depthWrite={false} blending={NormalBlending} /></mesh>
+      <points ref={cloud} geometry={cloudGeo}><pointsMaterial color={ink} size={mobile ? .05 : .045} transparent opacity={.9} depthWrite={false} /></points>
+      <points ref={stream} geometry={streamGeo} position={[0, 0, 0]}><pointsMaterial color={ink} size={.09} transparent opacity={0} depthWrite={false}  /></points>
+    </group>
+    {textures.map((tex, i) => <mesh key={i} ref={m => { messages.current[i] = m; }} position={[0, -5.45, 2]}>
+      <planeGeometry args={[msgW, msgW * 160 / 1024]} /><meshBasicMaterial map={tex} transparent opacity={0} depthWrite={false} />
     </mesh>)}
   </>;
 }
+
 export default function LandingTypography() {
   const scene = useRef<HTMLDivElement>(null);
-  const input = useRef<Interaction>({ x: 0, y: 0, scroll: 0, pressed: false });
   const [ready, setReady] = useState(false), [reduced, setReduced] = useState(false), [visible, setVisible] = useState(true);
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -153,30 +148,16 @@ export default function LandingTypography() {
     const content = hero?.querySelector(".landing-hero-content");
     const fit = () => {
       if (!(hero instanceof HTMLElement) || !content) return;
-      const top = content.getBoundingClientRect().bottom - hero.getBoundingClientRect().top + 22;
-      hero.style.setProperty("--hero-art-top", `${top}px`);
+      hero.style.setProperty("--hero-art-top", `${content.getBoundingClientRect().bottom - hero.getBoundingClientRect().top + 10}px`);
     };
     const resize = new ResizeObserver(fit); if (content) resize.observe(content); fit();
-    const move = (event: Event) => {
-      if (!(event instanceof PointerEvent) || !hero) return;
-      const bounds = hero.getBoundingClientRect();
-      input.current.x = (event.clientX - bounds.left) / bounds.width * 2 - 1;
-      input.current.y = (event.clientY - bounds.top) / bounds.height * 2 - 1;
-    };
-    const reset = () => { input.current.x = 0; input.current.y = 0; input.current.pressed = false; };
-    const press = (event: Event) => { move(event); input.current.pressed = true; };
-    const release = () => { input.current.pressed = false; };
-    const scroll = () => { if (hero) input.current.scroll = Math.max(0, -hero.getBoundingClientRect().top / hero.clientHeight); };
-    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
-    if (hero) observer.observe(hero);
-    hero?.addEventListener("pointermove", move, { passive: true }); hero?.addEventListener("pointerdown", press, { passive: true });
-    hero?.addEventListener("pointerleave", reset); window.addEventListener("pointerup", release); window.addEventListener("scroll", scroll, { passive: true });
-    return () => { resize.disconnect(); observer.disconnect(); query.removeEventListener("change", update); hero?.removeEventListener("pointermove", move); hero?.removeEventListener("pointerdown", press); hero?.removeEventListener("pointerleave", reset); window.removeEventListener("pointerup", release); window.removeEventListener("scroll", scroll); };
+    const observer = new IntersectionObserver(([e]) => setVisible(e.isIntersecting)); if (hero) observer.observe(hero);
+    return () => { resize.disconnect(); observer.disconnect(); query.removeEventListener("change", update); };
   }, []);
   const onReady = useMemo(() => () => setReady(true), []);
   return <div ref={scene} className="landing-type-scene" aria-hidden="true" data-scene-ready={ready ? "true" : undefined}>
     <Canvas orthographic camera={{ position: [0, 0, 30], zoom: 50 }} dpr={[1, 1.5]} frameloop={reduced || !visible ? "demand" : "always"} gl={{ alpha: true, antialias: true }}>
-      <SkullScene reduced={reduced} input={input} onReady={onReady} />
+      <HumanScene reduced={reduced} onReady={onReady} />
     </Canvas>
   </div>;
 }

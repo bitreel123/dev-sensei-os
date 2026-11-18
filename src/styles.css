@@ -392,3 +392,19 @@
 .jeradin-white-pages :where(button,a):not(.jeradin-landing *):not(.health-dashboard *)[class*="bg-white"][class*="text-black"]{background-color:var(--primary);color:var(--primary-foreground);}
 .jeradin-white-pages :where(button,a):not(.jeradin-landing *):not(.health-dashboard *)[class*="hover:bg-black"]:hover{background-color:var(--primary);color:var(--primary-foreground);}
 .jeradin-white-pages :where(button,a):not(.jeradin-landing *):not(.health-dashboard *)[class*="hover:bg-white"]:hover{background-color:var(--accent);color:var(--accent-foreground);}
+/* Network-human hero art */
+.landing-type-scene{height:560px;}
+.landing-hero{height:calc(var(--hero-art-top,530px) + 580px);}
+@media(max-width:760px){.landing-type-scene{height:470px;}.landing-hero{height:calc(var(--hero-art-top,560px) + 530px);}}
+/* Anatomy fade tour: label in, explanation in, both out — one 10s cycle per organ */
+.landing-anatomy-section,.landing-anatomy-visual,.anatomy-breathing-art{background:var(--background);}
+.anatomy-breathing-art>img{filter:brightness(1.035) contrast(1.02);}
+.anatomy-label{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:var(--foreground);color:var(--background);font-weight:600;letter-spacing:.04em;}
+.anatomy-label-cycle,.anatomy-text-cycle .cycle-a{animation:tour-a 10s ease both;}
+.anatomy-text-cycle .cycle-b{animation:tour-b 10s ease both;}
+.anatomy-note-cycle{position:absolute;left:4%;right:4%;bottom:46px;z-index:3;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid var(--border);background:color-mix(in oklab,var(--background) 88%,transparent);backdrop-filter:blur(6px);font-size:12px;line-height:1.5;animation:tour-b 10s ease both;}
+.anatomy-note-cycle strong{font-size:13px;animation:tour-a 10s ease both;}
+@keyframes tour-a{0%{opacity:0;transform:translateY(8px);}8%,86%{opacity:1;transform:none;}96%,100%{opacity:0;transform:translateY(-6px);}}
+@keyframes tour-b{0%,16%{opacity:0;transform:translateY(10px);}28%,86%{opacity:1;transform:none;}96%,100%{opacity:0;transform:translateY(-6px);}}
+@media(prefers-reduced-motion:reduce){.anatomy-label-cycle,.anatomy-text-cycle .cycle-a,.anatomy-text-cycle .cycle-b,.anatomy-note-cycle,.anatomy-note-cycle strong{animation:none;}}
+@media(max-width:760px){.anatomy-note-cycle{font-size:11px;bottom:40px;}}

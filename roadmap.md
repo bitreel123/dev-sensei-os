@@ -5,6 +5,9 @@
 - [x] Verify desktop and mobile presentation and explain which health tools remain planned.
 
 ## Landing page redesign
+- [x] Lighten and enlarge the mobile skull, shrink papers, and animate existing hero headings with Three.js.
+- [x] Add automatic anatomy label/connection walkthroughs with ten seconds per organ.
+- [x] Replace dashboard stand-ins with the landing anatomy artwork and verify both views.
 - [x] Center a small wireframe skull, enlarge and frame every paper, and add sequential fading Three.js messages without changing existing hero text.
 - [x] Apply white backgrounds across pricing and other pages while preserving controls and content.
 - [x] Verify the revised hero on desktop/mobile and white public pages.

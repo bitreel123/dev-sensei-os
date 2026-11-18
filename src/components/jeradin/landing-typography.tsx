@@ -16,7 +16,7 @@ function resolveColors() {
     const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
     return new Color().setRGB(r / 255, g / 255, b / 255, "srgb");
   };
-  return { ink: resolve("--foreground"), sage: resolve("--landing-sage"), paper: resolve("--background"), signal: resolve("--landing-signal") };
+  return { wire: resolve("--landing-wire"), ink: resolve("--foreground"), sage: resolve("--landing-sage"), paper: resolve("--background"), signal: resolve("--landing-signal") };
 }
 
 function SkullModel({ colors, onReady }: { colors: ReturnType<typeof resolveColors>; onReady: () => void }) {
@@ -31,7 +31,7 @@ function SkullModel({ colors, onReady }: { colors: ReturnType<typeof resolveColo
     const meshes: Mesh[] = [];
     clone.traverse(object => { if (object instanceof Mesh) meshes.push(object); });
     meshes.forEach(object => {
-        object.material = new MeshBasicMaterial({ color: colors.ink, wireframe: true, transparent: true, opacity: .62 });
+        object.material = new MeshBasicMaterial({ color: colors.wire, wireframe: true, transparent: true, opacity: .28 });
         const surface = new Mesh(object.geometry, new MeshBasicMaterial({ color: colors.paper, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }));
         object.add(surface);
     });
@@ -48,9 +48,9 @@ function SkullScene({ reduced, input, onReady }: { reduced: boolean; input: RefO
   const colors = useMemo(resolveColors, []);
   const mobile = size.width < 760;
   const width = size.width / size.height * 12;
-  const origin = useMemo(() => new Vector3(0, .6, 0), []);
-  const paperWidth = Math.min(3.8, width * .27);
-  const paperHeight = mobile ? 2.8 : 3.1;
+  const origin = useMemo(() => new Vector3(0, 1.35, 0), []);
+  const paperWidth = Math.min(2.4, width * .16);
+  const paperHeight = mobile ? 1.65 : 2.1;
   const routes = useMemo(() => Array.from({ length: 6 }, (_, i) => {
     const side = i < 3 ? -1 : 1;
     const row = i % 3;
@@ -85,12 +85,18 @@ function SkullScene({ reduced, input, onReady }: { reduced: boolean; input: RefO
     const dt = Math.min(delta, .05);
     if (!reduced) time.current += dt;
     const t = time.current;
+    const hero = document.querySelector(".landing-hero");
+    if (hero) {
+      const phase = t % 10 / 10;
+      const opacity = reduced ? 1 : phase < .75 ? 1 : phase < .88 ? 1 - MathUtils.smoothstep(phase, .75, .88) : MathUtils.smoothstep(phase, .9, 1);
+      hero.querySelectorAll<HTMLElement>("h1, .landing-hero-description").forEach(element => { element.style.opacity = String(opacity); });
+    }
     if (sculpture.current) {
       const blend = reduced ? 1 : 1 - Math.exp(-dt * 4);
       sculpture.current.rotation.y = MathUtils.lerp(sculpture.current.rotation.y, -.36 + (reduced ? 0 : Math.sin(t * .28) * .2 + input.current.x * .35), blend);
       sculpture.current.rotation.x = MathUtils.lerp(sculpture.current.rotation.x, .07 + (reduced ? 0 : input.current.y * .12), blend);
       sculpture.current.position.y = origin.y + (reduced ? 0 : Math.sin(t * .7) * .12 - input.current.scroll * .4);
-      const scale = 1;
+      const scale = mobile ? 1.75 : 1.35;
       sculpture.current.scale.setScalar(scale * (!reduced && input.current.pressed ? 1.03 : 1));
     }
     messages.current.forEach((mesh, index) => {

@@ -242,7 +242,7 @@
   --accent: oklch(0.89 0.022 83); --accent-foreground: var(--foreground);
   --border: oklch(0.79 0.022 83); --input: var(--border); --ring: oklch(0.48 0.044 150);
   --landing-paper: var(--background); --landing-sage: oklch(0.48 0.044 150);
-  --landing-molecule: oklch(0.38 0.035 155); --landing-signal: oklch(0.64 0.085 75);
+  --landing-molecule: oklch(0.38 0.035 155); --landing-signal: oklch(0.64 0.085 75); --landing-wire: oklch(.64 .018 155);
   --landing-dark: var(--background); --landing-dark-text: var(--foreground);
   --landing-dark-muted: var(--muted-foreground); --landing-shadow: 0 24px 70px color-mix(in oklab, var(--foreground) 9%, transparent);
   color:var(--foreground); background:var(--background); font-family:"Manrope",Arial,sans-serif; letter-spacing:0; overflow:clip;
@@ -313,7 +313,7 @@
 .landing-hero{background:var(--background);}
 .landing-hero-image{opacity:.3;animation:biomedical-drift 13s ease-in-out infinite alternate;transform-origin:center 70%;}
 .hero-kicker{margin-top:30px;}
-.landing-hero h1{animation:hero-enter 1.1s ease both;}
+.landing-hero h1{animation:none;}
 .landing-type-scene{opacity:1;height:230px;bottom:54px;left:0;width:100%;pointer-events:none;mix-blend-mode:normal;}
 .landing-manifesto{padding:30px 0 100px;max-width:1000px;text-align:left;}
 .landing-manifesto h2{font-size:60px;line-height:1.2;margin-top:30px;}
@@ -369,6 +369,15 @@
 .landing-hero{height:calc(var(--hero-art-top, 530px) + 370px);min-height:0;}
 .landing-type-scene{left:0;width:100%;top:var(--hero-art-top,530px);height:310px;bottom:auto;opacity:1;pointer-events:none;mask-image:none;}
 .landing-type-scene canvas{display:block;}
+.anatomy-connection-scene{position:absolute;inset:0;pointer-events:none;}
+.anatomy-detail-enter{animation:label-enter .8s ease both;}
+.dashboard-anatomy-art{position:absolute;inset:35px 0 0;transform-origin:50% 40%;}
+.dashboard-anatomy-art>img{width:100%;height:100%;object-fit:contain;}
+.dashboard-anatomy-art.zoom-level-2{scale:1.15;}.dashboard-anatomy-art.zoom-level-3{scale:1.3;}
+.health-dashboard .anatomy-art{width:100% !important;height:100% !important;}
+.atlas-art-label{position:absolute;height:22px;font-size:8px;padding:0 5px;max-width:105px;}
+.atlas-label-left{left:3%;}.atlas-label-right{right:3%;}
+.atlas-tour-toggle{position:absolute;bottom:36px;right:8px;font-size:9px;height:25px;}
 .landing-header{background:var(--background);}
 @media(max-width:760px){.landing-hero{height:calc(var(--hero-art-top,560px) + 410px);}.landing-type-scene{height:350px;}}
 

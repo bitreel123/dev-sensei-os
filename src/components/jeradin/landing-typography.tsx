@@ -150,10 +150,8 @@ export default function LandingTypography() {
       if (!(hero instanceof HTMLElement) || !content) return;
       const heroTop = hero.getBoundingClientRect().top;
       let top = content.getBoundingClientRect().bottom - heroTop + 10;
-      if (window.innerWidth < 760) {
-        const desc = content.querySelector(".landing-hero-description");
-        if (desc) top = Math.max(0, desc.getBoundingClientRect().top - heroTop - 30);
-      }
+      const desc = content.querySelector(".landing-hero-description");
+      if (desc) top = Math.max(0, desc.getBoundingClientRect().top - heroTop - (window.innerWidth < 760 ? 30 : 40));
       hero.style.setProperty("--hero-art-top", `${top}px`);
     };
     const resize = new ResizeObserver(fit); if (content) resize.observe(content); fit();

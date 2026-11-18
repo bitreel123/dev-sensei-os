@@ -394,7 +394,7 @@
 .jeradin-white-pages :where(button,a):not(.jeradin-landing *):not(.health-dashboard *)[class*="hover:bg-white"]:hover{background-color:var(--accent);color:var(--accent-foreground);}
 /* Network-human hero art */
 .landing-type-scene{height:560px;}
-.landing-hero{height:calc(var(--hero-art-top,530px) + 580px);}
+.landing-hero{height:calc(var(--hero-art-top,530px) + 620px);}
 @media(max-width:760px){.landing-type-scene{height:470px;}.landing-hero{height:calc(var(--hero-art-top,560px) + 530px);}}
 /* Anatomy fade tour: label in, explanation in, both out — one 10s cycle per organ */
 .landing-anatomy-section,.landing-anatomy-visual,.anatomy-breathing-art{background:var(--background);}

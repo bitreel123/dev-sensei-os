@@ -365,10 +365,8 @@
 @media(max-width:760px){.landing-type-scene{height:195px;bottom:55px;}.landing-hero{height:720px;}.landing-manifesto{padding-top:0;}.platform-story>p:not(.landing-kicker),.use-case-story p,.research-chapter p{line-height:1.75;}.landing-research-chapters{margin-top:40px;}}
 @media(max-width:390px){.landing-manifesto h2{font-size:34px;}.landing-hero{height:710px;}.landing-hero-content{padding-top:106px;}.landing-hero-description{font-size:13px;}.landing-type-scene{height:165px;bottom:55px;}}
 
-/* A full-width molecular sculpture, never a framed preview. */
-.landing-type-scene{left:0;width:100%;height:270px;bottom:44px;opacity:1;pointer-events:none;}
+/* A full-hero anatomy sculpture behind the unchanged editorial content. */
+.landing-type-scene{left:0;width:100%;top:86px;height:calc(100% - 129px);bottom:43px;opacity:.86;pointer-events:none;mask-image:linear-gradient(to right,transparent 0%,oklch(0 0 0 / .12) 28%,oklch(0 0 0 / .25) 48%,oklch(0 0 0) 72%);}
 .landing-type-scene canvas{display:block;}
 .landing-header{background:var(--background);}
-@media(min-width:1600px){.landing-type-scene{height:330px;bottom:45px;}}
-@media(max-width:760px){.landing-type-scene{height:165px;bottom:43px;}}
-@media(max-width:390px){.landing-type-scene{height:145px;bottom:43px;}}
+@media(max-width:760px){.landing-type-scene{top:72px;height:calc(100% - 115px);opacity:.65;mask-image:linear-gradient(to bottom,transparent 0%,oklch(0 0 0 / .08) 25%,oklch(0 0 0 / .16) 52%,oklch(0 0 0) 76%);}}

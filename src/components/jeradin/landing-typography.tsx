@@ -23,7 +23,7 @@ function HumanScene({ reduced, onReady }: { reduced: boolean; onReady: () => voi
   const ink = useMemo(inkColor, []);
   const mobile = size.width < 760;
   const viewW = size.width / size.height * 12;
-  const height = Math.min(10.2, viewW / ASPECT * .98);
+  const height = Math.min(11, viewW / ASPECT);
   const width = height * ASPECT;
   const center = useMemo(() => new Vector3(0, .75, 0), [mobile, viewW]);
   const image = useRef<Mesh>(null), cloud = useRef<Points>(null), stream = useRef<Points>(null), time = useRef(0);
@@ -129,8 +129,8 @@ function HumanScene({ reduced, onReady }: { reduced: boolean; onReady: () => voi
   return <>
     <group position={center}>
       <mesh ref={image}><planeGeometry args={[width, height]} /><meshBasicMaterial map={texture} transparent opacity={0} depthWrite={false} blending={NormalBlending} /></mesh>
-      <points ref={cloud} geometry={cloudGeo}><pointsMaterial color={ink} size={mobile ? .05 : .045} transparent opacity={.9} depthWrite={false} /></points>
-      <points ref={stream} geometry={streamGeo} position={[0, 0, 0]}><pointsMaterial color={ink} size={.09} transparent opacity={0} depthWrite={false}  /></points>
+      <points ref={cloud} geometry={cloudGeo}><pointsMaterial color={ink} size={mobile ? .085 : .065} transparent opacity={.95} depthWrite={false} /></points>
+      <points ref={stream} geometry={streamGeo} position={[0, 0, 0]}><pointsMaterial color={ink} size={mobile ? .14 : .12} transparent opacity={0} depthWrite={false}  /></points>
     </group>
     {textures.map((tex, i) => <mesh key={i} ref={m => { messages.current[i] = m; }} position={[0, -5.45, 2]}>
       <planeGeometry args={[msgW, msgW * 160 / 1024]} /><meshBasicMaterial map={tex} transparent opacity={0} depthWrite={false} />
@@ -148,11 +148,18 @@ export default function LandingTypography() {
     const content = hero?.querySelector(".landing-hero-content");
     const fit = () => {
       if (!(hero instanceof HTMLElement) || !content) return;
-      hero.style.setProperty("--hero-art-top", `${content.getBoundingClientRect().bottom - hero.getBoundingClientRect().top + 10}px`);
+      const heroTop = hero.getBoundingClientRect().top;
+      let top = content.getBoundingClientRect().bottom - heroTop + 10;
+      if (window.innerWidth < 760) {
+        const desc = content.querySelector(".landing-hero-description");
+        if (desc) top = Math.max(0, desc.getBoundingClientRect().top - heroTop - 30);
+      }
+      hero.style.setProperty("--hero-art-top", `${top}px`);
     };
     const resize = new ResizeObserver(fit); if (content) resize.observe(content); fit();
+    window.addEventListener("resize", fit);
     const observer = new IntersectionObserver(([e]) => setVisible(e.isIntersecting)); if (hero) observer.observe(hero);
-    return () => { resize.disconnect(); observer.disconnect(); query.removeEventListener("change", update); };
+    return () => { resize.disconnect(); observer.disconnect(); query.removeEventListener("change", update); window.removeEventListener("resize", fit); };
   }, []);
   const onReady = useMemo(() => () => setReady(true), []);
   return <div ref={scene} className="landing-type-scene" aria-hidden="true" data-scene-ready={ready ? "true" : undefined}>

@@ -23,6 +23,14 @@ function isSafeReturn(next: string): boolean {
 }
 
 export const Route = createFileRoute("/.lovable/oauth/consent")({
+  head: () => ({ meta: [
+    { title: "Authorize an application · Jeradin" },
+    { name: "description", content: "Review an application's request to access your Jeradin account." },
+    { property: "og:title", content: "Authorize an application · Jeradin" },
+    { property: "og:description", content: "Review an application's request to access your Jeradin account." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
     authorization_id: typeof s.authorization_id === "string" ? s.authorization_id : "",

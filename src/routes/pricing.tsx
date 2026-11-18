@@ -9,6 +9,7 @@ import { useUserData } from "@/hooks/use-user-data";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
 import { PLAN_MAP, type PlanId } from "@/lib/plan-map";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import planFree from "@/assets/plan-free.jpg";
 import planBasic from "@/assets/plan-basic.jpg";
 import planPro from "@/assets/plan-pro.jpg";
@@ -305,7 +306,7 @@ function PricingPage() {
         <div className="flex justify-center mb-8">
           <div className="inline-flex border border-white/25 p-1">
             {(["monthly", "yearly"] as const).map((c) => (
-              <button
+              <Button variant={cycle === c ? "default" : "ghost"}
                 key={c}
                 onClick={() => setCycle(c)}
                 className={`px-5 py-2 font-mono text-[11px] uppercase tracking-[0.22em] transition-colors ${
@@ -318,7 +319,7 @@ function PricingPage() {
                     −{Math.round(YEARLY_DISCOUNT * 100)}%
                   </span>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -435,7 +436,7 @@ function PricingPage() {
                   />
                 </div>
 
-                <button
+                <Button
                   onClick={() => choose(t)}
                   disabled={disabled}
                   className={`mt-5 w-full border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.25em] transition-colors ${
@@ -445,7 +446,7 @@ function PricingPage() {
                   }`}
                 >
                   {checkoutLoading ? "Opening…" : label}
-                </button>
+                </Button>
 
                 <ul className="mt-6 space-y-2.5 text-[13px] text-white/85 flex-1">
                   {t.features.map((f) => (

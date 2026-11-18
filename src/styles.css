@@ -366,7 +366,20 @@
 @media(max-width:390px){.landing-manifesto h2{font-size:34px;}.landing-hero{height:710px;}.landing-hero-content{padding-top:106px;}.landing-hero-description{font-size:13px;}.landing-type-scene{height:165px;bottom:55px;}}
 
 /* A full-hero anatomy sculpture behind the unchanged editorial content. */
-.landing-type-scene{left:0;width:100%;top:86px;height:calc(100% - 129px);bottom:43px;opacity:.86;pointer-events:none;mask-image:linear-gradient(to right,transparent 0%,oklch(0 0 0 / .12) 28%,oklch(0 0 0 / .25) 48%,oklch(0 0 0) 72%);}
+.landing-hero{height:calc(var(--hero-art-top, 530px) + 370px);min-height:0;}
+.landing-type-scene{left:0;width:100%;top:var(--hero-art-top,530px);height:310px;bottom:auto;opacity:1;pointer-events:none;mask-image:none;}
 .landing-type-scene canvas{display:block;}
 .landing-header{background:var(--background);}
-@media(max-width:760px){.landing-type-scene{top:72px;height:calc(100% - 115px);opacity:.65;mask-image:linear-gradient(to bottom,transparent 0%,oklch(0 0 0 / .08) 25%,oklch(0 0 0 / .16) 52%,oklch(0 0 0) 76%);}}
+@media(max-width:760px){.landing-hero{height:calc(var(--hero-art-top,560px) + 410px);}.landing-type-scene{height:350px;}}
+
+/* Compatibility bridge for older dark presentation classes, scoped away from
+   the token-based landing and health dashboard. Keep art and overlays intact. */
+.jeradin-white-pages{background:var(--background);color:var(--foreground);min-height:100dvh;}
+.jeradin-white-pages .jeradin-site-header{background-color:var(--background);}
+.jeradin-white-pages :where([class*="text-white"]):not(.jeradin-landing *):not(.health-dashboard *){color:var(--foreground);}
+.jeradin-white-pages :where([class*="bg-black"],[class*="bg-[#1a1a1a]"],[class*="bg-[#0a0a0a]"],[class*="bg-[#1c1c1a]"]):not(.jeradin-landing *):not(.health-dashboard *){background-color:var(--background);color:var(--foreground);}
+.jeradin-white-pages :where([class*="border-white"]):not(.jeradin-landing *):not(.health-dashboard *){border-color:var(--border);}
+.jeradin-white-pages :where([class*="text-white/"]):not(.jeradin-landing *):not(.health-dashboard *){color:var(--muted-foreground);}
+.jeradin-white-pages :where(button,a):not(.jeradin-landing *):not(.health-dashboard *)[class*="bg-white"][class*="text-black"]{background-color:var(--primary);color:var(--primary-foreground);}
+.jeradin-white-pages :where(button,a):not(.jeradin-landing *):not(.health-dashboard *)[class*="hover:bg-black"]:hover{background-color:var(--primary);color:var(--primary-foreground);}
+.jeradin-white-pages :where(button,a):not(.jeradin-landing *):not(.health-dashboard *)[class*="hover:bg-white"]:hover{background-color:var(--accent);color:var(--accent-foreground);}

@@ -5,6 +5,9 @@
 - [x] Verify desktop and mobile presentation and explain which health tools remain planned.
 
 ## Landing page redesign
+- [x] Center a small wireframe skull, enlarge and frame every paper, and add sequential fading Three.js messages without changing existing hero text.
+- [x] Apply white backgrounds across pricing and other pages while preserving controls and content.
+- [x] Verify the revised hero on desktop/mobile and white public pages.
 - [x] Replace the hero DNA with a large skull and animated outward data connections without changing the text or its positioning.
 - [x] Verify the skull animation and unchanged hero layout on desktop and mobile.
 - [x] Make all landing surfaces white and upgrade the hero to an interactive molecular ribbon scene.

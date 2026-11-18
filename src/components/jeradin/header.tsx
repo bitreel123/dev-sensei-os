@@ -11,7 +11,7 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
         isDark
           ? "bg-black/70 border-white/10 text-white"
           : "bg-white/70 border-black/5 text-black"
-      } backdrop-blur-xl`}
+      } backdrop-blur-xl jeradin-site-header`}
     >
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-5">
         <div className="flex items-center gap-10">

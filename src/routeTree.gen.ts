@@ -19,6 +19,7 @@ import { Route as ExtensionRouteImport } from './routes/extension'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as PathogenRouteImport } from './routes/pathogen'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProductRouteImport } from './routes/product'
@@ -92,6 +93,11 @@ const LoginRoute = LoginRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PathogenRoute = PathogenRouteImport.update({
+  id: '/pathogen',
+  path: '/pathogen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/pathogen': typeof PathogenRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/product': typeof ProductRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/pathogen': typeof PathogenRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/product': typeof ProductRoute
@@ -307,6 +315,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/pathogen': typeof PathogenRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/product': typeof ProductRoute
@@ -345,6 +354,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/mcp'
+    | '/pathogen'
     | '/pricing'
     | '/privacy'
     | '/product'
@@ -381,6 +391,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/mcp'
+    | '/pathogen'
     | '/pricing'
     | '/privacy'
     | '/product'
@@ -417,6 +428,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/mcp'
+    | '/pathogen'
     | '/pricing'
     | '/privacy'
     | '/product'
@@ -454,6 +466,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
+  PathogenRoute: typeof PathogenRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   ProductRoute: typeof ProductRoute
@@ -550,6 +563,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pathogen': {
+      id: '/pathogen'
+      path: '/pathogen'
+      fullPath: '/pathogen'
+      preLoaderRoute: typeof PathogenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -734,6 +754,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
+  PathogenRoute: PathogenRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   ProductRoute: ProductRoute,

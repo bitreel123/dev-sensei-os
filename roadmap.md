@@ -1,5 +1,10 @@
 # Jeradin presentation
 
+## Dashboard separation and automatic anatomy
+- [x] Separate Search Explorer and Pathogen Mapping into distinct pages with their own update feeds.
+- [x] Replace clickable anatomy labels with automatic illustrated organ explanations.
+- [x] Verify navigation, automatic tours, and fitting layouts on mobile and desktop.
+
 - [x] Replace dashboard overview with the reference inspired monochrome health research layout.
 - [x] Add anatomical exploration and core feature navigation while preserving existing account and chat access.
 - [x] Verify desktop and mobile presentation and explain which health tools remain planned.

@@ -1,131 +1,119 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Activity, ArrowLeft, ArrowRight, Bell, BookOpen, Bug, CheckCircle2, ChevronDown, Database, Dna, Droplet, FileText, Microscope, PanelLeftClose, PanelLeftOpen, Radio, Search, Send, Sparkles, Timer, UserRound, X } from "lucide-react";
-import anatomyImage from "@/assets/anatomy-research.jpg";
+import { ArrowRight, BookOpen, Bug, ChevronDown, Database, Dna, Droplet, FileText, Microscope, PanelLeftClose, PanelLeftOpen, Radio, Search, Send, Sparkles, UserRound, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "./logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
+import { DashboardAnatomy } from "./dashboard-anatomy";
+import { pathogenTour, researchTour } from "./dashboard-tour-data";
 
-// UI preview only. All report content below is illustrative sample content, not live research.
 type View = "search" | "pathogen";
-const ORGAN_POINTS: Record<string, [number, number]> = { Brain:[48,9], Lungs:[50,33], Breast:[56,35], Heart:[53,39], Liver:[43,48], Spleen:[57,50], "Lymph nodes":[40,30], "Red blood cells":[56,66] };
-const ticker = ["WHO updates mpox guidance", "Malaria cases reported rising in parts of Africa", "CAR-T lymphoma trial reports new response data", "Universal flu vaccine enters new trial phase"];
-const nav = [
-  { id: "search" as View, label: "Search Explorer", icon: Search },
-  { id: "pathogen" as View, label: "Pathogen Mapping", icon: Bug },
+const researchUpdates = [
+  { category: "Oncology", title: "Lung cancer research: connecting molecular changes to treatment targets", summary: "A reading brief on cell growth, tumour biology and the questions researchers investigate when evaluating targeted treatments.", age: "Sample update 01" },
+  { category: "Neurology", title: "Alzheimer’s research: biomarkers and early detection", summary: "An evidence brief exploring how researchers study biological markers, alongside the limits of screening and interpretation.", age: "Sample update 02" },
+  { category: "Drug discovery", title: "Cancer treatment combinations: efficacy and safety", summary: "A research brief comparing study design, treatment response and adverse effects before conclusions are drawn.", age: "Sample update 03" },
 ];
+const pathogenUpdates = [
+  { category: "Malaria", title: "Malaria research: tracing the parasite from entry to blood stage", summary: "An educational brief connecting mosquito transmission, the liver stage, blood-cell infection and immune response.", age: "Sample update 01" },
+  { category: "Virology", title: "Respiratory viruses: transmission and tissue response", summary: "A pathogen brief covering entry through the airways and the local immune response. Findings depend on the specific virus.", age: "Sample update 02" },
+  { category: "Microbiology", title: "Antimicrobial resistance: mechanisms under investigation", summary: "A reading brief on how microbes evade treatments and how resistance is studied across populations.", age: "Sample update 03" },
+];
+const nav = [{ id: "search" as View, label: "Search Explorer", icon: Search, to: "/app" as const }, { id: "pathogen" as View, label: "Pathogen Mapping", icon: Bug, to: "/pathogen" as const }];
 const soon = [{ label: "Educational Hub", icon: BookOpen }, { label: "Datasets", icon: Database }, { label: "AI Assistant", icon: Sparkles }];
 
-function Anatomy({ organs, active, onPick }: { organs: string[]; active: string; onPick: (o: string) => void }) {
-  return <div className="jd-anatomy">
-    <img src={anatomyImage} alt="Jeradin educational human anatomy with naturally coloured organs" />
-    {organs.map(o => { const p = ORGAN_POINTS[o]; if (!p) return null; return <button key={o} type="button" onClick={() => onPick(o)} className={`jd-hotspot ${o === active ? "is-active" : ""}`} style={{ left: `${p[0]}%`, top: `${p[1]}%` }} aria-label={o}><span /></button>; })}
-    {ORGAN_POINTS[active] && <span className="jd-callout" style={{ top: `${ORGAN_POINTS[active][1]}%` }}>{active}</span>}
-  </div>;
+function UpdateFeed({ view }: { view: View }) {
+  const updates = view === "search" ? researchUpdates : pathogenUpdates;
+  return <section className="jd-update-feed" aria-label="Incoming report updates">
+    <div className="jd-section-head"><h2>Incoming updates</h2><span className="jd-tag">Sample preview</span></div>
+    {updates.map(u => <article className="jd-update" key={u.title}><div className="jd-update-meta"><span>{u.category}</span><small>{u.age}</small></div><h3>{u.title}</h3><p>{u.summary}</p></article>)}
+  </section>;
 }
 
-function SearchView({ goPathogen }: { goPathogen: () => void }) {
-  const organs = ["Breast", "Lungs", "Heart", "Lymph nodes"];
-  const [organ, setOrgan] = useState(organs[0]);
+function SearchView() {
   return <>
-    <div className="jd-section-head"><h2>Incoming Report</h2><span className="jd-tag">Sample preview</span></div>
+    <div className="jd-section-head"><h2>Research report</h2><span className="jd-tag">Sample preview</span></div>
     <article className="jd-report">
       <div className="jd-report-body">
-        <div className="jd-chips"><span>Oncology</span><span>Clinical research</span><span>Updated 2h ago</span></div>
-        <h3>Targeting HER2: new combination therapy shows promising results</h3>
-        <p>A recent study reports that combining trastuzumab with a novel inhibitor improved outcomes in HER2+ breast cancer patients.</p>
+        <div className="jd-chips"><span>Oncology</span><span>Lung cancer</span><span>Educational brief</span></div>
+        <h3>Lung cancer: from cell changes to treatment research</h3>
+        <p>Connect the biology of lung cancer with the evidence researchers use to study treatment targets, response and safety.</p>
         <h4>Key findings</h4>
-        <ul className="jd-findings">
-          {["92% response rate in trial cohort", "Recurrence reduced by 60%", "Well tolerated with manageable side effects"].map(f => <li key={f}><CheckCircle2 />{f}</li>)}
-        </ul>
-        <h4>Research timeline</h4>
-        <ol className="jd-timeline">
-          {[["Baseline", "HER2 identified as driver"], ["Standard care", "Trastuzumab therapy"], ["Active trials", "Combination inhibitors"], ["Now", "This report"]].map(([a, b]) => <li key={a}><strong>{a}</strong><small>{b}</small></li>)}
-        </ol>
-        <div className="jd-report-actions"><Button disabled><FileText />Download dossier</Button><Button variant="outline" onClick={goPathogen}>Open pathogen mapping<ArrowRight /></Button></div>
+        <ul className="jd-findings"><li><Dna />Changes in growth signals can allow cells to multiply abnormally.</li><li><Microscope />Molecular testing helps distinguish tumour subtypes.</li><li><FileText />Study outcomes need context: design, comparison groups and follow-up.</li></ul>
+        <h4>Past to present</h4>
+        <ol className="jd-timeline">{[["Foundations", "Cell and tissue biology"], ["Molecular research", "Growth signals and mutations"], ["Treatment studies", "Targeted therapies"], ["Current questions", "Response and resistance"]].map(([a, b]) => <li key={a}><strong>{a}</strong><small>{b}</small></li>)}</ol>
+        <h4>Reading the evidence</h4><p>Distinguish a biological explanation from a demonstrated treatment benefit. This sample report has no retrieved publications or verified study results attached.</p>
+        <div className="jd-report-actions"><Button disabled title="Exports are not connected yet"><FileText />Download dossier</Button></div>
       </div>
-      <div className="jd-report-anatomy">
-        <div className="jd-anatomy-head"><strong>Virtual Human</strong><small>Built from key findings</small></div>
-        <Anatomy organs={organs} active={organ} onPick={setOrgan} />
-        <div className="jd-organ-pills">{organs.map(o => <button key={o} type="button" className={o === organ ? "is-active" : ""} onClick={() => setOrgan(o)}>{o}</button>)}</div>
-      </div>
+      <div className="jd-report-anatomy"><DashboardAnatomy stages={researchTour} /></div>
     </article>
-    <div className="jd-section-head"><h2>More incoming reports</h2></div>
-    <div className="jd-mini-list">
-      {[["Infectious disease", "Malaria vaccine shows durable protection", "The Lancet · 3h"], ["Neurology", "AI model flags early Alzheimer's risk", "Science Daily · 5h"], ["Virology", "Mpox guidance updated by WHO", "WHO · 6h"]].map(([t, h, s]) => <button type="button" className="jd-mini" key={h}><span className="jd-tag">{t}</span><strong>{h}</strong><small>{s}</small></button>)}
-    </div>
+    <UpdateFeed view="search" />
   </>;
 }
 
-function PathogenView({ back }: { back: () => void }) {
-  const impact = [["Liver", "Primary site of infection", 95], ["Red blood cells", "Parasite replication", 92], ["Spleen", "Immune response", 67], ["Brain", "Possible complications", 38]] as const;
-  const [organ, setOrgan] = useState<string>("Liver");
+function PathogenView() {
   return <>
-    <button type="button" className="jd-back" onClick={back}><ArrowLeft />Back to search</button>
-    <div className="jd-path-title"><div><h2>Pathogen Mapping</h2><p>How a pathogen moves through the body, from entry to impact.</p></div>
-      <div className="jd-pathogen-pick"><Droplet /><span>Malaria (Plasmodium falciparum)</span><X /></div></div>
-    <div className="jd-path-grid">
-      <section className="jd-card jd-overview">
-        <h3>Pathogen overview</h3>
-        <strong className="jd-big">Plasmodium falciparum</strong><small>Malaria parasite</small>
-        <p>A microscopic parasite that infects red blood cells.</p>
-        <dl>{[["Transmission", "Mosquito bite", Bug], ["Incubation", "7–30 days", Timer], ["Primary impact", "Red blood cells", Droplet], ["Mortality", "Sample figure", Activity]].map(([k, v, I]) => { const Icon = I as typeof Bug; return <div key={k as string}><Icon /><dt>{k as string}</dt><dd>{v as string}</dd></div>; })}</dl>
-      </section>
-      <section className="jd-card jd-path-anatomy"><Anatomy organs={impact.map(i => i[0])} active={organ} onPick={setOrgan} /></section>
-      <section className="jd-card jd-impact">
-        <h3>Impact analysis</h3>
-        {impact.map(([n, d, v]) => <button type="button" key={n} onClick={() => setOrgan(n)} className={n === organ ? "is-active" : ""}><span><strong>{n}</strong><small>{d}</small></span><b>{v}%</b><i style={{ width: `${v}%` }} /></button>)}
-      </section>
-    </div>
-    <div className="jd-path-bottom">
-      <section className="jd-card"><h3>Disease progression</h3>
-        <ol className="jd-steps">{[["Entry", "Mosquito bite"], ["Blood stage", "Parasitemia"], ["Organ stage", "Liver & spleen"], ["Severe stage", "Organs"]].map(([a, b], i) => <li key={a} className={i === 2 ? "is-active" : ""}><span>{i + 1}</span><strong>{a}</strong><small>{b}</small></li>)}</ol>
-        <p className="jd-note">The parasite enters through a mosquito bite, travels in the blood, targets the liver, then infects red blood cells.</p></section>
-      <section className="jd-card"><h3>Key biological pathways</h3>
-        <ul className="jd-pathways">{[["Immune response", "High"], ["Inflammatory signalling", "High"], ["Heme metabolism", "Moderate"], ["Cell cycle regulation", "Moderate"]].map(([a, b]) => <li key={a}><Dna />{a}<span>{b}</span></li>)}</ul></section>
-      <section className="jd-card"><h3>Related research</h3>
-        <ul className="jd-related">{[["New insights into malaria vaccine efficacy", "Nature"], ["Antimalarial drug resistance trends in Africa", "The Lancet"], ["Genetic markers of severe malaria", "Science"]].map(([a, b]) => <li key={a}><FileText /><span><strong>{a}</strong><small>{b}</small></span></li>)}</ul></section>
-    </div>
+    <div className="jd-section-head"><h2>Pathogen report</h2><span className="jd-tag">Sample preview</span></div>
+    <article className="jd-report jd-path-report">
+      <div className="jd-report-body">
+        <div className="jd-chips"><span>Malaria</span><span>Parasite</span><span>Educational brief</span></div>
+        <h3>Plasmodium falciparum: entry, spread and impact</h3>
+        <p>Malaria parasites move through distinct stages in the liver and blood. The body illustration follows that sequence automatically.</p>
+        <dl className="jd-facts"><div><dt>Transmission</dt><dd>Infected Anopheles mosquito</dd></div><div><dt>Early multiplication</dt><dd>Liver cells</dd></div><div><dt>Blood stage</dt><dd>Red blood cells</dd></div></dl>
+        <h4>Disease progression</h4>
+        <ol className="jd-timeline">{[["Entry", "Mosquito bite"], ["Liver stage", "Parasites multiply"], ["Blood stage", "Red blood cells infected"], ["Response", "Immune defence"]].map(([a, b]) => <li key={a}><strong>{a}</strong><small>{b}</small></li>)}</ol>
+        <h4>Organ connections</h4><ul className="jd-findings"><li><Droplet />Red blood cell infection can contribute to fever and anaemia.</li><li><Dna />The spleen helps filter infected cells from the blood.</li><li><Microscope />Severe infection may affect several organs; individual risk is not shown here.</li></ul>
+        <h4>Research focus</h4><p>Vaccine development, parasite biology and treatment resistance are distinct research questions. This sample contains no live outbreak counts or measured organ-risk scores.</p>
+        <div className="jd-report-actions"><Button disabled title="Exports are not connected yet"><FileText />Download dossier</Button></div>
+      </div>
+      <div className="jd-report-anatomy"><DashboardAnatomy stages={pathogenTour} /></div>
+    </article>
+    <section className="jd-pathways-band"><h2>Biological pathways</h2><div><span>Parasite replication</span><span>Red blood cell invasion</span><span>Immune response</span></div></section>
+    <UpdateFeed view="pathogen" />
   </>;
 }
 
-export function HealthDashboard() {
+export function HealthDashboard({ view = "search" }: { view?: View }) {
   const { user } = useAuth();
   const { credits } = useUserData(user?.id ?? null);
   const navigate = useNavigate();
-  const [view, setView] = useState<View>("search");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [query, setQuery] = useState("");
+  const [searchNotice, setSearchNotice] = useState(false);
   const [ask, setAsk] = useState("");
   const name = typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "Your account";
-  const go = (v: View) => { setView(v); setMobileNav(false); window.scrollTo({ top: 0 }); };
+  const updates = view === "search" ? researchUpdates : pathogenUpdates;
+  useEffect(() => {
+    if (!mobileNav) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setMobileNav(false); };
+    const resize = () => { if (window.innerWidth >= 1024) setMobileNav(false); };
+    window.addEventListener("keydown", close);
+    window.addEventListener("resize", resize);
+    return () => { document.body.style.overflow = previous; window.removeEventListener("keydown", close); window.removeEventListener("resize", resize); };
+  }, [mobileNav]);
   const toggle = () => { if (window.innerWidth < 1024) setMobileNav(s => !s); else setCollapsed(c => !c); };
   const openAssistant = () => { if (!ask.trim()) return; void navigate({ to: user ? "/chat" : "/login", search: user ? { view: "assistant", q: ask.trim() } : {} }); };
-
   return <div className={`jd-dash ${collapsed ? "is-collapsed" : ""}`}>
     {mobileNav && <div className="jd-backdrop" onClick={() => setMobileNav(false)} />}
-    <aside className={`jd-side ${mobileNav ? "is-open" : ""}`}>
-      <Link to="/" className="jd-brand"><LogoMark className="h-9 w-9 shrink-0 object-contain" /><span className="jd-copy"><strong>Jeradin</strong><small>Global Biomedical Intelligence</small></span></Link>
-      <nav>{nav.map(n => <button type="button" key={n.id} title={n.label} onClick={() => go(n.id)} className={view === n.id ? "is-active" : ""}><n.icon /><span className="jd-copy">{n.label}</span></button>)}
-        {soon.map(n => <button type="button" key={n.label} title={`${n.label} (coming soon)`} disabled><n.icon /><span className="jd-copy">{n.label}</span></button>)}</nav>
-      <div className="jd-side-card jd-copy">Connect the world's health evidence to the human body.</div>
+    <aside id="dashboard-sidebar" className={`jd-side ${mobileNav ? "is-open" : ""}`}>
+      <div className="jd-side-heading"><Link to="/" className="jd-brand"><LogoMark className="h-9 w-9 shrink-0 object-contain" /><span className="jd-copy"><strong>Jeradin</strong><small>Health Intelligence</small></span></Link><Button className="jd-mobile-close" variant="ghost" size="icon" onClick={() => setMobileNav(false)} aria-label="Close menu"><X /></Button></div>
+      <nav aria-label="Dashboard pages">{nav.map(n => <Button asChild variant="ghost" key={n.id} className={view === n.id ? "is-active" : ""}><Link to={n.to} title={n.label} aria-current={view === n.id ? "page" : undefined} onClick={() => setMobileNav(false)}><n.icon /><span className="jd-copy">{n.label}</span></Link></Button>)}
+        {soon.map(n => <Button variant="ghost" key={n.label} title={`${n.label} (coming soon)`} disabled><n.icon /><span className="jd-copy">{n.label}</span></Button>)}</nav>
+      <div className="jd-side-note jd-copy">Public evidence.<br />Human understanding.</div>
       <Link to={user ? "/account" : "/login"} className="jd-profile"><span className="jd-avatar"><UserRound /></span><span className="jd-copy"><strong>{name}</strong><small>{user ? (credits?.plan ?? "Member") : "Sign in"}</small></span><ChevronDown className="jd-copy" /></Link>
     </aside>
     <div className="jd-main">
-      <header className="jd-top">
-        <button type="button" className="jd-icon" onClick={toggle} aria-label="Toggle sidebar">{collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</button>
-        <div className="jd-ticker"><span className="jd-live"><Radio />Live</span><div className="jd-ticker-track"><div>{[...ticker, ...ticker].map((t, i) => <span key={i}>{t}</span>)}</div></div></div>
-        <button type="button" className="jd-icon" aria-label="Notifications"><Bell /></button>
+      <header className="jd-top"><Button variant="outline" size="icon" className="jd-icon" onClick={toggle} aria-label="Toggle sidebar" aria-controls="dashboard-sidebar" aria-expanded={mobileNav || !collapsed}>{collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</Button>
+        <div className="jd-ticker"><span className="jd-live"><Radio />Sample updates</span><div className="jd-ticker-track"><div>{[...updates, ...updates].map((t, i) => <span key={i}>{t.title}</span>)}</div></div></div>
       </header>
-      <main className="jd-content">
-        {view === "search" && <form className="jd-search" onSubmit={e => e.preventDefault()}><Search /><input value={query} onChange={e => setQuery(e.target.value)} placeholder='Search diseases, pathogens, drugs or research (e.g. "HER2+ breast cancer")' aria-label="Search research" /><Button type="submit">Search<ArrowRight /></Button></form>}
-        {view === "search" ? <SearchView goPathogen={() => go("pathogen")} /> : <PathogenView back={() => go("search")} />}
-        <form className="jd-ask" onSubmit={e => { e.preventDefault(); openAssistant(); }}>
-          <div><Microscope /><span><strong>Ask Jeradin AI</strong><small>Research and education only. Not medical advice.</small></span></div>
-          <div className="jd-ask-input"><input value={ask} onChange={e => setAsk(e.target.value)} placeholder="Ask anything about health, research or the human body…" aria-label="Ask Jeradin" /><Button type="submit" size="icon" aria-label="Send" disabled={!ask.trim()}><Send /></Button></div>
-        </form>
+      <main className="jd-content"><div className="jd-page-title"><div><small>Jeradin / {view === "search" ? "Research" : "Pathogens"}</small><h1>{view === "search" ? "Search Explorer" : "Pathogen Mapping"}</h1></div><span className="jd-tag">Sample preview</span></div>
+        <form className="jd-search" onSubmit={e => { e.preventDefault(); setSearchNotice(true); }}><Search /><input value={query} onChange={e => { setQuery(e.target.value); setSearchNotice(false); }} placeholder={view === "search" ? "Search conditions, medicines or research" : "Search pathogens or transmission"} aria-label={view === "search" ? "Search research" : "Search pathogens"} /><Button type="submit" aria-label="Search" title="Search"><span className="jd-search-word">Search</span><ArrowRight /></Button></form>
+        {searchNotice && <p className="jd-preview-notice" role="status">{query.trim() ? `Search for “${query.trim()}” is not connected yet.` : "Search is not connected yet."} Reports below are sample content.</p>}
+        {view === "search" ? <SearchView /> : <PathogenView />}
+        <form className="jd-ask" onSubmit={e => { e.preventDefault(); openAssistant(); }}><div><Microscope /><span><strong>Ask Jeradin AI</strong><small>Research and education only. Not medical advice.</small></span></div><div className="jd-ask-input"><input value={ask} onChange={e => setAsk(e.target.value)} placeholder="Ask about this research…" aria-label="Ask Jeradin" /><Button type="submit" size="icon" aria-label="Send" disabled={!ask.trim()}><Send /></Button></div></form>
       </main>
     </div>
   </div>;

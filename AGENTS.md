@@ -12,3 +12,4 @@ Landing anatomy tour uses CSS keyed 10s cycles: organ label fades in, then its e
 Dashboard v2 is a UI preview with labelled sample content; wire real ingestion before removing sample labels, so illustrative updates never imply live research.
 Keep Search Explorer on /app (also /chat overview) and Pathogen Mapping on /pathogen with independent feeds; share only the dashboard shell and anatomy renderer so reports are not mixed by navigation shortcuts.
 Render additional dashboard pages inside HealthDashboard's content slot with explicit active navigation; keep the dataset catalogue as labelled sample entries until licensed source records and downloads are connected.
+Keep /assistant as a single-conversation UI preview composed from installed AI Elements, without model calls or persistence; leave the existing /chat?view=assistant processing unchanged until connection is requested.

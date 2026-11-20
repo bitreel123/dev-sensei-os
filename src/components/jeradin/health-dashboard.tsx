@@ -9,7 +9,7 @@ import { useUserData } from "@/hooks/use-user-data";
 import { DashboardAnatomy } from "./dashboard-anatomy";
 import { pathogenTour, researchTour } from "./dashboard-tour-data";
 
-type View = "search" | "pathogen" | "datasets";
+type View = "search" | "pathogen" | "datasets" | "assistant";
 const researchUpdates = [
   { category: "Oncology", title: "Lung cancer research: connecting molecular changes to treatment targets", summary: "A reading brief on cell growth, tumour biology and the questions researchers investigate when evaluating targeted treatments.", age: "Sample update 01" },
   { category: "Neurology", title: "Alzheimer’s research: biomarkers and early detection", summary: "An evidence brief exploring how researchers study biological markers, alongside the limits of screening and interpretation.", age: "Sample update 02" },
@@ -20,8 +20,7 @@ const pathogenUpdates = [
   { category: "Virology", title: "Respiratory viruses: transmission and tissue response", summary: "A pathogen brief covering entry through the airways and the local immune response. Findings depend on the specific virus.", age: "Sample update 02" },
   { category: "Microbiology", title: "Antimicrobial resistance: mechanisms under investigation", summary: "A reading brief on how microbes evade treatments and how resistance is studied across populations.", age: "Sample update 03" },
 ];
-const nav = [{ id: "search" as View, label: "Search Explorer", icon: Search, to: "/app" as const }, { id: "pathogen" as View, label: "Pathogen Mapping", icon: Bug, to: "/pathogen" as const }, { id: "datasets" as View, label: "Datasets", icon: Database, to: "/datasets" as const }];
-const soon = [{ label: "AI Assistant", icon: Bot }];
+const nav = [{ id: "search" as View, label: "Search Explorer", icon: Search, to: "/app" as const }, { id: "pathogen" as View, label: "Pathogen Mapping", icon: Bug, to: "/pathogen" as const }, { id: "datasets" as View, label: "Datasets", icon: Database, to: "/datasets" as const }, { id: "assistant" as View, label: "AI Assistant", icon: Bot, to: "/assistant" as const }];
 
 function UpdateFeed({ view }: { view: View }) {
   const updates = view === "search" ? researchUpdates : pathogenUpdates;
@@ -102,7 +101,7 @@ export function HealthDashboard({ view = "search", children }: { view?: View; ch
     <aside id="dashboard-sidebar" className={`jd-side ${mobileNav ? "is-open" : ""}`}>
       <div className="jd-side-heading"><Link to="/" className="jd-brand"><LogoMark className="h-9 w-9 shrink-0 object-contain" /><span className="jd-copy"><strong>Jeradin</strong><small>Health Intelligence</small></span></Link><Button className="jd-mobile-close" variant="ghost" size="icon" onClick={() => setMobileNav(false)} aria-label="Close menu"><X /></Button></div>
       <nav aria-label="Dashboard pages">{nav.map(n => <Button asChild variant="ghost" key={n.id} className={view === n.id ? "is-active" : ""}><Link to={n.to} title={n.label} aria-current={view === n.id ? "page" : undefined} onClick={() => setMobileNav(false)}><n.icon /><span className="jd-copy">{n.label}</span></Link></Button>)}
-        {soon.map(n => <Button variant="ghost" key={n.label} title={`${n.label} (coming soon)`} disabled><n.icon /><span className="jd-copy">{n.label}</span></Button>)}</nav>
+        </nav>
       <div className="jd-side-note jd-copy">Public evidence.<br />Human understanding.</div>
       <Link to={user ? "/account" : "/login"} className="jd-profile"><span className="jd-avatar"><UserRound /></span><span className="jd-copy"><strong>{name}</strong><small>{user ? (credits?.plan ?? "Member") : "Sign in"}</small></span><ChevronDown className="jd-copy" /></Link>
     </aside>

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as DatasetsRouteImport } from './routes/datasets'
 import { Route as DocsRouteImport } from './routes/docs'
@@ -59,6 +60,11 @@ const AccountRoute = AccountRouteImport.update({
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistantRoute = AssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatRoute = ChatRouteImport.update({
@@ -239,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/app': typeof AppRoute
+  '/assistant': typeof AssistantRoute
   '/chat': typeof ChatRoute
   '/datasets': typeof DatasetsRoute
   '/docs': typeof DocsRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/app': typeof AppRoute
+  '/assistant': typeof AssistantRoute
   '/chat': typeof ChatRoute
   '/datasets': typeof DatasetsRoute
   '/docs': typeof DocsRoute
@@ -316,6 +324,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/app': typeof AppRoute
+  '/assistant': typeof AssistantRoute
   '/chat': typeof ChatRoute
   '/datasets': typeof DatasetsRoute
   '/docs': typeof DocsRoute
@@ -356,6 +365,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/app'
+    | '/assistant'
     | '/chat'
     | '/datasets'
     | '/docs'
@@ -394,6 +404,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/app'
+    | '/assistant'
     | '/chat'
     | '/datasets'
     | '/docs'
@@ -432,6 +443,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/app'
+    | '/assistant'
     | '/chat'
     | '/datasets'
     | '/docs'
@@ -471,6 +483,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
   AppRoute: typeof AppRoute
+  AssistantRoute: typeof AssistantRoute
   ChatRoute: typeof ChatRoute
   DatasetsRoute: typeof DatasetsRoute
   DocsRoute: typeof DocsRoute
@@ -527,6 +540,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistant': {
+      id: '/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat': {
@@ -767,6 +787,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
   AppRoute: AppRoute,
+  AssistantRoute: AssistantRoute,
   ChatRoute: ChatRoute,
   DatasetsRoute: DatasetsRoute,
   DocsRoute: DocsRoute,

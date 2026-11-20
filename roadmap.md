@@ -1,5 +1,11 @@
 # Jeradin presentation
 
+## Dataset and assistant pages
+- [x] Remove Educational Hub from the dashboard menu.
+- [x] Design Datasets from the supplied first reference with phone and desktop layouts.
+- [ ] Design AI Assistant from the second reference — waiting for conversation shape and storage answers.
+- [x] Verify Datasets and navigation across phone and desktop sizes; verify Assistant when its choices are answered.
+
 ## Dashboard separation and automatic anatomy
 - [x] Separate Search Explorer and Pathogen Mapping into distinct pages with their own update feeds.
 - [x] Replace clickable anatomy labels with automatic illustrated organ explanations.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, BookOpen, Bug, ChevronDown, Database, Dna, Droplet, FileText, Microscope, PanelLeftClose, PanelLeftOpen, Radio, Search, Send, Sparkles, UserRound, X } from "lucide-react";
+import { ArrowRight, Bug, ChevronDown, Database, Dna, Droplet, FileText, Microscope, PanelLeftClose, PanelLeftOpen, Radio, Search, Send, Bot, UserRound, X } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "./logo";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,7 +9,7 @@ import { useUserData } from "@/hooks/use-user-data";
 import { DashboardAnatomy } from "./dashboard-anatomy";
 import { pathogenTour, researchTour } from "./dashboard-tour-data";
 
-type View = "search" | "pathogen";
+type View = "search" | "pathogen" | "datasets";
 const researchUpdates = [
   { category: "Oncology", title: "Lung cancer research: connecting molecular changes to treatment targets", summary: "A reading brief on cell growth, tumour biology and the questions researchers investigate when evaluating targeted treatments.", age: "Sample update 01" },
   { category: "Neurology", title: "Alzheimer’s research: biomarkers and early detection", summary: "An evidence brief exploring how researchers study biological markers, alongside the limits of screening and interpretation.", age: "Sample update 02" },
@@ -19,8 +20,8 @@ const pathogenUpdates = [
   { category: "Virology", title: "Respiratory viruses: transmission and tissue response", summary: "A pathogen brief covering entry through the airways and the local immune response. Findings depend on the specific virus.", age: "Sample update 02" },
   { category: "Microbiology", title: "Antimicrobial resistance: mechanisms under investigation", summary: "A reading brief on how microbes evade treatments and how resistance is studied across populations.", age: "Sample update 03" },
 ];
-const nav = [{ id: "search" as View, label: "Search Explorer", icon: Search, to: "/app" as const }, { id: "pathogen" as View, label: "Pathogen Mapping", icon: Bug, to: "/pathogen" as const }];
-const soon = [{ label: "Educational Hub", icon: BookOpen }, { label: "Datasets", icon: Database }, { label: "AI Assistant", icon: Sparkles }];
+const nav = [{ id: "search" as View, label: "Search Explorer", icon: Search, to: "/app" as const }, { id: "pathogen" as View, label: "Pathogen Mapping", icon: Bug, to: "/pathogen" as const }, { id: "datasets" as View, label: "Datasets", icon: Database, to: "/datasets" as const }];
+const soon = [{ label: "AI Assistant", icon: Bot }];
 
 function UpdateFeed({ view }: { view: View }) {
   const updates = view === "search" ? researchUpdates : pathogenUpdates;
@@ -73,7 +74,7 @@ function PathogenView() {
   </>;
 }
 
-export function HealthDashboard({ view = "search" }: { view?: View }) {
+export function HealthDashboard({ view = "search", children }: { view?: View; children?: ReactNode }) {
   const { user } = useAuth();
   const { credits } = useUserData(user?.id ?? null);
   const navigate = useNavigate();
@@ -83,7 +84,7 @@ export function HealthDashboard({ view = "search" }: { view?: View }) {
   const [searchNotice, setSearchNotice] = useState(false);
   const [ask, setAsk] = useState("");
   const name = typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "Your account";
-  const updates = view === "search" ? researchUpdates : pathogenUpdates;
+  const updates = view === "pathogen" ? pathogenUpdates : researchUpdates;
   useEffect(() => {
     if (!mobileNav) return;
     const previous = document.body.style.overflow;
@@ -109,11 +110,11 @@ export function HealthDashboard({ view = "search" }: { view?: View }) {
       <header className="jd-top"><Button variant="outline" size="icon" className="jd-icon" onClick={toggle} aria-label="Toggle sidebar" aria-controls="dashboard-sidebar" aria-expanded={mobileNav || !collapsed}>{collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</Button>
         <div className="jd-ticker"><span className="jd-live"><Radio />Sample updates</span><div className="jd-ticker-track"><div>{[...updates, ...updates].map((t, i) => <span key={i}>{t.title}</span>)}</div></div></div>
       </header>
-      <main className="jd-content"><div className="jd-page-title"><div><small>Jeradin / {view === "search" ? "Research" : "Pathogens"}</small><h1>{view === "search" ? "Search Explorer" : "Pathogen Mapping"}</h1></div><span className="jd-tag">Sample preview</span></div>
+      <main className="jd-content">{children ?? <><div className="jd-page-title"><div><small>Jeradin / {view === "search" ? "Research" : "Pathogens"}</small><h1>{view === "search" ? "Search Explorer" : "Pathogen Mapping"}</h1></div><span className="jd-tag">Sample preview</span></div>
         <form className="jd-search" onSubmit={e => { e.preventDefault(); setSearchNotice(true); }}><Search /><input value={query} onChange={e => { setQuery(e.target.value); setSearchNotice(false); }} placeholder={view === "search" ? "Search conditions, medicines or research" : "Search pathogens or transmission"} aria-label={view === "search" ? "Search research" : "Search pathogens"} /><Button type="submit" aria-label="Search" title="Search"><span className="jd-search-word">Search</span><ArrowRight /></Button></form>
         {searchNotice && <p className="jd-preview-notice" role="status">{query.trim() ? `Search for “${query.trim()}” is not connected yet.` : "Search is not connected yet."} Reports below are sample content.</p>}
         {view === "search" ? <SearchView /> : <PathogenView />}
-        <form className="jd-ask" onSubmit={e => { e.preventDefault(); openAssistant(); }}><div><Microscope /><span><strong>Ask Jeradin AI</strong><small>Research and education only. Not medical advice.</small></span></div><div className="jd-ask-input"><input value={ask} onChange={e => setAsk(e.target.value)} placeholder="Ask about this research…" aria-label="Ask Jeradin" /><Button type="submit" size="icon" aria-label="Send" disabled={!ask.trim()}><Send /></Button></div></form>
+        <form className="jd-ask" onSubmit={e => { e.preventDefault(); openAssistant(); }}><div><Microscope /><span><strong>Ask Jeradin AI</strong><small>Research and education only. Not medical advice.</small></span></div><div className="jd-ask-input"><input value={ask} onChange={e => setAsk(e.target.value)} placeholder="Ask about this research…" aria-label="Ask Jeradin" /><Button type="submit" size="icon" aria-label="Send" disabled={!ask.trim()}><Send /></Button></div></form></>}
       </main>
     </div>
   </div>;

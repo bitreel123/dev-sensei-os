@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as ChatRouteImport } from './routes/chat'
+import { Route as DatasetsRouteImport } from './routes/datasets'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as ExtensionRouteImport } from './routes/extension'
@@ -63,6 +64,11 @@ const AppRoute = AppRouteImport.update({
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DatasetsRoute = DatasetsRouteImport.update({
+  id: '/datasets',
+  path: '/datasets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsRoute = DocsRouteImport.update({
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/app': typeof AppRoute
   '/chat': typeof ChatRoute
+  '/datasets': typeof DatasetsRoute
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/extension': typeof ExtensionRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/app': typeof AppRoute
   '/chat': typeof ChatRoute
+  '/datasets': typeof DatasetsRoute
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/extension': typeof ExtensionRoute
@@ -309,6 +317,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/app': typeof AppRoute
   '/chat': typeof ChatRoute
+  '/datasets': typeof DatasetsRoute
   '/docs': typeof DocsRoute
   '/download': typeof DownloadRoute
   '/extension': typeof ExtensionRoute
@@ -348,6 +357,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/app'
     | '/chat'
+    | '/datasets'
     | '/docs'
     | '/download'
     | '/extension'
@@ -385,6 +395,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/app'
     | '/chat'
+    | '/datasets'
     | '/docs'
     | '/download'
     | '/extension'
@@ -422,6 +433,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/app'
     | '/chat'
+    | '/datasets'
     | '/docs'
     | '/download'
     | '/extension'
@@ -460,6 +472,7 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   AppRoute: typeof AppRoute
   ChatRoute: typeof ChatRoute
+  DatasetsRoute: typeof DatasetsRoute
   DocsRoute: typeof DocsRoute
   DownloadRoute: typeof DownloadRoute
   ExtensionRoute: typeof ExtensionRoute
@@ -521,6 +534,13 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/datasets': {
+      id: '/datasets'
+      path: '/datasets'
+      fullPath: '/datasets'
+      preLoaderRoute: typeof DatasetsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs': {
@@ -748,6 +768,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   AppRoute: AppRoute,
   ChatRoute: ChatRoute,
+  DatasetsRoute: DatasetsRoute,
   DocsRoute: DocsRoute,
   DownloadRoute: DownloadRoute,
   ExtensionRoute: ExtensionRoute,

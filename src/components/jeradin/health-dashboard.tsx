@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { DashboardAnatomy } from "./dashboard-anatomy";
 import { pathogenTour, researchTour } from "./dashboard-tour-data";
-import { FullReportReading } from "./full-report-reading";
+import { ReadFullReportLink } from "./report-article-page";
 
 type View = "search" | "pathogen" | "datasets" | "assistant";
 const researchUpdates = [
@@ -44,7 +44,7 @@ function SearchView() {
         <h4>Past to present</h4>
         <ol className="jd-timeline">{[["Foundations", "Cell and tissue biology"], ["Molecular research", "Growth signals and mutations"], ["Treatment studies", "Targeted therapies"], ["Current questions", "Response and resistance"]].map(([a, b]) => <li key={a}><strong>{a}</strong><small>{b}</small></li>)}</ol>
         <h4>Reading the evidence</h4><p>Distinguish a biological explanation from a demonstrated treatment benefit. No retrieved publications or verified study results are attached.</p>
-        <FullReportReading stages={researchTour} />
+        <ReadFullReportLink kind="research" />
       </div>
       <div className="jd-report-anatomy"><DashboardAnatomy stages={researchTour} /></div>
     </article>
@@ -65,7 +65,7 @@ function PathogenView() {
         <ol className="jd-timeline">{[["Entry", "Mosquito bite"], ["Liver stage", "Parasites multiply"], ["Blood stage", "Red blood cells infected"], ["Response", "Immune defence"]].map(([a, b]) => <li key={a}><strong>{a}</strong><small>{b}</small></li>)}</ol>
         <h4>Organ connections</h4><ul className="jd-findings"><li><Droplet />Red blood cell infection can contribute to fever and anaemia.</li><li><Dna />The spleen helps filter infected cells from the blood.</li><li><Microscope />Severe infection may affect several organs; individual risk is not shown here.</li></ul>
         <h4>Research focus</h4><p>Vaccine development, parasite biology and treatment resistance are distinct research questions. No live outbreak counts or measured organ-risk scores are included.</p>
-        <FullReportReading stages={pathogenTour} />
+        <ReadFullReportLink kind="pathogen" />
       </div>
       <div className="jd-report-anatomy"><DashboardAnatomy stages={pathogenTour} /></div>
     </article>

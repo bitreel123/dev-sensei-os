@@ -33,6 +33,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WorkflowRouteImport } from './routes/workflow'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as ReportsKindRouteImport } from './routes/reports.$kind'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as ApiIntelGithubStreamRouteImport } from './routes/api/intel/github.stream'
@@ -169,6 +170,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ReportsKindRoute = ReportsKindRouteImport.update({
+  id: '/reports/$kind',
+  path: '/reports/$kind',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -266,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/workflow': typeof WorkflowRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/reports/$kind': typeof ReportsKindRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
@@ -305,6 +312,7 @@ export interface FileRoutesByTo {
   '/workflow': typeof WorkflowRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/reports/$kind': typeof ReportsKindRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
@@ -345,6 +353,7 @@ export interface FileRoutesById {
   '/workflow': typeof WorkflowRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/reports/$kind': typeof ReportsKindRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
@@ -386,6 +395,7 @@ export interface FileRouteTypes {
     | '/workflow'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/reports/$kind'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/intel/github/stream'
@@ -425,6 +435,7 @@ export interface FileRouteTypes {
     | '/workflow'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/reports/$kind'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/intel/github/stream'
@@ -464,6 +475,7 @@ export interface FileRouteTypes {
     | '/workflow'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/reports/$kind'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/intel/github/stream'
@@ -504,6 +516,7 @@ export interface RootRouteChildren {
   WorkflowRoute: typeof WorkflowRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ReportsKindRoute: typeof ReportsKindRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiIntelGithubStreamRoute: typeof ApiIntelGithubStreamRoute
@@ -689,6 +702,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/$kind': {
+      id: '/reports/$kind'
+      path: '/reports/$kind'
+      fullPath: '/reports/$kind'
+      preLoaderRoute: typeof ReportsKindRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -809,6 +829,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ReportsKindRoute: ReportsKindRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiIntelGithubStreamRoute: ApiIntelGithubStreamRoute,

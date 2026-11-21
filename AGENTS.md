@@ -15,3 +15,4 @@ Render additional dashboard pages inside HealthDashboard's content slot with exp
 Keep /assistant as a single-conversation UI preview composed from installed AI Elements, without model calls or persistence; leave the existing /chat?view=assistant processing unchanged until connection is requested.
 
 Keep report downloads out of overview actions; expose full organ explanations through Read full report and place unavailable dossier downloads only at the report end.
+- Full reports open at /reports/$kind as news-style articles inside the dashboard shell, reusing DashboardAnatomy; data lives in report-articles.ts until research is connected.

@@ -1,5 +1,10 @@
 # Jeradin presentation
 
+## Full report reading
+- [x] Remove visible sample and UI preview labels while keeping service limitations clear.
+- [x] Replace dossier actions with full-report reading in Search Explorer and Pathogen Mapping; keep unavailable downloads at the report end.
+- [x] Verify full reading on phones and computers.
+
 ## Dataset and assistant pages
 - [x] Remove Educational Hub from the dashboard menu.
 - [x] Design Datasets from the supplied first reference with phone and desktop layouts.

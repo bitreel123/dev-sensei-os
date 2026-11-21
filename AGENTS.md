@@ -9,7 +9,9 @@ The hero exposes dev-only window.__jeradinHero.setTime(seconds) to inspect seque
 Use AnatomyWalkthrough for landing Three.js overlays and DashboardAnatomy for autonomous ten-second report tours; both use the same uncropped educational atlas instead of procedural stand-ins so organ indicators align with the artwork.
 Render the hero's network-human artwork (background removed, edge-faded) as a Three.js plane that forms from sampled particles and streams data from the hand autonomously, with no pointer input; derive its top from the unchanged copy's measured height and suspend motion offscreen or for reduced motion.
 Landing anatomy tour uses CSS keyed 10s cycles: organ label fades in, then its explanation, then both fade out before the next organ.
-Dashboard v2 is a UI preview with labelled sample content; wire real ingestion before removing sample labels, so illustrative updates never imply live research.
+Dashboard content is educational and unconnected; use explicit service-availability notices instead of sample/preview badges so removing badges never implies live research.
 Keep Search Explorer on /app (also /chat overview) and Pathogen Mapping on /pathogen with independent feeds; share only the dashboard shell and anatomy renderer so reports are not mixed by navigation shortcuts.
-Render additional dashboard pages inside HealthDashboard's content slot with explicit active navigation; keep the dataset catalogue as labelled sample entries until licensed source records and downloads are connected.
+Render additional dashboard pages inside HealthDashboard's content slot with explicit active navigation; keep dataset records explicitly unconnected until licensed sources and downloads are connected.
 Keep /assistant as a single-conversation UI preview composed from installed AI Elements, without model calls or persistence; leave the existing /chat?view=assistant processing unchanged until connection is requested.
+
+Keep report downloads out of overview actions; expose full organ explanations through Read full report and place unavailable dossier downloads only at the report end.

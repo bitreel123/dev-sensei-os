@@ -103,14 +103,13 @@ export function AssistantPreview() {
   return (
     <div className="jd-assistant-page">
       <div className="jd-assistant-grid">
-        <section className="jd-assistant-main" aria-label="Jeradin AI Assistant preview">
+        <section className="jd-assistant-main" aria-label="Jeradin AI Assistant">
           <header className="jd-assistant-heading">
             <img src={robot.url} alt="Jeradin biomedical assistant" />
             <div>
               <h1>Jeradin AI Assistant</h1>
               <p>Your biomedical research companion</p>
             </div>
-            <span className="jd-tag">UI preview</span>
             <Activity className="jd-assistant-wave" aria-hidden="true" />
           </header>
           <div className="jd-assistant-welcome">
@@ -134,7 +133,7 @@ export function AssistantPreview() {
             ))}
           </div>
           <div className="jd-assistant-sample-label">
-            <span>Sample conversation</span>
+            <span>Educational conversation</span>
             <span>Research education · Not medical advice</span>
           </div>
           <Conversation className="jd-assistant-conversation" initial={false} resize="instant">
@@ -226,7 +225,7 @@ export function AssistantPreview() {
                         variant="outline"
                         onClick={() =>
                           setNotice(
-                            "This is a sample explanation. Retrieved publications and source citations are not connected yet.",
+                            "Retrieved publications and source citations are not connected yet.",
                           )
                         }
                       >
@@ -234,7 +233,7 @@ export function AssistantPreview() {
                         Cite sources
                       </Button>
                       <MessageAction
-                        tooltip={copied ? "Copied" : "Copy sample answer"}
+                        tooltip={copied ? "Copied" : "Copy explanation"}
                         onClick={() => {
                           void copyAnswer();
                         }}
@@ -252,7 +251,7 @@ export function AssistantPreview() {
             <PromptInput
               onSubmit={() => {
                 setNotice(
-                  "Live AI replies and account-saved conversations are not connected in this design preview.",
+                  "Live AI replies and account-saved conversations are not connected yet.",
                 );
                 textarea.current?.focus();
               }}
@@ -281,7 +280,7 @@ export function AssistantPreview() {
               </p>
             )}
             <p className="jd-assistant-disclaimer">
-              Sample preview. No live answers, downloads or saved conversations yet.
+              Live AI replies, downloads and saved conversations are not connected yet.
             </p>
           </div>
         </section>

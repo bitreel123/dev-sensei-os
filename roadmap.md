@@ -1,5 +1,10 @@
 # Jeradin presentation
 
+## Landing image storytelling
+- [x] Add the supplied human image beneath the introduction with glass text and autonomous Three.js motion.
+- [x] Cover the platform section with the supplied DNA image and consistent Three.js animation.
+- [x] Verify images, motion and readable layouts on phones and computers.
+
 ## Full report reading
 - [x] Remove visible sample and UI preview labels while keeping service limitations clear.
 - [x] Replace dossier actions with full-report reading in Search Explorer and Pathogen Mapping; keep unavailable downloads at the report end.

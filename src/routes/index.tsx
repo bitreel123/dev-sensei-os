@@ -7,6 +7,9 @@ import biomedicalImage from "@/assets/biomedical-sand.jpg";
 import anatomyImage from "@/assets/anatomy-research.jpg";
 import grain from "@/assets/jeradin-grain.png.asset.json";
 import { ScrollStatement, EvidenceAnimation } from "@/components/jeradin/landing-motion";
+import { LandingImageArt } from "@/components/jeradin/landing-image-art";
+import neuralPortrait from "@/assets/research-neural-portrait.jpg.asset.json";
+import platformDna from "@/assets/platform-glass-dna.jpg.asset.json";
 
 const AnatomyWalkthrough = lazy(() => import("@/components/jeradin/anatomy-walkthrough"));
 const Typography = lazy(() => import("@/components/jeradin/landing-typography"));
@@ -89,7 +92,15 @@ function Anatomy() {
   return <section id="anatomy" className="landing-anatomy-section"><div className="landing-container landing-anatomy-layout"><div className="landing-anatomy-visual"><div className="anatomy-preview-header"><span className="landing-kicker">HUMAN ATLAS / EDUCATIONAL PREVIEW</span></div><div className="anatomy-breathing-art"><img src={anatomyImage} alt="Educational illustration of the human body with internal organs in natural colors" loading="lazy" width={1024} height={1024} /><div className={`anatomy-focus focus-${part.position}`} key={part.name} /><div className="anatomy-scan" />{mounted && <Suspense fallback={null}><AnatomyWalkthrough count={organs.length} selected={selected} onSelect={setSelected} point={points[selected]} /></Suspense>}</div><div className="landing-anatomy-labels" aria-hidden="true"><span key={part.name} className={`anatomy-label anatomy-label-cycle label-${part.position}`}>{part.name}</span></div><div key={`note-${part.name}`} className="anatomy-note-cycle"><strong>{part.name}</strong><span>{part.description.split(". ")[0]}.</span></div><div className="anatomy-preview-footer"><span>STANDARD ANATOMY · NOT A PATIENT DIGITAL TWIN</span><MoveUpRight size={16} /></div></div><Reveal className="landing-anatomy-copy"><p className="landing-kicker">02 / HUMAN ANATOMY</p><h2>Put knowledge<br /><em>in perspective.</em></h2><p>Explore the body. Understand each part. See how its systems connect.</p><div key={part.name} className="landing-organ-detail anatomy-text-cycle" aria-live="polite"><span className="landing-kicker cycle-a">{part.system}</span><h3 className="cycle-a">{part.name}</h3><p className="cycle-b">{part.description}</p></div><Button asChild variant="outline" size="lg"><Link to="/app">Explore human anatomy <ArrowUpRight /></Link></Button><p>Coming next: conditions, pathways and their effects on the body.</p><small>Educational anatomy. Not a diagnostic model.</small></Reveal></div></section>;
 }
 function Platform() {
-  return <section id="platform" className="landing-platform-section"><div className="landing-container"><ScrollStatement /><Reveal className="platform-story"><p className="landing-kicker">THE JERADIN PLATFORM</p><h2>Research with context.<br /><em>Anatomy with meaning.</em></h2><p>One workspace for health evidence and the human body. Built for researchers, students and life-science teams.</p><a href="#intelligence" className="story-link">Discover the intelligence <ArrowUpRight size={18} /></a></Reveal><div className="landing-development-note"><span className="announcement-dot" /><p>The workspace and anatomy are previews. Automated intelligence, monitoring and research exports are in development.</p></div></div></section>;
+  return <section id="platform" className="landing-platform-section"><div className="landing-container"><ScrollStatement /></div>
+    <div className="landing-structured-image">
+      <LandingImageArt url={neuralPortrait.url} alt="Translucent human profile with intricate golden neural connections" portrait />
+      <div className="landing-container structured-image-content"><Reveal className="structured-glass"><p className="landing-kicker">HEALTH EVIDENCE / STRUCTURED INTELLIGENCE</p><h2>From research.<br /><em>To model-ready data.</em></h2><p>Turning health research and information into structured, traceable datasets for AI training and evaluation.</p><span className="structured-image-footnote">Our vision. Dataset creation and exports are in development.</span></Reveal></div>
+    </div>
+    <div className="landing-platform-image">
+      <LandingImageArt url={platformDna.url} alt="Glass-like DNA double helix" />
+      <div className="landing-container"><Reveal className="platform-story"><p className="landing-kicker">THE JERADIN PLATFORM</p><h2>Research with context.<br /><em>Anatomy with meaning.</em></h2><p>One workspace for health evidence and the human body. Built for researchers, students and life-science teams.</p><a href="#intelligence" className="story-link">Discover the intelligence <ArrowUpRight size={18} /></a></Reveal></div>
+    </div><div className="landing-container"><div className="landing-development-note"><span className="announcement-dot" /><p>The workspace and anatomy are previews. Automated intelligence, monitoring and research exports are in development.</p></div></div></section>;
 }
 function Pipeline() {
   const chapters = [

@@ -5,6 +5,7 @@ Keep the health overview presentation separate from clinical processing; anatomi
 Keep the public landing page's sand theme scoped to `.jeradin-landing`; dynamically import its Three.js typography after mounting so the rest of the website retains its theme and server rendering.
 Keep landing motion illustrations separate from research processing; animated evidence and anatomy are educational presentation, not generated clinical results.
 Use LandingImageArt for uploaded landing storytelling images: lazy-load its Three.js image-plane animation, preserve a static-image fallback, and pause offscreen or for reduced motion so presentation stays accessible without implying data processing.
+Keep the reason statement and structured-intelligence copy within one LandingImageArt wrapper so they share a continuous animated background.
 Bridge older hardcoded dark presentation classes to semantic light tokens under the root white-page scope, excluding the already token-based landing and health dashboard, so legacy pages remain readable without changing their behavior.
 The hero exposes dev-only window.__jeradinHero.setTime(seconds) to inspect sequential message fades at a fixed scene time; data-scene-ready signals the loaded skull.
 Use AnatomyWalkthrough for landing Three.js overlays and DashboardAnatomy for autonomous ten-second report tours; both use the same uncropped educational atlas instead of procedural stand-ins so organ indicators align with the artwork.

@@ -9,7 +9,7 @@ export function ScrollStatement() {
   return <div ref={ref} className="landing-manifesto"><p className="landing-kicker">THE REASON WE EXIST</p><h2>{words.map((word, i) => <StatementWord key={i} word={word} progress={scrollYProgress} start={i / words.length} reduced={!!reduced} />)}</h2><p className="manifesto-caption">Connecting health evidence to human understanding.</p></div>;
 }
 function StatementWord({ word, progress, start, reduced }: { word: string; progress: import("motion/react").MotionValue<number>; start: number; reduced: boolean }) {
-  const opacity = useTransform(progress, [start, Math.min(1, start + .15)], [.2, 1]);
+  const opacity = useTransform(progress, [start, Math.min(1, start + .15)], [.8, 1]);
   return <motion.span style={reduced ? undefined : { opacity }}>{word} </motion.span>;
 }
 

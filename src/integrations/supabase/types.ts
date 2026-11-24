@@ -552,6 +552,69 @@ export type Database = {
         }
         Relationships: []
       }
+      health_feed_entries: {
+        Row: {
+          authors: string
+          doi: string | null
+          fetched_at: string
+          id: string
+          kind: string
+          published_at: string | null
+          source: string
+          source_url: string
+          summary: string
+          title: string
+        }
+        Insert: {
+          authors?: string
+          doi?: string | null
+          fetched_at?: string
+          id: string
+          kind: string
+          published_at?: string | null
+          source: string
+          source_url: string
+          summary?: string
+          title: string
+        }
+        Update: {
+          authors?: string
+          doi?: string | null
+          fetched_at?: string
+          id?: string
+          kind?: string
+          published_at?: string | null
+          source?: string
+          source_url?: string
+          summary?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      health_feed_status: {
+        Row: {
+          entry_count: number
+          last_attempt_at: string
+          last_success_at: string | null
+          source: string
+          status: string
+        }
+        Insert: {
+          entry_count?: number
+          last_attempt_at?: string
+          last_success_at?: string | null
+          source: string
+          status?: string
+        }
+        Update: {
+          entry_count?: number
+          last_attempt_at?: string
+          last_success_at?: string | null
+          source?: string
+          status?: string
+        }
+        Relationships: []
+      }
       intel_memory: {
         Row: {
           created_at: string

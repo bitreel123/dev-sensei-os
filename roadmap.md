@@ -1,5 +1,10 @@
 # Jeradin presentation
 
+## Live Search Explorer
+- [x] Shorten the shared landing image and make its caption bold and black.
+- [x] Connect biomedical research search and automated health-news RSS updates with attributed source links.
+- [x] Verify real search results, refresh handling, and phone/desktop layouts.
+
 ## Landing image storytelling
 - [x] Add the supplied human image beneath the introduction with glass text and autonomous Three.js motion.
 - [x] Cover the platform section with the supplied DNA image and consistent Three.js animation.

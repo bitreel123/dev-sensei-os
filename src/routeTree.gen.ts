@@ -33,9 +33,11 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WorkflowRouteImport } from './routes/workflow'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as EvidenceIdRouteImport } from './routes/evidence.$id'
 import { Route as ReportsKindRouteImport } from './routes/reports.$kind'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as ApiPublicHealthRefreshRouteImport } from './routes/api/public/health-refresh'
 import { Route as ApiIntelGithubStreamRouteImport } from './routes/api/intel/github.stream'
 import { Route as ApiIntelKnowledgeStreamRouteImport } from './routes/api/intel/knowledge.stream'
 import { Route as ApiIntelScreenStreamRouteImport } from './routes/api/intel/screen.stream'
@@ -170,6 +172,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const EvidenceIdRoute = EvidenceIdRouteImport.update({
+  id: '/evidence/$id',
+  path: '/evidence/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsKindRoute = ReportsKindRouteImport.update({
   id: '/reports/$kind',
   path: '/reports/$kind',
@@ -186,6 +193,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHealthRefreshRoute = ApiPublicHealthRefreshRouteImport.update({
+  id: '/api/public/health-refresh',
+  path: '/api/public/health-refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiIntelGithubStreamRoute = ApiIntelGithubStreamRouteImport.update({
   id: '/api/intel/github/stream',
   path: '/api/intel/github/stream',
@@ -272,9 +284,11 @@ export interface FileRoutesByFullPath {
   '/workflow': typeof WorkflowRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/evidence/$id': typeof EvidenceIdRoute
   '/reports/$kind': typeof ReportsKindRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/health-refresh': typeof ApiPublicHealthRefreshRoute
   '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
   '/api/intel/knowledge/stream': typeof ApiIntelKnowledgeStreamRoute
   '/api/intel/screen/stream': typeof ApiIntelScreenStreamRoute
@@ -312,9 +326,11 @@ export interface FileRoutesByTo {
   '/workflow': typeof WorkflowRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/evidence/$id': typeof EvidenceIdRoute
   '/reports/$kind': typeof ReportsKindRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/health-refresh': typeof ApiPublicHealthRefreshRoute
   '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
   '/api/intel/knowledge/stream': typeof ApiIntelKnowledgeStreamRoute
   '/api/intel/screen/stream': typeof ApiIntelScreenStreamRoute
@@ -353,9 +369,11 @@ export interface FileRoutesById {
   '/workflow': typeof WorkflowRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/evidence/$id': typeof EvidenceIdRoute
   '/reports/$kind': typeof ReportsKindRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/health-refresh': typeof ApiPublicHealthRefreshRoute
   '/api/intel/github/stream': typeof ApiIntelGithubStreamRoute
   '/api/intel/knowledge/stream': typeof ApiIntelKnowledgeStreamRoute
   '/api/intel/screen/stream': typeof ApiIntelScreenStreamRoute
@@ -395,9 +413,11 @@ export interface FileRouteTypes {
     | '/workflow'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/evidence/$id'
     | '/reports/$kind'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/health-refresh'
     | '/api/intel/github/stream'
     | '/api/intel/knowledge/stream'
     | '/api/intel/screen/stream'
@@ -435,9 +455,11 @@ export interface FileRouteTypes {
     | '/workflow'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/evidence/$id'
     | '/reports/$kind'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/health-refresh'
     | '/api/intel/github/stream'
     | '/api/intel/knowledge/stream'
     | '/api/intel/screen/stream'
@@ -475,9 +497,11 @@ export interface FileRouteTypes {
     | '/workflow'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/evidence/$id'
     | '/reports/$kind'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/health-refresh'
     | '/api/intel/github/stream'
     | '/api/intel/knowledge/stream'
     | '/api/intel/screen/stream'
@@ -516,9 +540,11 @@ export interface RootRouteChildren {
   WorkflowRoute: typeof WorkflowRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  EvidenceIdRoute: typeof EvidenceIdRoute
   ReportsKindRoute: typeof ReportsKindRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicHealthRefreshRoute: typeof ApiPublicHealthRefreshRoute
   ApiIntelGithubStreamRoute: typeof ApiIntelGithubStreamRoute
   ApiIntelKnowledgeStreamRoute: typeof ApiIntelKnowledgeStreamRoute
   ApiIntelScreenStreamRoute: typeof ApiIntelScreenStreamRoute
@@ -702,6 +728,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/evidence/$id': {
+      id: '/evidence/$id'
+      path: '/evidence/$id'
+      fullPath: '/evidence/$id'
+      preLoaderRoute: typeof EvidenceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports/$kind': {
       id: '/reports/$kind'
       path: '/reports/$kind'
@@ -721,6 +754,13 @@ declare module '@tanstack/react-router' {
       path: '/.mcp/invoke-tool/$tool'
       fullPath: '/.mcp/invoke-tool/$tool'
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/health-refresh': {
+      id: '/api/public/health-refresh'
+      path: '/api/public/health-refresh'
+      fullPath: '/api/public/health-refresh'
+      preLoaderRoute: typeof ApiPublicHealthRefreshRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/intel/github/stream': {
@@ -829,9 +869,11 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  EvidenceIdRoute: EvidenceIdRoute,
   ReportsKindRoute: ReportsKindRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicHealthRefreshRoute: ApiPublicHealthRefreshRoute,
   ApiIntelGithubStreamRoute: ApiIntelGithubStreamRoute,
   ApiIntelKnowledgeStreamRoute: ApiIntelKnowledgeStreamRoute,
   ApiIntelScreenStreamRoute: ApiIntelScreenStreamRoute,

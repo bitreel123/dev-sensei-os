@@ -11,10 +11,12 @@ The hero exposes dev-only window.__jeradinHero.setTime(seconds) to inspect seque
 Use AnatomyWalkthrough for landing Three.js overlays and DashboardAnatomy for autonomous ten-second report tours; both use the same uncropped educational atlas instead of procedural stand-ins so organ indicators align with the artwork.
 Render the hero's network-human artwork (background removed, edge-faded) as a Three.js plane that forms from sampled particles and streams data from the hand autonomously, with no pointer input; derive its top from the unchanged copy's measured height and suspend motion offscreen or for reduced motion.
 Landing anatomy tour uses CSS keyed 10s cycles: organ label fades in, then its explanation, then both fade out before the next organ.
-Dashboard content is educational and unconnected; use explicit service-availability notices instead of sample/preview badges so removing badges never implies live research.
+Dashboard anatomy, pathogen reports, datasets and assistant remain educational or unconnected; Search Explorer retrieves attributed live source material, with explicit availability notices on source failures.
 Keep Search Explorer on /app (also /chat overview) and Pathogen Mapping on /pathogen with independent feeds; share only the dashboard shell and anatomy renderer so reports are not mixed by navigation shortcuts.
 Render additional dashboard pages inside HealthDashboard's content slot with explicit active navigation; keep dataset records explicitly unconnected until licensed sources and downloads are connected.
 Keep /assistant as a single-conversation UI preview composed from installed AI Elements, without model calls or persistence; leave the existing /chat?view=assistant processing unchanged until connection is requested.
 
 Keep report downloads out of overview actions; expose full organ explanations through Read full report and place unavailable dossier downloads only at the report end.
 - Full reports open at /reports/$kind as news-style articles inside the dashboard shell, reusing DashboardAnatomy; data lives in report-articles.ts until research is connected.
+Keep live Search Explorer sources separate from educational reports: /evidence/$id shows retrieved excerpts or abstracts with original publication links and reuse notices, never fabricated full articles or anatomy findings.
+Use public read-only source catalogue access and bounded Europe PMC searches; only the authenticated managed hourly callback writes deduplicated RSS and research feed entries, preserving cached records when providers fail.

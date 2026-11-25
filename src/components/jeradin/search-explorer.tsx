@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { ArrowRight, ArrowUpRight, FileText, Loader2, RefreshCw, Search } from 'lucide-react';
+import { ArrowRight, FileText, Loader2, RefreshCw, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { explorerQuery } from '@/lib/health-evidence.queries';
 import { getExplorer } from '@/lib/health-evidence.functions';
@@ -18,7 +18,7 @@ function EvidenceRow({ entry }: { entry: EvidenceEntry }) {
     <h3><Link to="/evidence/$id" params={{ id: entry.id }}>{entry.title}</Link></h3>
     {entry.authors && <p className="je-authors">{entry.authors}</p>}
     <p className="je-excerpt">{entry.summary || 'No abstract supplied by the source.'}</p>
-    <div className="je-result-actions"><Button asChild variant="link"><Link to="/evidence/$id" params={{ id: entry.id }}>Read {entry.kind === 'news' ? 'news' : 'research'} <ArrowRight /></Link></Button><a href={entry.source_url} target="_blank" rel="noopener noreferrer">Original source <ArrowUpRight /></a>{entry.doi && <small>DOI {entry.doi}</small>}</div>
+    <div className="je-result-actions"><Button asChild variant="link"><Link to="/evidence/$id" params={{ id: entry.id }}>Read {entry.kind === 'news' ? 'news' : 'research'} <ArrowRight /></Link></Button>{entry.doi && <small>DOI {entry.doi}</small>}</div>
   </article>;
 }
 export function SearchExplorer() {

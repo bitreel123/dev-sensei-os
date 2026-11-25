@@ -10,6 +10,7 @@ import { DashboardAnatomy } from "./dashboard-anatomy";
 import { pathogenTour } from "./dashboard-tour-data";
 import { ReadFullReportLink } from "./report-article-page";
 import { SearchExplorer } from "./search-explorer";
+import { PathogenExplorer } from "./pathogen-explorer";
 
 type View = "search" | "pathogen" | "datasets" | "assistant";
 const pathogenUpdates = [
@@ -18,14 +19,6 @@ const pathogenUpdates = [
   { category: "Microbiology", title: "Antimicrobial resistance: mechanisms under investigation", summary: "A reading brief on how microbes evade treatments and how resistance is studied across populations.", age: "Brief 03" },
 ];
 const nav = [{ id: "search" as View, label: "Search Explorer", icon: Search, to: "/app" as const }, { id: "pathogen" as View, label: "Pathogen Mapping", icon: Bug, to: "/pathogen" as const }, { id: "datasets" as View, label: "Datasets", icon: Database, to: "/datasets" as const }, { id: "assistant" as View, label: "AI Assistant", icon: Bot, to: "/assistant" as const }];
-
-function UpdateFeed({ view }: { view: View }) {
-  const updates = pathogenUpdates;
-  return <section className="jd-update-feed" aria-label="Incoming report updates">
-    <div className="jd-section-head"><h2>Incoming updates</h2></div>
-    {updates.map(u => <article className="jd-update" key={u.title}><div className="jd-update-meta"><span>{u.category}</span><small>{u.age}</small></div><h3>{u.title}</h3><p>{u.summary}</p></article>)}
-  </section>;
-}
 
 function PathogenView() {
   return <>
@@ -45,7 +38,6 @@ function PathogenView() {
       <div className="jd-report-anatomy"><DashboardAnatomy stages={pathogenTour} /></div>
     </article>
     <section className="jd-pathways-band"><h2>Biological pathways</h2><div><span>Parasite replication</span><span>Red blood cell invasion</span><span>Immune response</span></div></section>
-    <UpdateFeed view="pathogen" />
   </>;
 }
 
@@ -55,8 +47,6 @@ export function HealthDashboard({ view = "search", children }: { view?: View; ch
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
-  const [query, setQuery] = useState("");
-  const [searchNotice, setSearchNotice] = useState(false);
   const [ask, setAsk] = useState("");
   const name = typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "Your account";
   const updates = pathogenUpdates;
@@ -86,7 +76,7 @@ export function HealthDashboard({ view = "search", children }: { view?: View; ch
         <div className="jd-ticker"><span className="jd-live"><Radio />{view === "search" ? "Health evidence" : "Educational briefs"}</span>{view === "search" ? <span className="je-ticker-label">Health news · Biomedical research</span> : <div className="jd-ticker-track"><div>{[...updates, ...updates].map((t, i) => <span key={i}>{t.title}</span>)}</div></div>}</div>
       </header>
       <main className="jd-content">{children ?? <><div className="jd-page-title"><div><small>Jeradin / {view === "search" ? "Research" : "Pathogens"}</small><h1>{view === "search" ? "Search Explorer" : "Pathogen Mapping"}</h1></div></div>
-        {view === "search" ? <Suspense fallback={<p role="status">Loading health sources…</p>}><SearchExplorer /></Suspense> : <><form className="jd-search" onSubmit={e => { e.preventDefault(); setSearchNotice(true); }}><Search /><input value={query} onChange={e => { setQuery(e.target.value); setSearchNotice(false); }} placeholder="Search pathogens or transmission" aria-label="Search pathogens" /><Button type="submit" aria-label="Search" title="Search"><span className="jd-search-word">Search</span><ArrowRight /></Button></form>{searchNotice && <p className="jd-preview-notice" role="status">Pathogen search is not connected yet. Reports below are educational briefs.</p>}<PathogenView /></>}
+        {view === "search" ? <Suspense fallback={<p role="status">Loading health sources…</p>}><SearchExplorer /></Suspense> : <><PathogenExplorer /><PathogenView /></>}
         <form className="jd-ask" onSubmit={e => { e.preventDefault(); openAssistant(); }}><div><Microscope /><span><strong>Ask Jeradin AI</strong><small>Research and education only. Not medical advice.</small></span></div><div className="jd-ask-input"><input value={ask} onChange={e => setAsk(e.target.value)} placeholder="Ask about this research…" aria-label="Ask Jeradin" /><Button type="submit" size="icon" aria-label="Send" disabled={!ask.trim()}><Send /></Button></div></form></>}
       </main>
     </div>

@@ -76,3 +76,28 @@ export async function ingestHealthSources() {
     }
   }));
 }
+export type FullTextBlock = { type: 'h' | 'p'; text: string };
+// Only Europe PMC open-access articles are reproduced in full; others return null.
+export async function loadFullText(id: string): Promise<{ blocks: FullTextBlock[]; license: string | null } | null> {
+  const match = /^research-(MED|PMC|PPR|AGR|CBA|CTX|ETH|HIR|NBK|PAT)-([a-zA-Z0-9._-]{1,80})$/.exec(id);
+  if (!match) return null;
+  const params = new URLSearchParams({ query: `EXT_ID:${match[2]} AND SRC:${match[1]}`, format: 'json', resultType: 'core', pageSize: '1' });
+  const json = await (await providerFetch(`https://www.ebi.ac.uk/europepmc/webservices/rest/search?${params}`)).json() as { resultList?: { result?: Array<{ pmcid?: string; isOpenAccess?: string; license?: string }> } };
+  const record = json.resultList?.result?.[0];
+  const pmcid = record?.pmcid ?? (match[1] === 'PMC' ? match[2] : undefined);
+  if (!pmcid || !/^PMC\d{1,12}$/.test(pmcid) || record?.isOpenAccess !== 'Y') return null;
+  const response = await fetch(`https://www.ebi.ac.uk/europepmc/webservices/rest/${pmcid}/fullTextXML`, { signal: AbortSignal.timeout(25000) });
+  if (!response.ok) return null;
+  const xml = await response.text();
+  const body = /<body\b[^>]*>([\s\S]*?)<\/body>/.exec(xml)?.[1];
+  if (!body) return null;
+  const { plainText } = await import('./health-evidence');
+  const cleaned = body.replace(/<(table-wrap|fig|disp-formula)\b[\s\S]*?<\/\1>/g, '');
+  const blocks: FullTextBlock[] = [];
+  for (const m of cleaned.matchAll(/<title\b[^>]*>([\s\S]*?)<\/title>|<p\b[^>]*>([\s\S]*?)<\/p>/g)) {
+    const text = plainText(m[1] ?? m[2] ?? '');
+    if (text) blocks.push({ type: m[1] !== undefined ? 'h' : 'p', text });
+    if (blocks.length >= 600) break;
+  }
+  return blocks.length ? { blocks, license: record?.license ?? null } : null;
+}

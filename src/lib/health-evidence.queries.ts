@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { getExplorer, getEvidence } from './health-evidence.functions';
+import { getExplorer, getEvidence, getFullText } from './health-evidence.functions';
 
 export const explorerQuery = (query = '', cursor = '*') => queryOptions({
   queryKey: ['health-explorer', query, cursor],
@@ -8,4 +8,4 @@ export const explorerQuery = (query = '', cursor = '*') => queryOptions({
   refetchInterval: 5 * 60 * 1000,
   retry: 1,
 });
-export const evidenceQuery = (id: string) => queryOptions({ queryKey: ['health-evidence', id], queryFn: () => getEvidence({ data: { id } }), staleTime: 10 * 60 * 1000 });
+export const evidenceQuery = (id: string) => queryOptions({ queryKey: ['health-evidence', id], queryFn: () => getEvidence({ data: { id } }), staleTime: 10 * 60 * 1000 });export const fullTextQuery = (id: string) => queryOptions({ queryKey: ['health-fulltext', id], queryFn: () => getFullText({ data: { id } }), staleTime: 60 * 60 * 1000, enabled: id.startsWith('research-') });

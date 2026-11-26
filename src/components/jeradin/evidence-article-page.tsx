@@ -1,47 +1,52 @@
-import { useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, BookOpen, FileText, Info, Share2, Stethoscope } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DashboardAnatomy } from "./dashboard-anatomy";
-import { pathogenTour, researchTour } from "./dashboard-tour-data";
-import { evidenceDate } from "./search-explorer";
-import { fullTextQuery } from "@/lib/health-evidence.queries";
-import type { EvidenceEntry } from "@/lib/health-evidence";
+import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, Info, Share2, Stethoscope, ChartNoAxesCombined, ArrowUpRight, Loader2, RefreshCw, ZoomIn } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DashboardAnatomy } from './dashboard-anatomy';
+import { pathogenTour, researchTour } from './dashboard-tour-data';
+import { evidenceDate } from './search-explorer';
+import { EvidenceVisual } from './evidence-visual';
+import { fullTextQuery } from '@/lib/health-evidence.queries';
+import type { EvidenceEntry } from '@/lib/health-evidence';
+import type { ArticleBlock } from '@/lib/health-article';
 
-const tabs = [["overview", "Overview"], ["full", "Full report"], ["anatomy", "Virtual human"], ["details", "Details"]] as const;
+const tabs = [['overview', 'Overview'], ['data', 'Data & figures'], ['anatomy', 'Virtual human'], ['details', 'Publication details']] as const;
 type Tab = typeof tabs[number][0];
-
+function ContentBlock({ block, index }: { block: ArticleBlock; index: number }) {
+  if (block.type === 'h') return <h2 id={`article-section-${index}`}>{block.text}</h2>;
+  if (block.type === 'p') return <div className="je-reading-paragraph"><p>{block.text}</p>{block.links.length > 0 && <div className="je-inline-links">{block.links.map((link, i) => <a key={i} href={link.url} target="_blank" rel="noreferrer">{link.text}<ArrowUpRight size={12} /></a>)}</div>}</div>;
+  if (block.type === 'table') return <figure className="je-article-table"><figcaption>{block.text || 'Data table'}</figcaption><div tabIndex={0} role="region" aria-label={block.text || 'Data table'}><table><tbody>{block.rows.map((row, i) => <tr key={i}>{row.map((cell, j) => cell.header ? <th key={j} colSpan={cell.colspan} rowSpan={cell.rowspan} scope="col">{cell.text}</th> : <td key={j} colSpan={cell.colspan} rowSpan={cell.rowspan}>{cell.text}</td>)}</tr>)}</tbody></table></div></figure>;
+  return <figure className="je-article-figure">{block.image ? <Dialog><DialogTrigger asChild><Button variant="ghost" className="je-figure-open" aria-label="Enlarge article figure"><img src={block.image} alt={block.text || 'Publication figure'} loading="lazy" /><ZoomIn /></Button></DialogTrigger><DialogContent className="je-image-dialog"><DialogTitle>Article figure</DialogTitle><img src={block.image} alt={block.text || 'Publication figure'} /><p>{block.text}</p></DialogContent></Dialog> : <p className="je-figure-unavailable">The publisher’s image file is unavailable.</p>}<figcaption>{block.text}</figcaption></figure>;
+}
 export function EvidenceArticlePage({ entry }: { entry: EvidenceEntry }) {
-  const [tab, setTab] = useState<Tab>("overview");
-  const full = useQuery(fullTextQuery(entry.id));
+  const [tab, setTab] = useState<Tab>('overview');
+  const [shareNotice, setShareNotice] = useState('');
+  const full = useQuery({ ...fullTextQuery(entry.id), ...(entry.article_content ? { initialData: entry.article_content } : {}) });
+  const content = full.data;
   const stages = /infect|virus|viral|bacteri|parasit|malaria|pathogen|tubercul|outbreak|vaccin/i.test(`${entry.title} ${entry.summary}`) ? pathogenTour : researchTour;
   const paragraphs = entry.summary ? entry.summary.split(/\n\n+/) : [];
-  const credit = `${entry.source}${entry.authors ? ` · ${entry.authors.replace(/\.+$/, "")}` : ""}`;
-  return <article className="jd-article">
-    <div className="jd-article-bar">
-      <Link to="/app" className="jd-back"><ArrowLeft />Back to Search Explorer</Link>
-      <Button variant="outline" size="sm" onClick={() => void navigator.share?.({ title: entry.title, url: location.href })}><Share2 />Share</Button>
-    </div>
-    <header className="jd-article-hero">
-      <div><small>{entry.kind === "news" ? "Health news" : "Biomedical research"}</small><h1>{entry.title}</h1>
-        <div className="jd-chips"><span>{evidenceDate(entry.published_at)}</span>{entry.doi && <span>DOI {entry.doi}</span>}</div></div>
-    </header>
-    <nav className="jd-article-tabs" role="tablist" aria-label="Report sections">{tabs.map(([id, label]) => <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? "is-active" : ""} onClick={() => setTab(id)}>{label}</button>)}</nav>
-    <div className="jd-article-grid">
-      <div className="jd-article-main">
-        {tab === "overview" && <section className="jd-a-card"><h2><FileText />Overview</h2>
-          {paragraphs.length ? paragraphs.map((p, i) => <p key={i}>{p}</p>) : <p>No summary was supplied for this item.</p>}
-          {full.data && <Button variant="outline" onClick={() => setTab("full")}><BookOpen />Continue to the full report</Button>}</section>}
-        {tab === "full" && <section className="jd-a-card jd-a-fulltext"><h2><BookOpen />Full report</h2>
-          {full.isLoading ? <p role="status">Loading the full report…</p> : full.data ? full.data.blocks.map((b, i) => b.type === "h" ? <h3 key={i}>{b.text}</h3> : <p key={i}>{b.text}</p>)
-            : <><p>{entry.kind === "news" ? "News publishers only share a summary for reuse, so the complete article can't be republished here." : "This publication is not open access, so only its abstract can be shown."}</p>{paragraphs.map((p, i) => <p key={i}>{p}</p>)}</>}
-          <footer className="jd-a-end"><div><strong>You have reached the end of this report.</strong></div></footer></section>}
-        {tab === "anatomy" && <section className="jd-a-card"><h2><Stethoscope />Body systems</h2>{stages.map(s => <div className="jd-a-organ" key={s.organ}><h3>{s.organ}</h3><strong>{s.function}</strong><p>{s.explanation}</p></div>)}<p className="jd-a-note">Educational illustration, not a finding of this publication.</p></section>}
-        {tab === "details" && <section className="jd-a-card"><h2><Info />Details</h2><dl className="jd-facts"><div><dt>Type</dt><dd>{entry.kind === "news" ? "News" : "Research"}</dd></div><div><dt>Published</dt><dd>{evidenceDate(entry.published_at)}</dd></div>{entry.authors && <div><dt>Authors</dt><dd>{entry.authors}</dd></div>}{entry.doi && <div><dt>DOI</dt><dd>{entry.doi}</dd></div>}{full.data?.license && <div><dt>License</dt><dd>{full.data.license}</dd></div>}</dl></section>}
-        <p className="jd-a-note">Credit: {credit}. Not medical advice.</p>
-      </div>
-      <aside className="jd-article-side"><section className="jd-a-card jd-a-sticky"><DashboardAnatomy stages={stages} /></section></aside>
-    </div>
+  const blocks = content?.blocks ?? [];
+  const visuals = blocks.flatMap((block, index) => block.type === 'figure' || block.type === 'table' ? [{ block, index }] : []);
+  const firstFigure = blocks.find(b => b.type === 'figure' && b.image);
+  const headings = blocks.flatMap((block, index) => block.type === 'h' ? [{ text: block.text, index }] : []);
+  const share = async () => {
+    try { if (navigator.share) await navigator.share({ title: entry.title, url: location.href }); else { await navigator.clipboard.writeText(location.href); setShareNotice('Link copied'); } } catch { setShareNotice('Unable to share this link.'); }
+  };
+  return <article className="jd-article je-reader">
+    <div className="jd-article-bar"><Link to="/app" className="jd-back"><ArrowLeft />Search Explorer</Link><div><Button variant="ghost" size="sm" onClick={() => void share()}><Share2 />Share</Button>{shareNotice && <small role="status">{shareNotice}</small>}</div></div>
+    <header className="je-reader-heading"><small>{entry.kind === 'news' ? 'Health news' : 'Biomedical research'} / {entry.source}</small><h1>{entry.title}</h1><div className="je-reader-byline"><time>{evidenceDate(entry.published_at)}</time><span>{entry.authors || entry.source}</span></div></header>
+    <EvidenceVisual entry={entry} image={firstFigure?.type === 'figure' ? firstFigure.image : entry.featured_image} className="je-reader-cover" />
+    <nav className="jd-article-tabs" role="tablist" aria-label="Report sections">{tabs.map(([id, label]) => <Button variant="ghost" key={id} id={`article-tab-${id}`} role="tab" aria-selected={tab === id} aria-controls="article-panel" className={tab === id ? 'is-active' : ''} onClick={() => setTab(id)}>{label}</Button>)}</nav>
+    <div className="jd-article-grid"><div className="jd-article-main" id="article-panel" role="tabpanel" aria-labelledby={`article-tab-${tab}`}>
+      {tab === 'overview' && <section className="je-reading"><h2>Overview</h2>{paragraphs.map((p, i) => <p className="je-abstract" key={i}>{p}</p>)}
+        {full.isPending ? <p role="status" className="je-loading"><Loader2 className="animate-spin" />Retrieving article sections and figures…</p> : content ? <>{content.mediaNotice && <p className="je-availability">{content.mediaNotice}</p>}{blocks.map((block, index) => <ContentBlock key={index} block={block} index={index} />)}<footer className="je-reading-end">End of article · {visuals.filter(v => v.block.type === 'figure').length} figures · {visuals.filter(v => v.block.type === 'table').length} tables</footer></> : <div className="je-availability"><strong>Complete content is not available for republication.</strong><p>{entry.kind === 'news' ? 'This publisher shares a summary through its feed. Jeradin cannot reproduce the rest without permission.' : 'The publication did not provide a reusable complete manuscript, or its content service could not be reached.'}</p><Button variant="ghost" size="sm" onClick={() => void full.refetch()} disabled={full.isFetching}><RefreshCw />Retry retrieval</Button></div>}
+      </section>}
+      {tab === 'data' && <section className="je-reading"><h2><ChartNoAxesCombined />Data & figures</h2>{full.isPending ? <p role="status">Retrieving article data…</p> : visuals.length ? visuals.map(v => <ContentBlock key={v.index} block={v.block} index={v.index} />) : <p>No reusable figures or tables were supplied for this article.</p>}<p className="jd-a-note">Published tables and figures are preserved, not a validated AI-training dataset.</p></section>}
+      {tab === 'anatomy' && <section className="je-reading"><h2><Stethoscope />Body systems</h2>{stages.map(s => <div className="jd-a-organ" key={s.organ}><h3>{s.organ}</h3><strong>{s.function}</strong><p>{s.explanation}</p></div>)}<p className="jd-a-note">Educational illustration, not a finding of this publication.</p></section>}
+      {tab === 'details' && <section className="je-reading"><h2><Info />Publication details</h2><dl className="jd-facts"><div><dt>Type</dt><dd>{entry.kind === 'news' ? 'News' : 'Research'}</dd></div><div><dt>Published</dt><dd>{evidenceDate(entry.published_at)}</dd></div>{entry.authors && <div><dt>Authors</dt><dd>{entry.authors}</dd></div>}{entry.doi && <div><dt>DOI</dt><dd>{entry.doi}</dd></div>}<div><dt>Availability</dt><dd>{content ? 'Complete permitted article content' : 'Publisher summary or abstract'}</dd></div>{content?.license && <div><dt>Reuse terms</dt><dd>{content.license}</dd></div>}</dl>{content?.licenseUrl && <a href={content.licenseUrl} target="_blank" rel="noreferrer">View reuse terms <ArrowUpRight size={14} /></a>}<p>Reading permission does not automatically grant permission for commercial redistribution or AI training. Third-party figures may carry separate rights.</p></section>}
+      <p className="jd-a-note">Credit: {content?.credit || entry.source}{entry.authors ? ` · ${entry.authors}` : ''}. Not medical advice.</p>
+    </div><aside className="jd-article-side"><div className="je-reader-aside"><h2>Human anatomy</h2><DashboardAnatomy stages={stages} /><p>Educational illustration</p>{tab === 'overview' && headings.length > 0 && <nav aria-label="Article contents"><h3>In this article</h3>{headings.map(h => <a key={h.index} href={`#article-section-${h.index}`}>{h.text}</a>)}</nav>}</div></aside></div>
   </article>;
 }

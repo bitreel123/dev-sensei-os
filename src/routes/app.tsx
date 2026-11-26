@@ -7,9 +7,9 @@ export const Route = createFileRoute("/app")({
   head: () => ({
     meta: [
       { title: "Search Explorer · Jeradin" },
-      { name: "description", content: "Search health-news feeds and biomedical publications with attributed excerpts, research abstracts and original source links." },
+      { name: "description", content: "Explore health news and biomedical research, with complete permitted articles, publication figures, tables and educational human anatomy." },
       { property: "og:title", content: "Search Explorer · Jeradin" },
-      { property: "og:description", content: "Explore health news and research from connected sources, with readable abstracts and publication details." },
+      { property: "og:description", content: "Discover health news and research with organised articles, figures, data tables and publication details." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

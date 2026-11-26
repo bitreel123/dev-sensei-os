@@ -1,5 +1,12 @@
 # Jeradin presentation
 
+## Complete evidence reading and editorial search
+- [x] Preserve complete permitted article sections, tables, figures, references and publication metadata.
+- [x] Expand verified health feeds without copying restricted publisher articles.
+- [x] Add an image-led featured carousel, topic filtering and clickable post grid.
+- [x] Open organised article content directly without a full-text action button.
+- [x] Verify real articles, figures, searches and phone/desktop layouts.
+
 ## Live Search Explorer
 - [x] Shorten the shared landing image and make its caption bold and black.
 - [x] Connect biomedical research search and automated health-news RSS updates with attributed source links.

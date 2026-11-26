@@ -554,11 +554,15 @@ export type Database = {
       }
       health_feed_entries: {
         Row: {
+          article_content: Json | null
           authors: string
+          content_access: string
           doi: string | null
+          featured_image: string | null
           fetched_at: string
           id: string
           kind: string
+          pmcid: string | null
           published_at: string | null
           source: string
           source_url: string
@@ -566,11 +570,15 @@ export type Database = {
           title: string
         }
         Insert: {
+          article_content?: Json | null
           authors?: string
+          content_access?: string
           doi?: string | null
+          featured_image?: string | null
           fetched_at?: string
           id: string
           kind: string
+          pmcid?: string | null
           published_at?: string | null
           source: string
           source_url: string
@@ -578,11 +586,15 @@ export type Database = {
           title: string
         }
         Update: {
+          article_content?: Json | null
           authors?: string
+          content_access?: string
           doi?: string | null
+          featured_image?: string | null
           fetched_at?: string
           id?: string
           kind?: string
+          pmcid?: string | null
           published_at?: string | null
           source?: string
           source_url?: string

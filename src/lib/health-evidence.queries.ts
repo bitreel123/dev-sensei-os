@@ -8,4 +8,5 @@ export const explorerQuery = (query = '', cursor = '*') => queryOptions({
   refetchInterval: 5 * 60 * 1000,
   retry: 1,
 });
-export const evidenceQuery = (id: string) => queryOptions({ queryKey: ['health-evidence', id], queryFn: () => getEvidence({ data: { id } }), staleTime: 10 * 60 * 1000 });export const fullTextQuery = (id: string) => queryOptions({ queryKey: ['health-fulltext', id], queryFn: () => getFullText({ data: { id } }), staleTime: 60 * 60 * 1000, enabled: id.startsWith('research-') });
+export const evidenceQuery = (id: string) => queryOptions({ queryKey: ['health-evidence', id], queryFn: () => getEvidence({ data: { id } }), staleTime: 10 * 60 * 1000 });
+export const fullTextQuery = (id: string) => queryOptions({ queryKey: ['health-fulltext', id], queryFn: () => getFullText({ data: { id } }), staleTime: 30 * 60 * 1000 });

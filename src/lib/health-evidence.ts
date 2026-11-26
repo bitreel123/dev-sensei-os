@@ -1,14 +1,17 @@
 import { z } from 'zod';
 import { XMLParser } from 'fast-xml-parser';
+import type { ArticleContent } from './health-article';
 
 export type EvidenceEntry = {
   id: string; kind: 'news' | 'research'; title: string; summary: string;
   source: string; source_url: string; published_at: string | null;
   authors: string; doi: string | null; fetched_at: string;
+  pmcid?: string | null; content_access?: string; featured_image?: string | null; article_content?: ArticleContent | null;
 };
 export const NEWS_SOURCES = [
   { name: 'WHO', url: 'https://www.who.int/rss-feeds/news-english.xml', hosts: ['www.who.int', 'who.int'] },
   { name: 'BBC Health', url: 'https://feeds.bbci.co.uk/news/health/rss.xml', hosts: ['www.bbc.com', 'www.bbc.co.uk', 'bbc.com', 'bbc.co.uk'] },
+  { name: 'CDC MMWR', url: 'https://tools.cdc.gov/api/v2/resources/media/342778.rss', hosts: ['tools.cdc.gov', 'www.cdc.gov'] },
 ] as const;
 export const explorerInput = z.object({
   query: z.string().trim().max(160).default(''),
@@ -68,5 +71,6 @@ export function normalizeResearch(value: unknown, now: string): EvidenceEntry | 
   if (!parsed.success) return null;
   const r = parsed.data;
   if (!/^[a-zA-Z0-9._-]{1,80}$/.test(r.id)) return null;
-  return { id: `research-${r.source}-${r.id}`, kind: 'research', title: plainText(r.title), summary: plainText(r.abstractText ?? ''), source: 'Europe PMC', source_url: `https://europepmc.org/article/${r.source}/${encodeURIComponent(r.id)}`, published_at: safeDate(r.firstPublicationDate), authors: r.authorString ?? '', doi: r.doi && /^10\.\d{4,9}\//.test(r.doi) ? r.doi : null, fetched_at: now };
+  const pmcid = typeof r['pmcid'] === 'string' && /^PMC\d+$/.test(r['pmcid']) ? r['pmcid'] : null;
+  return { id: `research-${r.source}-${r.id}`, kind: 'research', title: plainText(r.title), summary: plainText(r.abstractText ?? ''), source: 'Europe PMC', source_url: `https://europepmc.org/article/${r.source}/${encodeURIComponent(r.id)}`, published_at: safeDate(r.firstPublicationDate), authors: r.authorString ?? '', doi: r.doi && /^10\.\d{4,9}\//.test(r.doi) ? r.doi : null, fetched_at: now, pmcid, content_access: r['isOpenAccess'] === 'Y' ? 'open-access' : 'summary' };
 }

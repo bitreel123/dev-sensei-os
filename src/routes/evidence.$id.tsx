@@ -10,7 +10,8 @@ export const Route = createFileRoute('/evidence/$id')({
     const entry = loaderData?.entry;
     const title = entry ? `${entry.title} · Jeradin` : 'Health evidence · Jeradin';
     const description = entry?.summary.slice(0, 180) || 'Read health news and biomedical research in Jeradin.';
-    return { meta: [{ title }, { name: 'description', content: description }, { property: 'og:title', content: title }, { property: 'og:description', content: description }, { property: 'og:type', content: 'article' }, { name: 'twitter:card', content: 'summary_large_image' }] };
+    const image = entry?.featured_image;
+    return { meta: [{ title }, { name: 'description', content: description }, { property: 'og:title', content: title }, { property: 'og:description', content: description }, { property: 'og:type', content: 'article' }, { name: 'twitter:card', content: 'summary_large_image' }, ...(image?.startsWith('https://') ? [{ property: 'og:image', content: image }, { name: 'twitter:image', content: image }] : [])] };
   },
   component: EvidencePage,
 });

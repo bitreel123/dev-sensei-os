@@ -18,5 +18,7 @@ Keep /assistant as a single-conversation UI preview composed from installed AI E
 
 Keep report downloads out of overview actions; expose full organ explanations through Read full report and place unavailable dossier downloads only at the report end.
 - Full reports open at /reports/$kind as news-style articles inside the dashboard shell, reusing DashboardAnatomy; data lives in report-articles.ts until research is connected.
-Keep live Search Explorer sources separate from educational reports: /evidence/$id shows retrieved excerpts or abstracts with original publication links and reuse notices, never fabricated full articles or anatomy findings.
+Keep live Search Explorer sources separate from educational reports: /evidence/$id opens permitted complete article content directly in Overview, preserving figures, tables, references and reuse notices; restricted feeds remain clearly marked summaries, never fabricated full articles or anatomy findings.
 Use public read-only source catalogue access and bounded Europe PMC searches; only the authenticated managed hourly callback writes deduplicated RSS and research feed entries, preserving cached records when providers fail.
+Cache licensed article blocks and media only in the authenticated hourly ingestion; public reads use read-only catalogue access and signed media URLs, while uncached permitted articles are retrieved without privileged writes.
+Parse article XML and approved CDC syndication separately from presentation; preserve original structure and require CC BY, CC BY-SA or public-domain reproduction terms, excluding NC/ND restrictions without implying commercial AI-training rights.

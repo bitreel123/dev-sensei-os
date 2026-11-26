@@ -1,0 +1,3 @@
+ALTER TABLE public.health_feed_entries ADD COLUMN article_content jsonb, ADD COLUMN featured_image text, ADD COLUMN content_access text NOT NULL DEFAULT 'summary', ADD COLUMN pmcid text;
+COMMENT ON COLUMN public.health_feed_entries.article_content IS 'Sanitized complete article blocks, attribution, license, figures and references from approved reusable sources';
+CREATE POLICY "Public article image reads" ON storage.objects FOR SELECT TO anon, authenticated USING (bucket_id = 'health-article-media');

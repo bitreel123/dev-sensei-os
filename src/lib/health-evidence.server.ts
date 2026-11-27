@@ -5,8 +5,9 @@ import type { EvidenceEntry } from './health-evidence';
 import { unzipSync } from 'fflate';
 import { articleSchema, parseArticleDocument, parseResearchArticle } from './health-article';
 import type { ArticleContent } from './health-article';
+import { intelligenceRecord, extractIntelligence } from './evidence-intelligence';
 
-const listingColumns = 'id,kind,title,summary,source,source_url,published_at,authors,doi,fetched_at,pmcid,content_access,featured_image';
+const listingColumns = 'id,kind,title,summary,source,source_url,published_at,authors,doi,fetched_at,pmcid,content_access,featured_image,article_content';
 
 async function signedImage(path: string | null | undefined): Promise<string | null> {
   if (!path) return null;
@@ -18,7 +19,11 @@ async function hydrateArticle(article: ArticleContent): Promise<ArticleContent> 
   return { ...article, blocks: await Promise.all(article.blocks.map(async b => b.type === 'figure' ? { ...b, image: await signedImage(b.image) } : b)) };
 }
 async function hydrateListings(entries: EvidenceEntry[]) {
-  return Promise.all(entries.map(async entry => ({ ...entry, featured_image: await signedImage(entry.featured_image) })));
+  return Promise.all(entries.map(async entry => {
+    const { article_content, ...listing } = entry;
+    const parsed = articleSchema.safeParse(article_content);
+    return { ...listing, mentions: parsed.success ? extractIntelligence(parsed.data) : entry.mentions ?? [], featured_image: await signedImage(entry.featured_image) };
+  }));
 }
 
 function publicClient() {
@@ -46,9 +51,9 @@ export async function searchResearch(query: string, cursor = '*') {
 export async function loadExplorer(query: string, cursor: string) {
   const client = publicClient();
   const [newsResult, statuses, research] = await Promise.all([
-    client.from('health_feed_entries').select(listingColumns).eq('kind', 'news').order('published_at', { ascending: false, nullsFirst: false }).limit(250),
-    client.from('health_feed_status').select('*'),
-    Promise.resolve(query ? searchResearch(query, cursor) : client.from('health_feed_entries').select(listingColumns).eq('kind', 'research').order('published_at', { ascending: false }).limit(12).then(r => {
+    client.from('health_feed_entries').select(listingColumns).eq('kind', 'news').eq('source', 'CDC MMWR').eq('content_access', 'complete').order('published_at', { ascending: false, nullsFirst: false }).limit(250),
+    client.from('health_feed_status').select('*').in('source', ['CDC MMWR', 'Europe PMC']),
+    Promise.resolve(query ? searchResearch(query, cursor) : client.from('health_feed_entries').select(listingColumns).eq('kind', 'research').eq('content_access', 'complete').order('published_at', { ascending: false }).limit(12).then(r => {
       if (r.error) throw r.error;
       return { entries: (r.data ?? []) as EvidenceEntry[], total: r.data?.length ?? 0, nextCursor: null };
     })).then(r => ({ ...r, available: true })).catch(error => { console.error('Research source unavailable', error); return { entries: [] as EvidenceEntry[], total: 0, nextCursor: null, available: false }; }),
@@ -56,22 +61,46 @@ export async function loadExplorer(query: string, cursor: string) {
   const news = (newsResult.data ?? []).filter(e => newsMatches(e as EvidenceEntry, query)) as EvidenceEntry[];
   // Cached research is only a fallback, never presented as a fresh API response.
   if (!research.available && cursor === '*') {
-    const cached = await client.from('health_feed_entries').select(listingColumns).eq('kind', 'research').order('published_at', { ascending: false }).limit(100);
+    const cached = await client.from('health_feed_entries').select(listingColumns).eq('kind', 'research').eq('content_access', 'complete').order('published_at', { ascending: false }).limit(100);
     research.entries = (cached.data ?? []).filter(e => newsMatches(e as EvidenceEntry, query)) as EvidenceEntry[];
     research.total = research.entries.length;
   }
   if (query && research.entries.length) {
     const cached = await client.from('health_feed_entries').select(listingColumns).in('id', research.entries.map(e => e.id));
     const saved = new Map((cached.data ?? []).map(e => [e.id, e]));
-    research.entries = research.entries.map(e => ({ ...e, ...(saved.get(e.id) ?? {}), kind: e.kind }));
+    research.entries = research.entries.map(e => {
+      const cachedEntry = saved.get(e.id);
+      if (!cachedEntry) return e;
+      const parsed = articleSchema.safeParse(cachedEntry.article_content);
+      return { ...e, ...cachedEntry, kind: e.kind, article_content: parsed.success ? parsed.data : null };
+    });
+  }
+  // Open access alone is insufficient: validate the manuscript and reuse terms.
+  if (query) {
+    const verified = await Promise.all(research.entries.map(async entry => {
+      if (entry.content_access === 'complete') return entry;
+      try { const article = await fetchArticle(entry, false); return article?.complete ? { ...entry, content_access: 'complete', mentions: extractIntelligence(article) } : null; }
+      catch { return null; }
+    }));
+    research.entries = verified.filter((e): e is EvidenceEntry => e !== null);
   }
   return { news: await hydrateListings(news), research: { ...research, entries: await hydrateListings(research.entries) }, statuses: statuses.data ?? [], newsAvailable: !newsResult.error, checkedAt: new Date().toISOString() };
+}
+export async function loadDatasetRecords() {
+  const result = await publicClient().from('health_feed_entries').select('*').eq('content_access', 'complete').in('source', ['CDC MMWR', 'Europe PMC']).order('published_at', { ascending: false }).limit(50);
+  if (result.error) throw result.error;
+  return (result.data ?? []).flatMap(entry => {
+    const article = articleSchema.safeParse(entry.article_content);
+    if (!article.success || !article.data.complete || (entry.kind !== 'news' && entry.kind !== 'research')) return [];
+    return [intelligenceRecord({ ...entry, kind: entry.kind, article_content: article.data }, article.data)];
+  });
 }
 export async function loadEvidence(id: string): Promise<EvidenceEntry | null> {
   const client = publicClient();
   const stored = await client.from('health_feed_entries').select('*').eq('id', id).maybeSingle();
   if (stored.data) {
     if (stored.data.kind !== 'news' && stored.data.kind !== 'research') return null;
+    if (stored.data.kind === 'news' && stored.data.source !== 'CDC MMWR') return null;
     const parsed = articleSchema.safeParse(stored.data.article_content);
     return { ...stored.data, kind: stored.data.kind, featured_image: await signedImage(stored.data.featured_image), article_content: parsed.success ? await hydrateArticle(parsed.data) : null };
   }
@@ -92,7 +121,10 @@ export async function ingestHealthSources() {
       if (!entries.length) throw new Error('No valid provider entries');
       const previous = await supabaseAdmin.from('health_feed_entries').select('id,content_access').in('id', entries.map(e => e.id));
       const existingAccess = new Map((previous.data ?? []).map(e => [e.id, e.content_access]));
-      const saved = await supabaseAdmin.from('health_feed_entries').upsert(entries.map(e => ({ ...e, content_access: existingAccess.get(e.id) === 'complete' ? 'complete' : e.content_access ?? 'summary' })), { onConflict: 'id' });
+      const saved = await supabaseAdmin.from('health_feed_entries').upsert(entries.map(e => {
+        const { mentions, ...row } = e;
+        return { ...row, content_access: existingAccess.get(e.id) === 'complete' ? 'complete' : e.content_access ?? 'summary' };
+      }), { onConflict: 'id' });
       if (saved.error) throw saved.error;
       // Bound each hourly batch; catalogue reads never write or trigger privileged work.
       const eligible = entries.filter(e => e.source === 'CDC MMWR' || e.content_access === 'open-access').slice(0, 8);
@@ -150,14 +182,14 @@ function imageData(bytes: Uint8Array, filename: string): string | null {
   const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : ext === 'webp' ? 'image/webp' : null;
   return mime ? `data:${mime};base64,${Buffer.from(bytes).toString('base64')}` : null;
 }
-async function fetchArticle(entry: EvidenceEntry): Promise<ArticleContent | null> {
+async function fetchArticle(entry: EvidenceEntry, includeMedia = true): Promise<ArticleContent | null> {
   if (entry.kind === 'news') {
     if (entry.source !== 'CDC MMWR') return null;
     const url = new URL(entry.source_url);
     if (!(url.hostname === 'tools.cdc.gov' && url.pathname === '/api/embed/downloader/download.asp') && !(url.hostname === 'www.cdc.gov' && url.pathname.startsWith('/mmwr/'))) return null;
     const article = parseArticleDocument(new TextDecoder().decode(await boundedSource(url.href)), { xml: false, base: 'https://www.cdc.gov', credit: 'CDC MMWR', license: 'US government report; third-party materials may have separate terms. No endorsement implied.', licenseUrl: 'https://www.cdc.gov/other/agencymaterials.html' });
     if (!article) return null;
-    for (const b of article.blocks) if (b.type === 'figure' && b.file) {
+    for (const b of article.blocks) if (includeMedia && b.type === 'figure' && b.file) {
       try { b.image = imageData(await boundedSource(b.file, 8 * 1024 * 1024), b.file); } catch { article.mediaNotice = 'Some publisher figures could not be retrieved. Their captions remain available.'; }
     }
     return article;
@@ -176,7 +208,7 @@ async function fetchArticle(entry: EvidenceEntry): Promise<ArticleContent | null
   const article = parseResearchArticle(new TextDecoder().decode(await boundedSource(`https://www.ebi.ac.uk/europepmc/webservices/rest/${pmcid}/fullTextXML`)));
   if (!article) return null;
   const figures = article.blocks.filter(b => b.type === 'figure');
-  if (figures.length) {
+  if (includeMedia && figures.length) {
     try {
       const zip = await boundedSource(`https://www.ebi.ac.uk/europepmc/webservices/rest/${pmcid}/supplementaryFiles`);
       let selectedSize = 0;

@@ -1,5 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
-import { getExplorer, getEvidence, getFullText } from './health-evidence.functions';
+import { getExplorer, getEvidence, getFullText, getDatasetRecords } from './health-evidence.functions';
+
+export const datasetRecordsQuery = () => queryOptions({ queryKey: ['evidence-dataset-records'], queryFn: () => getDatasetRecords(), staleTime: 5 * 60 * 1000 });
 
 export const explorerQuery = (query = '', cursor = '*') => queryOptions({
   queryKey: ['health-explorer', query, cursor],

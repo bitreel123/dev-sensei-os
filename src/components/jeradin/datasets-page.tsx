@@ -1,42 +1,28 @@
-import { useState } from "react";
-import { ArrowRight, Bookmark, CalendarDays, Check, Database, Dna, Download, Grid2X2, Microscope, Pill, Search, Stethoscope, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import banner from "@/assets/dataset-banner.png.asset.json";
-import cancer from "@/assets/dataset-cancer.png.asset.json";
-import brain from "@/assets/dataset-brain.png.asset.json";
-import virus from "@/assets/dataset-virus.png.asset.json";
-
-const categories = [
-  { name: "Genomics & Bioinformatics", icon: Dna },
-  { name: "Clinical Trials", icon: Pill },
-  { name: "Diseases & Conditions", icon: Stethoscope },
-  { name: "Medical Imaging", icon: Microscope },
-  { name: "Drug & Treatment", icon: Pill },
-  { name: "Others", icon: Grid2X2 },
-];
-const datasets = [
-  { id: "tcga", title: "TCGA Pan-Cancer Gene Expression Data", description: "An illustrative catalogue entry for gene-expression research across cancer types from The Cancer Genome Atlas.", category: "Genomics & Bioinformatics", tags: ["Genomics", "Cancer", "Gene expression", "TCGA"], image: cancer.url, detail: "Gene expression", format: "Tabular records", fields: ["Study identifier", "Cancer type", "Gene identifier", "Expression value", "Source reference"] },
-  { id: "mri", title: "Brain Tumor MRI Dataset", description: "An illustrative medical-imaging collection for brain tumour research and analysis.", category: "Medical Imaging", tags: ["Medical imaging", "Brain", "MRI", "Neuro"], image: brain.url, detail: "Medical imaging", format: "Image metadata", fields: ["Study identifier", "Imaging modality", "Anatomical region", "Annotation", "Source reference"] },
-  { id: "trials", title: "COVID-19 Clinical Trials Dataset", description: "An illustrative structured collection of clinical trial registrations, study designs and outcome fields.", category: "Clinical Trials", tags: ["Clinical trials", "COVID-19", "Outcomes", "Global"], image: virus.url, detail: "Trial registrations", format: "Structured records", fields: ["Trial identifier", "Condition", "Intervention", "Study phase", "Study status", "Source reference"] },
-];
-type Dataset = typeof datasets[number];
+import { useState } from 'react';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
+import { Database, Download, Search, ArrowRight, FileText, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { datasetRecordsQuery } from '@/lib/health-evidence.queries';
+import { downloadEvidence } from '@/lib/evidence-download';
+import banner from '@/assets/dataset-banner.png.asset.json';
 
 export function DatasetsPage() {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("");
-  const [saved, setSaved] = useState<string[]>([]);
-  const [onlySaved, setOnlySaved] = useState(false);
-  const [selected, setSelected] = useState<Dataset | null>(null);
-  const visible = datasets.filter(d => (!category || d.category === category) && (!onlySaved || saved.includes(d.id)) && `${d.title} ${d.description} ${d.tags.join(" ")}`.toLowerCase().includes(query.toLowerCase()));
-  const toggleSave = (id: string) => setSaved(values => values.includes(id) ? values.filter(v => v !== id) : [...values, id]);
+  const { data } = useSuspenseQuery(datasetRecordsQuery());
+  const [query, setQuery] = useState('');
+  const [kind, setKind] = useState('');
+  const [selected, setSelected] = useState<string[]>([]);
+  const visible = data.records.filter(r => (!kind || r.kind === kind) && `${r.title} ${r.source} ${r.mentions.map(m => m.name).join(' ')}`.toLowerCase().includes(query.toLowerCase()));
+  const exportRecords = visible.filter(r => selected.includes(r.id));
+  const toggle = (id: string) => setSelected(s => s.includes(id) ? s.filter(v => v !== id) : [...s, id]);
   return <>
-    <div className="jd-catalog-heading"><div><h1><Database />Datasets</h1><p>Biomedical data for research, analysis and discovery.</p></div><Button variant={onlySaved ? "default" : "outline"} onClick={() => setOnlySaved(v => !v)} aria-pressed={onlySaved}><Bookmark />My Datasets{saved.length > 0 && ` (${saved.length})`}</Button></div>
-    <section className="jd-dataset-banner"><img src={banner.url} alt="Biomedical illustration of lungs, heart and a DNA helix" /><div className="jd-banner-copy"><span className="jd-banner-eyebrow">Biomedical catalogue</span><h2>Powering Better Research<br />with Biomedical Data</h2><p>Explore structured research collections, clinical studies and medical imaging.</p><form className="jd-dataset-search" onSubmit={e => e.preventDefault()}><Search /><input aria-label="Search datasets" placeholder="Search datasets…" value={query} onChange={e => setQuery(e.target.value)} /><Button size="icon" type="submit" aria-label="Search catalogue"><ArrowRight /></Button></form></div><div className="jd-banner-checks">{["Source references", "Structured fields", "Research access"].map(label => <span key={label}><Check />{label}</span>)}</div></section>
-    <div className="jd-category-grid" aria-label="Dataset categories">{categories.map(c => <Button key={c.name} variant="outline" className={`jd-category ${category === c.name ? "is-selected" : ""}`} onClick={() => setCategory(current => current === c.name ? "" : c.name)} aria-pressed={category === c.name}><span className="jd-category-symbol"><c.icon /></span><span><strong>{c.name}</strong><small>{datasets.filter(d => d.category === c.name).length || "No"} illustrative collections</small></span><ArrowRight /></Button>)}</div>
-    <div className="jd-catalog-meta"><span>{onlySaved ? "My Datasets" : category || "All datasets"} · {visible.length} {visible.length === 1 ? "collection" : "collections"}</span><span>Illustrative catalogue · Records and downloads not connected</span>{(category || query || onlySaved) && <Button variant="ghost" size="sm" onClick={() => { setCategory(""); setQuery(""); setOnlySaved(false); }}><X />Clear filters</Button>}</div>
-    <div className="jd-dataset-list">{visible.map(d => <article className="jd-dataset-row" key={d.id}><img src={d.image} alt={`${d.detail} scientific illustration, not a dataset record`} /><div className="jd-dataset-description"><h2>{d.title}</h2><p>{d.description}</p><div className="jd-dataset-tags">{d.tags.map(t => <span key={t}>{t}</span>)}</div></div><dl className="jd-dataset-stats"><div><Database /><dd>{d.detail}</dd></div><div><CalendarDays /><dd>Records not connected</dd></div><div><Download /><dd>{d.format}</dd></div></dl><Button onClick={() => setSelected(d)}>View Dataset<ArrowRight /></Button></article>)}</div>
-    {visible.length === 0 && <div className="jd-catalog-empty"><Database /><h2>No collections here yet</h2><p>{onlySaved ? "You haven’t saved a matching collection." : "No illustrative collections match these filters."}</p><Button variant="outline" onClick={() => { setCategory(""); setQuery(""); setOnlySaved(false); }}>Show all datasets</Button></div>}
-    <Dialog open={selected !== null} onOpenChange={open => { if (!open) setSelected(null); }}><DialogContent className="jd-dataset-dialog"><DialogHeader><DialogTitle>{selected?.title}</DialogTitle><DialogDescription>{selected?.description}</DialogDescription></DialogHeader>{selected && <><span className="jd-tag">Records not connected</span><h3>Record fields</h3><ul>{selected.fields.map(field => <li key={field}><Check />{field}</li>)}</ul><p>Records, licensing checks and downloads are not connected yet. Artwork is illustrative; no research files are included.</p><div className="jd-dialog-actions"><Button variant="outline" onClick={() => toggleSave(selected.id)}><Bookmark />{saved.includes(selected.id) ? "Remove from My Datasets" : "Save to My Datasets"}</Button><Button disabled><Download />Download</Button></div></>}</DialogContent></Dialog>
+    <div className="jd-catalog-heading"><div><h1><Database />Datasets</h1><p>Structured records from complete health reports and research.</p></div><span className="jd-tag">{data.records.length} available records</span></div>
+    <section className="jd-dataset-banner"><img src={banner.url} alt="Human organs and DNA" /><div className="jd-banner-copy"><span className="jd-banner-eyebrow">Evidence collections</span><h2>From full reports<br />to structured records</h2><p>Published text, tables and evidence-linked mentions.</p><form className="jd-dataset-search" onSubmit={e => e.preventDefault()}><Search /><input aria-label="Search datasets" placeholder="Search topics, organs, reports…" value={query} onChange={e => setQuery(e.target.value)} /><Button size="icon" type="submit" aria-label="Search catalogue"><ArrowRight /></Button></form></div><div className="jd-banner-checks">{['Publication identifiers', 'Supporting passages', 'Reuse terms'].map(label => <span key={label}><Check />{label}</span>)}</div></section>
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Evidence collections">{[['', 'All records'], ['news', 'Outbreak & health reports'], ['research', 'Biomedical research']].map(([value, label]) => <Button key={value} variant={kind === value ? 'default' : 'outline'} aria-pressed={kind === value} onClick={() => setKind(value ?? '')}>{label}</Button>)}</div>
+    <div className="jd-catalog-meta"><span>{visible.length} matching records · {exportRecords.length} selected</span><Button variant="ghost" size="sm" disabled={!visible.length} onClick={() => setSelected(exportRecords.length === visible.length ? [] : visible.map(r => r.id))}>{exportRecords.length === visible.length && visible.length ? 'Clear selection' : 'Select matching records'}</Button></div>
+    {data.unavailable && <p role="alert">The evidence collection could not be loaded. Please try again later.</p>}
+    <div className="divide-y divide-border">{visible.map(r => <article key={r.id} className="grid gap-4 py-6 sm:grid-cols-[auto_minmax(0,1fr)]"><label className="flex items-start gap-2 pt-1"><input type="checkbox" checked={selected.includes(r.id)} onChange={() => toggle(r.id)} aria-label={`Select ${r.title}`} className="h-4 w-4 accent-current" /></label><div className="min-w-0"><small className="text-muted-foreground">{r.source} · {r.published_at ? new Date(r.published_at).toLocaleDateString('en-GB') : 'Date unavailable'}</small><h2 className="mt-2 break-words text-lg font-semibold"><Link to="/evidence/$id" params={{ id: r.id }}>{r.title}</Link></h2><div className="jd-dataset-tags my-3">{r.mentions.filter(m => m.category === 'Organ mentions').map(m => <span key={m.name}>{m.name}</span>)}</div><p className="text-sm text-muted-foreground">{r.blocks.filter(b => b.type === 'p').length} text passages · {r.blocks.filter(b => b.type === 'table').length} tables · {r.blocks.filter(b => b.type === 'figure').length} figure references</p><p className="mt-2 break-words text-xs text-muted-foreground">{r.license || 'Check publication reuse terms'} · Automated extraction, not expert reviewed</p><Button asChild variant="ghost" className="mt-2"><Link to="/evidence/$id" params={{ id: r.id }}><FileText />Read report<ArrowRight /></Link></Button></div></article>)}</div>
+    {!visible.length && !data.unavailable && <div className="jd-catalog-empty"><Database /><h2>No matching complete records</h2><p>{data.records.length ? 'Try a different topic or collection.' : 'Complete permitted articles will appear after the next successful source refresh.'}</p></div>}
+    <section className="border-t border-border py-6"><h2 className="text-lg font-semibold">Export selected evidence</h2><p className="mt-2 text-sm text-muted-foreground">Text, tables, figure references, article mentions and publication provenance. Records are not validated training datasets; commercial training rights and third-party image rights require separate review.</p><div className="mt-4 flex flex-wrap gap-3"><Button variant="outline" disabled={!exportRecords.length} onClick={() => void downloadEvidence(exportRecords, 'jsonl')}><Download />Export JSONL</Button><Button variant="outline" disabled={!exportRecords.length} onClick={() => void downloadEvidence(exportRecords, 'csv')}><Download />Export CSV</Button></div></section>
   </>;
 }

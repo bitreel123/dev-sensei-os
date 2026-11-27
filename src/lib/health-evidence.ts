@@ -1,16 +1,16 @@
 import { z } from 'zod';
 import { XMLParser } from 'fast-xml-parser';
 import type { ArticleContent } from './health-article';
+import type { EvidenceMention } from './evidence-intelligence';
 
 export type EvidenceEntry = {
   id: string; kind: 'news' | 'research'; title: string; summary: string;
   source: string; source_url: string; published_at: string | null;
   authors: string; doi: string | null; fetched_at: string;
   pmcid?: string | null; content_access?: string; featured_image?: string | null; article_content?: ArticleContent | null;
+  mentions?: EvidenceMention[];
 };
 export const NEWS_SOURCES = [
-  { name: 'WHO', url: 'https://www.who.int/rss-feeds/news-english.xml', hosts: ['www.who.int', 'who.int'] },
-  { name: 'BBC Health', url: 'https://feeds.bbci.co.uk/news/health/rss.xml', hosts: ['www.bbc.com', 'www.bbc.co.uk', 'bbc.com', 'bbc.co.uk'] },
   { name: 'CDC MMWR', url: 'https://tools.cdc.gov/api/v2/resources/media/342778.rss', hosts: ['tools.cdc.gov', 'www.cdc.gov'] },
 ] as const;
 export const explorerInput = z.object({
@@ -31,10 +31,10 @@ export function safeDate(value: string | undefined | null): string | null {
 }
 export function buildResearchQuery(query: string, now = new Date()): string {
   const tokens = query.match(/[\p{L}\p{N}]+/gu)?.slice(0, 24) ?? [];
-  if (tokens.length) return tokens.map(token => `TITLE_ABS:"${token}"`).join(' AND ');
+  if (tokens.length) return `(${tokens.map(token => `TITLE_ABS:"${token}"`).join(' AND ')}) AND OPEN_ACCESS:Y`;
   const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const until = now.toISOString().slice(0, 10);
-  return `(TITLE_ABS:health OR TITLE_ABS:disease OR TITLE_ABS:medicine) FIRST_PDATE:[${since} TO ${until}] sort_date:y`;
+  return `(TITLE_ABS:health OR TITLE_ABS:disease OR TITLE_ABS:medicine) FIRST_PDATE:[${since} TO ${until}] AND OPEN_ACCESS:Y sort_date:y`;
 }
 export function newsMatches(entry: EvidenceEntry, query: string): boolean {
   const tokens = query.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];

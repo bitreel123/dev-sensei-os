@@ -2,6 +2,12 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { explorerInput } from './health-evidence';
 
+export const getDatasetRecords = createServerFn({ method: 'GET' }).handler(async () => {
+  const { loadDatasetRecords } = await import('./health-evidence.server');
+  try { return { records: await loadDatasetRecords(), unavailable: false }; }
+  catch (error) { console.error('Evidence datasets unavailable', error); return { records: [], unavailable: true }; }
+});
+
 export const getExplorer = createServerFn({ method: 'GET' })
   .inputValidator(explorerInput)
   .handler(async ({ data }) => {

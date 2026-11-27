@@ -1,5 +1,11 @@
 # Jeradin presentation
 
+## Full-content data intelligence
+- [x] Exclude teaser-only feeds and verify reusable complete articles before listing them.
+- [x] Add citation-backed structured mentions and article-specific anatomy.
+- [x] Connect real evidence collections with JSONL and CSV exports.
+- [x] Test source rules, extraction, exports and phone/desktop reading.
+
 ## Complete evidence reading and editorial search
 - [x] Preserve complete permitted article sections, tables, figures, references and publication metadata.
 - [x] Expand verified health feeds without copying restricted publisher articles.

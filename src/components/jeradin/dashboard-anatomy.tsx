@@ -23,8 +23,9 @@ export function DashboardAnatomy({ stages }: { stages: AnatomyStage[] }) {
     }, ORGAN_SECONDS * 1000);
     return () => window.clearInterval(timer);
   }, [reduced, stages.length]);
-  const stage = stages[step];
-  if (!stage) return null;
+  const currentStep = stages.length ? step % stages.length : 0;
+  const stage = stages[currentStep];
+  if (!stage) return <figure className="jd-auto-anatomy"><div className="jd-anatomy-head"><strong>Virtual Human</strong><small>No mapped organ mentions</small></div><div className="jd-atlas"><img src={anatomyImage} alt="Jeradin human anatomy atlas" /></div><figcaption>No supported organ mentions were identified in this article. No condition or organ effects are inferred.</figcaption></figure>;
   return <figure className="jd-auto-anatomy" aria-label="Automatic educational anatomy walkthrough" data-organ={stage.organ}>
     <div className="jd-anatomy-head"><strong>Virtual Human</strong><small>Educational illustration · Not clinical imaging</small></div>
     <div className="jd-atlas">
@@ -39,7 +40,7 @@ export function DashboardAnatomy({ stages }: { stages: AnatomyStage[] }) {
     <figcaption key={`caption-${step}`} className="jd-tour-caption">
       <div className="jd-tour-label"><small>{stage.label}</small><h4>{stage.organ}</h4></div>
       <div className="jd-tour-explanation"><strong>{stage.function}</strong><p>{stage.explanation}</p></div>
-      <div className="jd-tour-progress" aria-label={`Stage ${step + 1} of ${stages.length}`}>{stages.map((s, i) => <span key={s.organ} className={i === step ? "is-active" : ""} />)}</div>
+      <div className="jd-tour-progress" aria-label={`Stage ${currentStep + 1} of ${stages.length}`}>{stages.map((s, i) => <span key={s.organ} className={i === currentStep ? "is-active" : ""} />)}</div>
     </figcaption>
     {reduced && <div className="jd-reduced-transcript">{stages.filter(s => s.organ !== stage.organ).map(s => <p key={s.organ}><strong>{s.organ}: </strong>{s.explanation}</p>)}</div>}
   </figure>;

@@ -7,7 +7,7 @@ import { explorerQuery } from '@/lib/health-evidence.queries';
 import { getExplorer } from '@/lib/health-evidence.functions';
 import type { EvidenceEntry } from '@/lib/health-evidence';
 import { DashboardAnatomy } from './dashboard-anatomy';
-import { researchTour } from './dashboard-tour-data';
+import { evidenceAnatomy } from '@/lib/evidence-intelligence';
 import { EvidenceVisual, evidenceTopic } from './evidence-visual';
 import { EvidenceFeatured } from './evidence-featured';
 
@@ -41,6 +41,8 @@ export function SearchExplorer() {
   const featured = [...initial.news, ...initial.research.entries].sort((a, b) => Number(b.content_access === 'complete') - Number(a.content_access === 'complete') || (b.published_at ?? '').localeCompare(a.published_at ?? '')).slice(0, 5);
   const submit = () => { setTopic('All topics'); setQuery(input.trim()); setNewsLimit(12); if (input.trim() === query) void results.refetch(); };
   const statuses = first?.statuses ?? [];
+  const anatomyEntry = tab === 'news' ? news[0] : research[0] ?? news[0];
+  const anatomyStages = evidenceAnatomy(anatomyEntry?.mentions ?? []);
   return <div className="je-explorer je-editorial">
     <form className="jd-search" onSubmit={e => { e.preventDefault(); submit(); }}><Search /><input value={input} maxLength={160} onChange={e => setInput(e.target.value)} placeholder="Search conditions, medicines or research" aria-label="Search research" /><Button type="submit" aria-label="Search" title="Search" disabled={results.isFetching}>{results.isFetching ? <Loader2 className="animate-spin" /> : <><span className="jd-search-word">Search</span><ArrowRight /></>}</Button></form>
     {!query && <EvidenceFeatured entries={featured} />}
@@ -53,8 +55,8 @@ export function SearchExplorer() {
       {(!first.research.available || !first.newsAvailable) && <p role="status" className="jd-preview-notice">{!first.research.available ? 'Research is temporarily unavailable. Saved publications are shown where available.' : 'The news catalogue is temporarily unavailable.'}</p>}
       <div className="je-layout"><div id="evidence-results" role="tabpanel" aria-labelledby={`evidence-type-${tab}`} className="je-results">
         {tab !== 'research' && <section aria-label="Health news results"><div className="jd-section-head"><h2>Health news</h2><small>{news.length} {query ? 'matches in current feeds' : 'updates'}</small></div><div className="je-post-grid">{news.slice(0, newsLimit).map(entry => <EvidenceRow key={entry.id} entry={entry} />)}</div>{!news.length && <p className="je-empty">{query ? 'No news matches in the current feeds. Try a broader topic or explore research.' : 'No news entries are available yet.'}</p>}{news.length > newsLimit && <Button variant="outline" onClick={() => setNewsLimit(n => n + 12)}>More health news <ArrowRight /></Button>}</section>}
-        {tab !== 'news' && <section aria-label="Research results"><div className="jd-section-head"><h2>Biomedical research</h2><small>{first.research.total.toLocaleString()} {first.research.available ? 'publications found' : 'saved entries'}</small></div><div className="je-post-grid">{research.map(entry => <EvidenceRow key={entry.id} entry={entry} />)}</div>{!research.length && <p className="je-empty">No publications found. Try the condition or medicine name.</p>}{results.hasNextPage && <Button variant="outline" onClick={() => void results.fetchNextPage()} disabled={results.isFetchingNextPage}>{results.isFetchingNextPage ? <Loader2 className="animate-spin" /> : <FileText />} More research</Button>}</section>}
-      </div><aside className="je-context"><div className="jd-section-head"><h2>Human anatomy</h2><Activity size={16} /></div><DashboardAnatomy stages={researchTour} /><p>Educational anatomy, not findings from these publications.</p><div className="je-source-status"><h3>Feed activity</h3>{statuses.map(s => <div key={s.source}><strong>{s.source}</strong><span>{s.status === 'ok' ? `Retrieved ${evidenceDate(s.last_success_at)}` : 'Temporarily unavailable'}</span></div>)}<p>Article availability and reuse terms vary by publisher. Not medical advice.</p></div></aside></div>
+        {tab !== 'news' && <section aria-label="Research results"><div className="jd-section-head"><h2>Biomedical research</h2><small>{research.length} complete reports shown</small></div><div className="je-post-grid">{research.map(entry => <EvidenceRow key={entry.id} entry={entry} />)}</div>{!research.length && <p className="je-empty">No complete permitted publications are available in this batch. Try another topic or load more research.</p>}{results.hasNextPage && <Button variant="outline" onClick={() => void results.fetchNextPage()} disabled={results.isFetchingNextPage}>{results.isFetchingNextPage ? <Loader2 className="animate-spin" /> : <FileText />} More research</Button>}</section>}
+      </div><aside className="je-context"><div className="jd-section-head"><h2>Human anatomy</h2><Activity size={16} /></div><DashboardAnatomy stages={anatomyStages} />{anatomyEntry && <p className="text-sm">Article mentions: {anatomyEntry.title}</p>}<p>Educational organ locations, not proven effects.</p><div className="je-source-status"><h3>Feed activity</h3>{statuses.map(s => <div key={s.source}><strong>{s.source}</strong><span>{s.status === 'ok' ? `Retrieved ${evidenceDate(s.last_success_at)}` : 'Temporarily unavailable'}</span></div>)}<p>Only complete permitted reports are listed. Retrieval failures may reduce available results. Not medical advice.</p></div></aside></div>
     </>}
   </div>;
 }

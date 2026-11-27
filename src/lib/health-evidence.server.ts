@@ -6,23 +6,28 @@ import { unzipSync } from 'fflate';
 import { articleSchema, parseArticleDocument, parseResearchArticle } from './health-article';
 import type { ArticleContent } from './health-article';
 import { intelligenceRecord, extractIntelligence } from './evidence-intelligence';
+import { canSignArticleMedia } from './article-media-access';
 
 const listingColumns = 'id,kind,title,summary,source,source_url,published_at,authors,doi,fetched_at,pmcid,content_access,featured_image,article_content';
 
-async function signedImage(path: string | null | undefined): Promise<string | null> {
+async function signedImage(path: string | null | undefined, entryId: string): Promise<string | null> {
   if (!path) return null;
   if (!path.startsWith('articles/')) return path.startsWith('data:image/') ? path : null;
-  const result = await publicClient().storage.from('health-article-media').createSignedUrl(path, 3600);
+  const record = await publicClient().from('health_feed_entries').select('id,source,content_access,featured_image,article_content').eq('id', entryId).maybeSingle();
+  if (record.error || !canSignArticleMedia(path, record.data)) return null;
+  // Privilege is limited to signing a figure verified through public catalogue access.
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const result = await supabaseAdmin.storage.from('health-article-media').createSignedUrl(path, 3600);
   return result.data?.signedUrl ?? null;
 }
-async function hydrateArticle(article: ArticleContent): Promise<ArticleContent> {
-  return { ...article, blocks: await Promise.all(article.blocks.map(async b => b.type === 'figure' ? { ...b, image: await signedImage(b.image) } : b)) };
+async function hydrateArticle(article: ArticleContent, entryId: string): Promise<ArticleContent> {
+  return { ...article, blocks: await Promise.all(article.blocks.map(async b => b.type === 'figure' ? { ...b, image: await signedImage(b.image, entryId) } : b)) };
 }
 async function hydrateListings(entries: EvidenceEntry[]) {
   return Promise.all(entries.map(async entry => {
     const { article_content, ...listing } = entry;
     const parsed = articleSchema.safeParse(article_content);
-    return { ...listing, mentions: parsed.success ? extractIntelligence(parsed.data) : entry.mentions ?? [], featured_image: await signedImage(entry.featured_image) };
+    return { ...listing, mentions: parsed.success ? extractIntelligence(parsed.data) : entry.mentions ?? [], featured_image: await signedImage(entry.featured_image, entry.id) };
   }));
 }
 
@@ -102,7 +107,7 @@ export async function loadEvidence(id: string): Promise<EvidenceEntry | null> {
     if (stored.data.kind !== 'news' && stored.data.kind !== 'research') return null;
     if (stored.data.kind === 'news' && stored.data.source !== 'CDC MMWR') return null;
     const parsed = articleSchema.safeParse(stored.data.article_content);
-    return { ...stored.data, kind: stored.data.kind, featured_image: await signedImage(stored.data.featured_image), article_content: parsed.success ? await hydrateArticle(parsed.data) : null };
+    return { ...stored.data, kind: stored.data.kind, featured_image: await signedImage(stored.data.featured_image, stored.data.id), article_content: parsed.success ? await hydrateArticle(parsed.data, stored.data.id) : null };
   }
   const match = /^research-(MED|PMC|PPR|AGR|CBA|CTX|ETH|HIR|NBK|PAT)-([a-zA-Z0-9._-]{1,80})$/.exec(id);
   if (!match) return null;
